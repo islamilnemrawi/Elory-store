@@ -4405,6 +4405,194 @@ img{image-rendering:auto;}
   #featured .section-title{font-size:18px!important}
 }
 </style>
+
+<style id="elory-v8-mobile-final">
+/* =========================================================
+   ELORY V8 — mobile touch polish based on the supplied 720px
+   phone capture. Keep store/Supabase logic unchanged.
+   ========================================================= */
+html,body{width:100%;max-width:100%;overflow-x:hidden!important;overscroll-behavior-x:none!important;-webkit-text-size-adjust:100%!important}
+button,a,input{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit}
+
+/* One compact navigation strip: home / categories / best sellers. */
+.elory-reference-nav{
+  width:94%!important;
+  max-width:760px!important;
+  height:44px!important;
+  min-height:44px!important;
+  margin:0 auto!important;
+  padding:3px!important;
+  border-radius:0 0 22px 22px!important;
+  background:rgba(255,250,253,.97)!important;
+  border:1px solid #f0d6df!important;
+  border-top:0!important;
+  box-shadow:0 5px 14px rgba(104,44,68,.06)!important;
+}
+.elory-reference-nav-inner{height:100%!important;display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:3px!important}
+.elory-reference-nav button{
+  min-width:0!important;
+  width:100%!important;
+  height:36px!important;
+  padding:4px 5px!important;
+  border-radius:18px!important;
+  font-size:11px!important;
+  line-height:1!important;
+  color:#6e2c48!important;
+  background:transparent!important;
+  white-space:nowrap!important;
+}
+.elory-reference-nav button.active{
+  background:linear-gradient(145deg,#d986a3 0%,#c85e87 100%)!important;
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.35),0 4px 9px rgba(137,49,79,.13)!important;
+}
+
+/* Header: smaller visuals, larger touch areas. */
+.header-main-wrap{overflow:visible!important}
+.hg-icon-v19{
+  min-width:42px!important;min-height:42px!important;
+  width:42px!important;height:42px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  border-radius:50%!important;
+  background:linear-gradient(145deg,#eaa7bd,#c95d86)!important;
+  color:#fff!important;
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.32),0 5px 12px rgba(115,39,69,.13)!important;
+}
+.hg-icon-v19 i{font-size:15px!important}
+.hg-icon-v19:active,.hg-icon-v19.is-pressed{transform:translateY(2px) scale(.92)!important}
+.hg-badge-v19{min-width:12px!important;height:12px!important;font-size:6px!important}
+
+.header-search-line{position:relative!important;left:auto!important;bottom:auto!important;width:100%!important;margin:2px auto 5px!important;padding:0 10px!important;justify-content:center!important}
+.search-compact-v19{
+  width:min(340px,100%)!important;max-width:340px!important;height:38px!important;
+  border-radius:20px!important;padding:0 4px 0 10px!important;
+  background:#fff!important;border:1px solid #efd5de!important;
+  box-shadow:0 5px 14px rgba(122,48,77,.08)!important;
+}
+.search-compact-v19 input{font-size:10px!important;text-align:right!important}
+.search-compact-v19 input::placeholder{font-size:9px!important;color:#9b858c!important}
+.search-compact-v19 .search-btn{
+  flex:0 0 31px!important;width:31px!important;height:31px!important;
+  border-radius:50%!important;font-size:11px!important;
+}
+
+/* Remove ALL category navigation arrows; the strip remains touch-scrollable. */
+#categoryWrapper:before,#categoryWrapper:after{display:none!important;content:none!important}
+#categoryWrapper{padding:0!important;overflow:hidden!important}
+#categoriesSection .categories-wrapper{padding:0!important;overflow:hidden!important}
+#categoriesSection .category-set{
+  gap:10px!important;padding:3px 8px 9px!important;
+  overflow-x:auto!important;overflow-y:hidden!important;
+  scroll-snap-type:x proximity!important;scrollbar-width:none!important;
+  -webkit-overflow-scrolling:touch!important;touch-action:pan-x!important;
+}
+#categoriesSection .category-set::-webkit-scrollbar{display:none!important}
+#categoriesSection .category-card{
+  width:70px!important;min-width:70px!important;flex:0 0 70px!important;
+  scroll-snap-align:center!important;
+}
+#categoriesSection .category-image{
+  width:62px!important;height:62px!important;
+  margin:0 auto!important;border-width:2px!important;
+  box-shadow:0 4px 10px rgba(106,45,68,.09)!important;
+}
+#categoriesSection .category-name{font-size:9px!important;margin-top:4px!important;line-height:1.15!important}
+
+/* Mobile hero: compact, clean and fully touch driven. */
+.hero,.elory-code-hero{overflow:hidden!important}
+.elory-code-hero,.hero-slider{
+  height:318px!important;min-height:318px!important;max-height:318px!important;
+  border-radius:0 0 15px 15px!important;
+}
+.elory-code-hero .hero-wave-top{display:block!important;z-index:16!important;opacity:.98!important}
+.elory-code-hero .hero-wave-bottom{display:block!important;z-index:18!important}
+.elory-wave-scene{z-index:28!important;pointer-events:none!important}
+.elory-wave-top-persistent{height:57px!important;z-index:30!important}
+.elory-wave-bottom-persistent{height:49px!important;z-index:30!important}
+.elory-hero-track{height:100%!important;touch-action:pan-y!important}
+.elory-hero-track>.hero-slide{height:100%!important;min-height:100%!important;max-height:100%!important}
+.hero-copy{
+  left:7%!important;top:62px!important;width:52%!important;
+  transform:none!important;z-index:38!important;
+}
+.hero-small{font-size:11px!important;letter-spacing:.6px!important;margin-bottom:3px!important}
+.hero-title{font-size:43px!important;line-height:.90!important;margin-bottom:4px!important}
+.hero-arabic-title{font-size:17px!important;line-height:1.15!important;margin-bottom:4px!important}
+.hero-text{font-size:10px!important;line-height:1.35!important;max-width:180px!important;margin-bottom:7px!important}
+.hero-btn{font-size:10px!important;padding:8px 15px!important;border-radius:18px!important}
+.hero-product-stage{right:0!important;bottom:14px!important;width:51%!important;height:72%!important;z-index:35!important}
+.hero-product-image{width:66%!important;height:70%!important;max-height:70%!important}
+.hero-bag-image{width:76%!important;max-height:68%!important}
+.hero-pedestal{width:92%!important;height:45px!important}
+.hero-arrow{
+  width:34px!important;height:34px!important;
+  min-width:34px!important;min-height:34px!important;
+  font-size:23px!important;z-index:60!important;
+}
+.hero-prev{left:7px!important}.hero-next{right:7px!important}
+.hero-dots{bottom:5px!important;z-index:65!important}
+.hero-dot{width:6px!important;height:6px!important;border-width:1px!important}
+.hero-dot.active{width:18px!important}
+
+/* Featured section: one heart only; title is compact like the reference. */
+#featured{padding:13px 8px 45px!important;margin:0!important}
+#featured .section-head{margin-bottom:9px!important}
+#featured .section-title-wrap{position:relative!important;width:max-content!important}
+#featured .section-title{
+  font-size:21px!important;line-height:1.15!important;
+  margin:0!important;padding:0!important;display:block!important;
+}
+#featured .section-title:after{
+  content:""!important;display:block!important;width:210px!important;max-width:72vw!important;height:13px!important;
+  margin:3px auto 0!important;background:
+    linear-gradient(#bd708b,#bd708b) left center/39% 1px no-repeat,
+    linear-gradient(#bd708b,#bd708b) right center/39% 1px no-repeat!important;
+}
+#featured .section-title-wrap:after{
+  content:"♥"!important;display:flex!important;position:absolute!important;
+  left:50%!important;bottom:-1px!important;transform:translateX(-50%)!important;
+  width:22px!important;height:13px!important;align-items:center!important;justify-content:center!important;
+  background:var(--ref-cream,#fffaf3)!important;color:#c8698c!important;font-size:10px!important;line-height:1!important;
+}
+#featured .products-grid,#productsGrid,#featuredGrid,.featured-grid{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;width:100%!important;
+}
+#featured .product-card{min-width:0!important;border-radius:10px!important}
+#featured .product-image{aspect-ratio:1/1!important}
+#featured .product-info{padding:6px!important}
+#featured .product-name{font-size:8px!important;line-height:1.25!important;margin-bottom:4px!important}
+#featured .current-price{font-size:9px!important}.old-price{font-size:7px!important}
+#featured .add-cart{height:24px!important;margin-top:4px!important;border-radius:12px!important;font-size:7px!important;padding:2px!important}
+#featured .favorite-btn{width:22px!important;height:22px!important;top:4px!important;right:4px!important;font-size:10px!important}
+#featured .discount-badge{top:4px!important;left:4px!important;font-size:6px!important;padding:2px 4px!important}
+#featured .product-card:hover{transform:none!important}
+
+/* No accidental horizontal scroll from any legacy desktop rule. */
+@media(max-width:600px){
+  .header-main-wrap{padding:4px 8px 6px!important}
+  .header-top-line{height:62px!important;min-height:62px!important;grid-template-columns:auto 1fr auto!important;gap:3px!important}
+  .hg-left-v19,.hg-right-v19{gap:3px!important}
+  .hg-center-v19,.hg-center-v19 .logo{height:58px!important;min-height:58px!important}
+  .hg-center-v19 .logo img,.hg-center-v19 .logo-image{width:142px!important;max-width:142px!important;max-height:55px!important}
+  .header-search-line{margin-top:0!important;margin-bottom:4px!important}
+}
+@media(max-width:380px){
+  .hg-icon-v19{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important}
+  .hg-center-v19 .logo img,.hg-center-v19 .logo-image{width:132px!important;max-width:132px!important}
+  .search-compact-v19{height:36px!important}
+  .search-compact-v19 .search-btn{width:29px!important;height:29px!important;flex-basis:29px!important}
+  .elory-reference-nav{height:42px!important;min-height:42px!important}
+  .elory-reference-nav button{height:34px!important;font-size:10px!important}
+  .elory-code-hero,.hero-slider{height:300px!important;min-height:300px!important;max-height:300px!important}
+  .hero-copy{top:58px!important}.hero-title{font-size:40px!important}.hero-arabic-title{font-size:16px!important}.hero-text{font-size:9px!important;max-width:165px!important}
+  .hero-product-stage{height:70%!important}.hero-product-image{width:68%!important}.hero-arrow{width:32px!important;height:32px!important;font-size:21px!important}
+  #categoriesSection .category-card{width:66px!important;min-width:66px!important;flex-basis:66px!important}
+  #categoriesSection .category-image{width:58px!important;height:58px!important}
+  #categoriesSection .category-name{font-size:8.5px!important}
+  #featured .section-title{font-size:19px!important}
+  #featured .products-grid{gap:5px!important}
+}
+</style>
 </head>
 
 <body>
@@ -8873,5 +9061,20 @@ button:active,.social:active,.category-card:active{transform:scale(.97)!importan
 
 </style>
 
+
+<script id="elory-v8-touch-guards">
+(function(){
+  function apply(){
+    document.querySelectorAll('#categoryWrapper button, #categoriesSection .category-nav, #categoriesSection .category-arrow').forEach(function(el){
+      el.remove();
+    });
+    var featuredTitle=document.querySelector('#featured .section-title');
+    if(featuredTitle){ featuredTitle.setAttribute('data-v8-title','1'); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',apply,{once:true});
+  else apply();
+  window.addEventListener('load',apply,{once:true});
+})();
+</script>
 </body>
 </html>
