@@ -4165,6 +4165,22 @@ if(sIn){ sIn.addEventListener('input', function(){ if(window.handleSearch) handl
     <section class="hero">
 
       <div class="hero-slider elory-code-hero" id="heroSlider">
+<div class="elory-wave-scene" aria-hidden="true">
+  <div class="elory-wave-top-persistent">
+    <svg viewBox="0 0 1440 180" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#fffaf4" d="M0 0H1440V64C1340 101 1260 109 1160 83C1055 56 975 30 865 57C755 84 690 127 560 116C435 105 345 55 235 64C135 72 79 106 0 93Z"/>
+      <path fill="#f7dbe5" fill-opacity=".76" d="M0 0H1440V42C1335 70 1243 75 1145 54C1030 29 959 16 864 40C764 66 690 101 566 93C447 85 350 39 239 45C142 50 77 74 0 64Z"/>
+      <path fill="#fff" fill-opacity=".58" d="M0 0H1440V25C1312 48 1210 42 1104 26C1003 11 940 17 849 34C747 53 679 76 574 72C451 67 360 34 244 35C142 36 73 49 0 46Z"/>
+    </svg>
+  </div>
+  <div class="elory-wave-bottom-persistent">
+    <svg viewBox="0 0 1440 190" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#f7dbe5" fill-opacity=".82" d="M0 92C120 48 214 116 338 105C465 94 536 38 675 54C812 70 871 125 1010 116C1138 108 1265 58 1440 92V190H0Z"/>
+      <path fill="#fffaf0" d="M0 113C126 72 215 134 344 125C474 116 545 73 676 82C815 91 892 146 1019 137C1148 128 1271 87 1440 116V190H0Z"/>
+      <path fill="#fff" fill-opacity=".55" d="M0 101C122 61 217 125 346 115C475 104 545 59 678 69C816 79 889 134 1019 125C1150 116 1277 76 1440 104V113C1270 85 1148 129 1019 138C891 147 814 92 676 83C545 74 474 117 344 126C215 135 126 73 0 114Z"/>
+    </svg>
+  </div>
+</div>
   <div class="hero-slide active elory-code-slide">
     <div class="hero-wave-top"></div>
     <div class="hero-decor hero-decor-left"></div>
@@ -8251,6 +8267,101 @@ button:active,.social:active,.category-card:active{transform:scale(.97)!importan
   #featured .elory-featured-head .section-title{font-size:19px!important}
   #featured .products-grid,#productsGrid,.featured-grid,#featuredGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
 }
+
+/* =========================================================
+   ELORY V5 — mobile-first visual correction from reference
+   ========================================================= */
+.elory-wave-scene{position:absolute!important;inset:0!important;z-index:50!important;pointer-events:none!important;overflow:hidden!important}
+.elory-wave-top-persistent{position:absolute!important;left:-4%!important;top:-1px!important;width:108%!important;height:92px!important}
+.elory-wave-top-persistent svg,.elory-wave-bottom-persistent svg{display:block!important;width:100%!important;height:100%!important}
+.elory-wave-bottom-persistent{position:absolute!important;left:-3%!important;bottom:-2px!important;width:106%!important;height:78px!important}
+.elory-code-hero>.hero-wave-top,.elory-code-hero .hero-wave-bottom{display:none!important}
+.elory-code-hero::before,.elory-code-hero::after{display:none!important}
+
+/* Exact mobile proportions: compact, not a scaled desktop header. */
+@media(max-width:700px){
+  .announcement{height:29px!important;min-height:29px!important}
+  .announcement-track{height:29px!important;animation-duration:18s!important;animation-timing-function:linear!important}
+  .announcement-group{gap:34px!important;padding-inline:18px!important}
+  .announcement-item{font-size:8px!important}
+
+  .header-main-wrap{padding:3px 8px 5px!important;background:linear-gradient(180deg,#fffafd 0%,#fde9f0 100%)!important}
+  .header-top-line{height:49px!important;min-height:49px!important;padding:0!important;grid-template-columns:auto 1fr auto!important}
+  .hg-left-v19,.hg-right-v19{gap:3px!important}
+  .hg-icon-v19{width:26px!important;height:26px!important;font-size:11px!important;border-radius:50%!important}
+  .hg-badge-v19{min-width:12px!important;height:12px!important;font-size:6px!important;top:-2px!important;right:-2px!important}
+  .hg-center-v19{width:auto!important;height:49px!important}
+  .hg-center-v19 .logo{height:49px!important}
+  .hg-center-v19 .logo img[data-fixed-elory-logo="true"],.hg-center-v19 .logo-image{width:128px!important;max-width:128px!important;height:auto!important;max-height:47px!important}
+
+  .header-search-line{width:92%!important;max-width:300px!important;margin:2px auto 1px!important}
+  .search-compact-v19{height:31px!important;border-radius:17px!important;padding:0 3px 0 8px!important;gap:3px!important}
+  .search-compact-v19 input{font-size:9px!important;padding-right:7px!important}
+  .search-compact-v19 input::placeholder{font-size:8px!important}
+  .search-compact-v19 .search-btn{width:25px!important;height:25px!important;flex-basis:25px!important;font-size:9px!important}
+
+  .elory-reference-nav,.elory-code-nav{height:34px!important;min-height:34px!important;gap:2px!important;padding:0 5px!important}
+  .elory-reference-nav button,.elory-code-nav button{font-size:9px!important;padding:5px 11px!important;border-radius:16px!important}
+
+  .hero{padding:0!important}
+  .elory-code-hero,.hero-slider{height:214px!important;min-height:214px!important;max-height:214px!important;border-radius:0 0 16px 16px!important}
+  .elory-wave-top-persistent{height:68px!important;top:0!important}
+  .elory-wave-bottom-persistent{height:58px!important;bottom:-1px!important}
+
+  .elory-hero-track{height:100%!important}
+  .elory-code-slide{background:radial-gradient(circle at 80% 53%,rgba(255,255,255,.58),transparent 29%),linear-gradient(135deg,#f7d2de 0%,#efb8c9 57%,#f9dde6 100%)!important}
+  .hero-copy{left:6%!important;top:63px!important;width:53%!important;align-items:flex-start!important;text-align:left!important;z-index:35!important}
+  .hero-small{font-size:8px!important;letter-spacing:.7px!important;margin-bottom:3px!important}
+  .hero-title{font-size:29px!important;line-height:.91!important;margin-bottom:3px!important;letter-spacing:-.5px!important}
+  .hero-arabic-title{font-size:12.5px!important;line-height:1.15!important;margin-bottom:3px!important}
+  .hero-text{font-size:8px!important;line-height:1.3!important;max-width:172px!important;margin-bottom:5px!important}
+  .hero-btn{font-size:8px!important;padding:6px 11px!important;border-radius:15px!important}
+  .hero-product-stage{right:-1%!important;bottom:7px!important;width:49%!important;height:77%!important;z-index:34!important}
+  .hero-product-image{width:68%!important;height:72%!important;max-height:none!important;object-fit:contain!important}
+  .hero-pedestal{width:92%!important;height:34px!important;bottom:2px!important}
+  .hero-arrow{width:25px!important;height:25px!important;font-size:18px!important;top:54%!important;z-index:60!important}
+  .hero-prev{left:5px!important}.hero-next{right:5px!important}
+  .hero-dots{bottom:6px!important;z-index:61!important;gap:4px!important}
+  .hero-dot{width:5px!important;height:5px!important}.hero-dot.active{width:16px!important;height:5px!important}
+
+  #categoriesSection{padding:14px 0 9px!important}
+  #categoryWrapper{padding:0 16px!important}
+  #categoriesSection .category-set{gap:7px!important;padding:2px 0 5px!important}
+  #categoriesSection .category-card{width:57px!important;min-width:57px!important;flex-basis:57px!important}
+  #categoriesSection .category-image{width:50px!important;height:50px!important;border-width:2px!important}
+  #categoriesSection .category-name{font-size:7px!important;margin-top:3px!important}
+
+  #featured{padding:10px 9px 28px!important}
+  #featured .elory-featured-head{margin-bottom:7px!important}
+  #featured .elory-featured-head .section-title{font-size:18px!important}
+  #featured .products-grid,#productsGrid,.featured-grid,#featuredGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+  #featured .product-card{border-radius:10px!important}
+  #featured .product-image{aspect-ratio:1/1!important}
+  #featured .product-info{padding:5px!important}
+  #featured .product-name{font-size:7.5px!important;line-height:1.2!important;min-height:19px!important;margin-bottom:3px!important}
+  #featured .current-price{font-size:8.5px!important}
+  #featured .old-price{font-size:6.7px!important}
+  #featured .add-cart{height:24px!important;margin-top:4px!important;border-radius:12px!important;font-size:6.8px!important;padding:3px 1px!important}
+  #featured .favorite-btn{width:21px!important;height:21px!important;font-size:10px!important;top:4px!important;left:4px!important}
+  #featured .discount-badge{font-size:6.5px!important;padding:2px 4px!important;top:4px!important;right:4px!important}
+  #featured .product-card:nth-child(n+7){display:none!important}
+}
+
+@media(max-width:360px){
+  .hg-center-v19 .logo img[data-fixed-elory-logo="true"],.hg-center-v19 .logo-image{width:118px!important;max-width:118px!important}
+  .hg-icon-v19{width:24px!important;height:24px!important;font-size:10px!important}
+  .header-search-line{width:94%!important}
+  .elory-code-hero,.hero-slider{height:204px!important;min-height:204px!important;max-height:204px!important}
+  .hero-copy{top:60px!important}.hero-title{font-size:27px!important}.hero-arabic-title{font-size:11.5px!important}.hero-text{font-size:7.5px!important;max-width:160px!important}
+  .hero-product-stage{height:76%!important}.hero-product-image{width:70%!important}
+}
+
+/* The hero carousel always moves one direction and never flashes its old
+   transform at the loop boundary. Reduce motion only for accessibility. */
+@media(prefers-reduced-motion:reduce){
+  .announcement-track{animation-duration:0s!important}
+}
+
 </style>
 
 </body>
