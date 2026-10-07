@@ -3682,8 +3682,15 @@ if(sIn){
 </div>
 </div>
 <div class="elory-footer-bottom">
-<span>© 2026 Elory. جميع الحقوق محفوظة.</span>
-<span class="developer-credit"><a href="privacy.html" style="color:inherit;text-decoration:none;margin-inline-end:12px">سياسة الخصوصية</a><a href="terms.html" style="color:inherit;text-decoration:none;margin-inline-end:12px">شروط الخدمة</a>تم التطوير بواسطة <b>El Nemrawy</b></span>
+<div class="elory-footer-legal-wrap">
+<span class="developer-credit developer-credit-main">تم التطوير بواسطة <b>El Nemrawy</b></span>
+<div class="elory-footer-legal-links">
+<a href="privacy.html" target="_blank" rel="noopener">سياسة الخصوصية</a>
+<a href="terms.html" target="_blank" rel="noopener">الشروط والأحكام</a>
+<a href="data-deletion.html" target="_blank" rel="noopener">حذف البيانات</a>
+</div>
+</div>
+<span class="elory-copyright">© 2026 Elory. جميع الحقوق محفوظة.</span>
 </div>
 </footer>
 <!-- =========================================================
@@ -8840,6 +8847,22 @@ main#home{
     min-height:32px !important;
     font-size:10px !important;
   }
+}
+
+/* Final footer credit refinement — requested change only */
+.elory-footer-legal-wrap{display:flex;flex-direction:column;align-items:flex-start;gap:7px;}
+.elory-footer-bottom .developer-credit-main{margin:0;color:#fff;font-size:16px;line-height:1.5;font-weight:700;letter-spacing:.1px;}
+.elory-footer-bottom .developer-credit-main b{color:#fff;font-size:17px;font-weight:800;}
+.elory-footer-legal-links{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.elory-footer-legal-links a{color:rgba(255,255,255,.48)!important;text-decoration:none;font-size:8.5px!important;line-height:1.4!important;font-weight:400;}
+.elory-footer-legal-links a:hover{color:rgba(255,255,255,.78)!important;}
+.elory-copyright{font-size:9px;color:rgba(255,255,255,.58);align-self:flex-end;}
+@media(max-width:760px){
+  .elory-footer-bottom{align-items:center;flex-direction:column-reverse;text-align:center;}
+  .elory-footer-legal-wrap{align-items:center;}
+  .elory-footer-bottom .developer-credit-main{font-size:15px;}
+  .elory-footer-bottom .developer-credit-main b{font-size:16px;}
+  .elory-copyright{align-self:center;}
 }
 </style>
 <script id="elory-stable-category-navigation">
