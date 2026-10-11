@@ -9416,6 +9416,8 @@ main#home{
 })();
 </script>
 <style id="elory-account-orders-prime-fixes">
+/* Keep hidden account views hidden even where component display rules are stronger. */
+#accountModal [hidden]{display:none !important;}
 /* The navigation intentionally overlaps only the home hero, which compensates with its own top spacing.
    Keep the navigation in document flow on account/order pages so it cannot cover their first row. */
 .elory-reference-nav{margin-bottom:0 !important;}
