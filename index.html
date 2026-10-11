@@ -11,9 +11,29 @@
 <!-- Google Font -->
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&amp;family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,500&amp;display=swap" rel="stylesheet"/>
-<!-- Icons -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&amp;family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,500&amp;display=swap" media="print" onload="this.media='all'" rel="stylesheet"/>
+<!-- Local text-symbol icons keep the storefront legible when third-party font CDNs are blocked. -->
+<style id="elory-local-icons">
+.fa-solid,.fa-regular,.fa-brands{font-family:Arial,"Noto Sans Symbols",sans-serif!important;font-style:normal!important;font-weight:700!important;}
+.fa-solid::before,.fa-regular::before,.fa-brands::before{content:var(--elory-icon,"•")!important;font-family:Arial,"Noto Sans Symbols",sans-serif!important;font-weight:700!important;}
+.fa-arrow-left{--elory-icon:"←"}.fa-arrow-right{--elory-icon:"→"}.fa-arrow-up-from-bracket{--elory-icon:"↗"}
+.fa-bag-shopping{--elory-icon:"▣"}.fa-bars{--elory-icon:"☰"}.fa-box,.fa-box-open{--elory-icon:"▣"}
+.fa-calendar{--elory-icon:"▦"}.fa-check,.fa-circle-check{--elory-icon:"✓"}.fa-chevron-down{--elory-icon:"⌄"}
+.fa-chevron-left{--elory-icon:"‹"}.fa-chevron-right{--elory-icon:"›"}.fa-circle-xmark,.fa-xmark{--elory-icon:"×"}
+.fa-clock{--elory-icon:"◷"}.fa-cloud-arrow-down{--elory-icon:"↓"}.fa-credit-card{--elory-icon:"▭"}
+.fa-crown{--elory-icon:"♛"}.fa-envelope{--elory-icon:"✉"}.fa-face-frown{--elory-icon:"☹"}
+.fa-fire{--elory-icon:"♨"}.fa-gem{--elory-icon:"◆"}.fa-gift{--elory-icon:"✿"}
+.fa-google{--elory-icon:"G"}.fa-facebook-f{--elory-icon:"f"}.fa-grid-2{--elory-icon:"▦"}.fa-hand-holding-dollar{--elory-icon:"ج.م"}
+.fa-heart{--elory-icon:"♡"}.fa-house{--elory-icon:"⌂"}.fa-image{--elory-icon:"▧"}
+.fa-instagram{--elory-icon:"◎"}.fa-key{--elory-icon:"⚿"}.fa-magnifying-glass{--elory-icon:"⌕"}
+.fa-magnifying-glass-plus{--elory-icon:"⌕+"}.fa-mobile-screen-button{--elory-icon:"▯"}.fa-palette{--elory-icon:"◉"}
+.fa-percent{--elory-icon:"%"}.fa-phone{--elory-icon:"☎"}.fa-right-from-bracket{--elory-icon:"↪"}
+.fa-school{--elory-icon:"⌂"}.fa-shield-halved{--elory-icon:"⬟"}.fa-shield-heart{--elory-icon:"♡"}
+.fa-shirt{--elory-icon:"♧"}.fa-sparkles{--elory-icon:"✦"}.fa-spinner{--elory-icon:"◌"}
+.fa-tags{--elory-icon:"◇"}.fa-trash{--elory-icon:"⌫"}.fa-truck,.fa-truck-fast{--elory-icon:"➤"}
+.fa-user{--elory-icon:"♙"}.fa-wand-magic-sparkles{--elory-icon:"✧"}.fa-whatsapp{--elory-icon:"◔"}
+.fa-spin::before{display:inline-block;animation:eloryIconSpin 1s linear infinite}@keyframes eloryIconSpin{to{transform:rotate(360deg)}}
+</style>
 <!-- Supabase -->
 <style id="elory-orders-prime-v4-css">
 .header-orders-btn{position:relative}.header-orders-btn .header-count{min-width:15px;height:15px;padding:0 3px;font-size:8px}.header-orders-btn.orders-pulse{animation:eloryOrdersPulse .7s ease}@keyframes eloryOrdersPulse{0%{transform:scale(1)}35%{transform:scale(1.18) rotate(-5deg)}70%{transform:scale(.96) rotate(4deg)}100%{transform:scale(1)}}
@@ -42,8 +62,7 @@
   #accountGuestView .auth-social-grid{grid-template-columns:1fr;}
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
+<script async onload="window.dispatchEvent(new Event('elory-supabase-ready'))" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="elory-supabase-fallback">
 (function(){
   const URL="https://dmttevcncsxzbamazmmq.supabase.co";
@@ -4030,26 +4049,53 @@ if(sIn){
 
     let primeActive = false;
     let primeStatus = null;
-let primeStatusLoadState = "idle";
+    let primeStatusLoadState = "idle";
+    let primeStatusRequest = null;
+    let accountUserCache = null;
+    let sessionUserReadPromise = null;
+    function withEloryTimeout(promise, timeoutMs, label){
+      let timer;
+      return Promise.race([
+        Promise.resolve(promise),
+        new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label)),timeoutMs);})
+      ]).finally(()=>clearTimeout(timer));
+    }
+    function getCurrentSessionUser(){
+      if(sessionUserReadPromise)return sessionUserReadPromise;
+      const client=ensureSupabaseClient();
+      if(!client)return Promise.resolve(null);
+      sessionUserReadPromise=withEloryTimeout(
+        Promise.resolve().then(()=>client.auth.getSession()),
+        5000,
+        "انتهت مهلة التحقق من جلسة الحساب"
+      ).then(result=>{
+        if(result?.error)throw result.error;
+        accountUserCache=result?.data?.session?.user||null;
+        return accountUserCache;
+      }).finally(()=>{sessionUserReadPromise=null;});
+      return sessionUserReadPromise;
+    }
     let customerAccessToken = localStorage.getItem("elory_customer_access_token") || "";
     if(!customerAccessToken){ customerAccessToken = crypto.randomUUID(); localStorage.setItem("elory_customer_access_token",customerAccessToken); }
 
-    async function refreshPrimeState(){
+    function refreshPrimeState(){
+      if(primeStatusRequest)return primeStatusRequest;
+      primeStatusRequest=(async()=>{
       if(!hasSupabaseClient()){
         primeStatus=null; primeStatusLoadState="error"; setPrimeTheme(false); updatePrimeAccountSummary();
         return {ok:false,reason:"unavailable"};
       }
       try{
-        const {data:{user}}=await elorySupabase.auth.getUser();
+        const user=await getCurrentSessionUser();
         if(!user){
           primeStatus=null; primeStatusLoadState="idle"; setPrimeTheme(false); updatePrimeAccountSummary();
           return {ok:true,user:null,active:false,status:null};
         }
         primeStatusLoadState="loading"; updatePrimeAccountSummary();
-        const r=await elorySupabase.rpc("get_my_prime_status");
+        const r=await withEloryTimeout(elorySupabase.rpc("get_my_prime_status"),7000,"انتهت مهلة التحقق من Prime");
         if(r.error) throw r.error;
-        const current=await elorySupabase.auth.getUser();
-        if(!current?.data?.user || current.data.user.id!==user.id) return {ok:false,reason:"session_changed"};
+        const current=await getCurrentSessionUser();
+        if(!current || current.id!==user.id) return {ok:false,reason:"session_changed"};
         primeStatus=r.data||null;
         primeStatusLoadState="ready";
         const expiresAt=primeStatus?.expires_at?new Date(primeStatus.expires_at).getTime():NaN;
@@ -4061,6 +4107,8 @@ let primeStatusLoadState = "idle";
         primeStatus=null; primeStatusLoadState="error"; setPrimeTheme(false); updatePrimeAccountSummary();
         return {ok:false,error:e};
       }
+      })();
+      return primeStatusRequest.finally(()=>{primeStatusRequest=null;});
     }
     function updatePrimeAccountSummary(){
       const box=document.getElementById("primeAccountSummary"); if(!box)return;
@@ -4295,22 +4343,26 @@ let primeStatusLoadState = "idle";
       // Public catalog reads must stay on the anon role.
       // Do not forward a signed-in customer's Auth session here; the products
       // table contains staff-only restrictive policies for authenticated users.
-      const response = await fetch(`${url}/rest/v1/${table}?${query || ""}`, {
-        method: "GET",
-        headers: {
-          apikey: key,
-          Accept: "application/json"
-        },
-        cache: "no-store"
-      });
-      const text = await response.text();
-      let data = [];
-      try { data = text ? JSON.parse(text) : []; } catch (_) { data = []; }
-      if (!response.ok) {
-        const message = data?.message || data?.hint || data?.details || text || `HTTP ${response.status}`;
-        throw new Error(`${table}: ${message}`);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const response = await fetch(`${url}/rest/v1/${table}?${query || ""}`, {
+          method: "GET",
+          headers: { apikey: key, Accept: "application/json" },
+          cache: "no-store",
+          signal: controller.signal
+        });
+        const text = await response.text();
+        let data = [];
+        try { data = text ? JSON.parse(text) : []; } catch (_) { data = []; }
+        if (!response.ok) {
+          const message = data?.message || data?.hint || data?.details || text || `HTTP ${response.status}`;
+          throw new Error(`${table}: ${message}`);
+        }
+        return Array.isArray(data) ? data : [];
+      } finally {
+        clearTimeout(timer);
       }
-      return Array.isArray(data) ? data : [];
     }
 
     /* =========================================================
@@ -4350,7 +4402,6 @@ let primeStatusLoadState = "idle";
         if (!silent) {
           storeCategories = [];
           renderCategories();
-          showToast("تعذر الاتصال بقاعدة البيانات. تأكدي من إعدادات Supabase");
         }
         return;
       }
@@ -4382,7 +4433,6 @@ let primeStatusLoadState = "idle";
         if (!silent) {
           storeCategories = [];
           renderCategories();
-          showToast("تعذر تحميل الأقسام. راجعي إعدادات Supabase والصلاحيات");
         }
       }
     }
@@ -4404,13 +4454,25 @@ let primeStatusLoadState = "idle";
       }
     }
 
-    async function loadProducts() {
+    function showProductLoadIssue(){
+      const html='<div class="search-empty-state product-load-issue"><i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i><strong>تعذر الاتصال بالمتجر مؤقتًا</strong><span>يمكنك إعادة المحاولة بعد استقرار الاتصال.</span><button type="button" onclick="loadProducts()">إعادة المحاولة</button></div>';
+      const homeGrid=document.getElementById("productsGrid");
+      if(homeGrid)homeGrid.innerHTML=html;
+      const shopGrid=document.getElementById("shopProductsGrid");
+      if(shopGrid&&document.getElementById("shopPage")?.classList.contains("show"))shopGrid.innerHTML=html;
+    }
+    let productsLoadPromise=null;
+    function loadProducts(silent=false){
+      if(productsLoadPromise)return productsLoadPromise;
+      productsLoadPromise=loadProductsInternal(silent).finally(()=>{productsLoadPromise=null;});
+      return productsLoadPromise;
+    }
+    async function loadProductsInternal(silent=false) {
       const client = ensureSupabaseClient();
       if (!client) {
         products = [];
         filteredProducts = [];
-        renderProducts();
-        showToast("تعذر الاتصال بقاعدة البيانات. تأكدي من إعدادات Supabase");
+        showProductLoadIssue();
         return;
       }
 
@@ -4440,26 +4502,7 @@ let primeStatusLoadState = "idle";
           }
         }
 
-        // SDK fallback is kept for installations where the REST endpoint has
-        // not yet exposed the table/view.
-        if (publicError) {
-          let result = await client
-            .from("products")
-            .select("id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at")
-            .eq("active", true)
-            .order("created_at", { ascending: false });
-
-          if (result.error) {
-            result = await client
-              .from("catalog_products")
-              .select("id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at")
-              .eq("active", true)
-              .order("created_at", { ascending: false });
-          }
-
-          if (result.error) throw result.error;
-          rows = Array.isArray(result.data) ? result.data : [];
-        }
+        if (publicError) throw publicError;
 
         products = rows.map(normalizeProduct);
         const searchValue=document.getElementById("searchInput")?.value||"";
@@ -4475,20 +4518,17 @@ let primeStatusLoadState = "idle";
         }else renderProducts();
         if(productDetailState) renderProductDetails();
 
-        if (!products.length) showToast("لا توجد منتجات منشورة حالياً");
       } catch (error) {
-        console.error("Elory Store product query failed:", error);
-        products = [];
-        filteredProducts = [];
-        renderProducts();
-        showToast("تعذر تحميل المنتجات الآن");
+        if(!silent)console.warn("Elory Store product query failed:", error);
+        if(products.length)renderProducts();
+        else showProductLoadIssue();
       }
     }
 
     let productsRefreshTimer = null;
     function startProductsLiveSync() {
       if (productsRefreshTimer) clearInterval(productsRefreshTimer);
-      productsRefreshTimer = setInterval(() => loadProducts(), 15000);
+      productsRefreshTimer = setInterval(() => loadProducts(true), 60000);
     }
 
     async function loadShippingCenters() {
@@ -6709,12 +6749,10 @@ let primeStatusLoadState = "idle";
     async function openAccount(){
       try{ sessionStorage.removeItem(ELORY_PRIME_PENDING_KEY); }catch(e){}
       const note=document.getElementById("primeLoginHandoffNote"); if(note) note.hidden=true;
-      let user=null;
-      if(hasSupabase()){ try{ const {data}=await elorySupabase.auth.getUser(); user=data?.user||null; }catch(e){} }
       const account=document.getElementById("accountModal");
-      account?.classList.toggle("account-page-mode",!!user);
+      account?.classList.toggle("account-page-mode",!!accountUserCache);
       openModal("accountModal");
-      await updateAccountUI();
+      void updateAccountUI();
     }
 
     function openOrdersFromAccount(){
@@ -7108,16 +7146,18 @@ let primeStatusLoadState = "idle";
       }
       let user=null;
       try{
-        const result=await elorySupabase.auth.getUser();
-        if(result.error)throw result.error;
-        user=result.data?.user||null;
+        user=await getCurrentSessionUser();
       }catch(error){
-        guest.hidden=false;form.hidden=true;userView.hidden=true;
-        accountModal?.classList.remove("account-page-mode");
-        clearAccountUserData();primeStatus=null;primeStatusLoadState="error";setPrimeTheme(false);
-        showToast("تعذر تحميل بيانات الحساب. حاولي مرة أخرى.");
-        return;
+        console.info("Using the locally cached account session while Supabase reconnects.",error);
+        user=accountUserCache;
+        if(!user){
+          guest.hidden=false;form.hidden=!preserveAuthForm;userView.hidden=true;
+          accountModal?.classList.remove("account-page-mode");
+          clearAccountUserData();primeStatus=null;primeStatusLoadState="idle";setPrimeTheme(false);
+          return;
+        }
       }
+      accountUserCache=user;
       guest.hidden=!!user;form.hidden=user?true:!preserveAuthForm;userView.hidden=!user;
       accountModal?.classList.toggle("account-page-mode",!!user);
       if(!user){
@@ -7156,7 +7196,17 @@ let primeStatusLoadState = "idle";
       catch(e){showToast(e.message||"تعذر إرسال رابط تغيير كلمة المرور");}
     }
 
-    if(hasSupabaseClient()){ elorySupabase.auth.onAuthStateChange((_event,session)=>setTimeout(()=>{ updateAccountUI(); if(session?.user) continuePrimeAfterLogin(); },80)); }
+    let accountAuthSubscription=null;
+    function bindEloryAuthState(){
+      const client=ensureSupabaseClient();
+      if(!client||accountAuthSubscription)return;
+      accountAuthSubscription=client.auth.onAuthStateChange((_event,session)=>{
+        accountUserCache=session?.user||null;
+        setTimeout(()=>{ void updateAccountUI(); if(session?.user) continuePrimeAfterLogin(); },80);
+      });
+    }
+    bindEloryAuthState();
+    window.addEventListener("elory-supabase-ready",bindEloryAuthState,{once:true});
 
     /* =========================================================
        PAYMENT UI
@@ -7516,6 +7566,16 @@ let primeStatusLoadState = "idle";
         bindProductCardNavigation(document.getElementById("shopProductsGrid"));
         loadCategories();
         loadProducts();
+        window.addEventListener("elory-supabase-ready",()=>{
+          if(!ensureSupabaseClient())return;
+          bindEloryAuthState();
+          loadCategories(true);loadProducts(true);loadShippingCenters();refreshOrdersCount();refreshPrimeState();
+          if(document.getElementById("accountModal")?.classList.contains("show")){
+            const form=document.getElementById("accountAuthForm");
+            updateAccountUI(!!form&&!form.hidden);
+          }
+        },{once:true});
+        bindEloryAuthState();
         if(initialProductId!==null) openProductDetails(initialProductId,initialProductAlreadyInHistory);
         startProductsLiveSync();
 
