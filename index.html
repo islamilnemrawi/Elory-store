@@ -7736,7 +7736,7 @@ if(sIn){
         // لا نستخدم select() هنا حتى لا يعتمد نجاح الطلب على صلاحية قراءة الطلب من جهة العميل.
         // كود المنتج وسعر الجملة لا يتم إرسالهما للعميل؛ الداشبورد يضيفهما داخليًا من بيانات المنتجات.
         if(appliedCoupon?.id){
-          const cr=await elorySupabase.rpc("redeem_coupon",{p_coupon_id:appliedCoupon.id,p_order_id:null});
+          const cr=await elorySupabase.rpc("redeem_coupon",{p_coupon_id:appliedCoupon.id,p_order_id:createdOrderSnapshot?.id||null});
           if(cr.error)console.warn("Coupon redemption failed:",cr.error);
         }
         const successOrder={...order,order_number:createdOrderSnapshot?.order_number||createdOrderSnapshot?.id||"",status:createdOrderSnapshot?.status||order.status,customer_name:customerName,governorate,center,address,payment_method:selectedPaymentMethod,items:order.items,subtotal,shipping_cost:shippingCost,total};
