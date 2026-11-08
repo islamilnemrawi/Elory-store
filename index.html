@@ -9568,6 +9568,11 @@ if(sIn){
       visible(announcement,a.isVisible!==false);
     }
     if(color(h.backgroundColor) && $('.header')) $('.header').style.backgroundColor=color(h.backgroundColor);
+    if(color(h.iconsColor)) $('.hg-icon-v19').forEach(el=>el.style.color=color(h.iconsColor));
+    visible('.header-menu-btn',h.showMenuBtn);
+    visible('.header-account-btn',h.showAccountBtn);
+    visible('.header-cart-btn',h.showCartBtn);
+    visible('.header-favorite-btn',h.showFavBtn);
     const logo=imageUrl(h.logoUrl); if(logo && $('.elory-logo-normal')) $('.elory-logo-normal').src=logo;
     if(g.storeName){ document.title=txt(g.metaTitle||g.storeName); const meta=$('meta[name="description"]'); if(meta && g.metaDescription) meta.content=txt(g.metaDescription); const footerLogo=$('.elory-footer-logo span:nth-child(2)'); if(footerLogo) footerLogo.textContent=txt(g.storeName); }
     if(color(g.primaryColor)) document.documentElement.style.setProperty('--pink',color(g.primaryColor));
