@@ -9631,7 +9631,14 @@ if(sIn){
     sectionSettings.forEach(item=>{ const el=sectionMap.get(txt(item.id)); if(el) visible(el,item.isVisible!==false); });
     const primeSetting=sectionSettings.find(x=>txt(x.id)==='sec_prime_promo');
     const showPrime=primeVisible && (!primeSetting || primeSetting.isVisible!==false);
+    visible('#prime',showPrime);
     visible('#primeHeaderBtn',showPrime); $('.footer a[href="#prime"]').forEach(el=>visible(el,showPrime));
+    const heroSetting=sectionSettings.find(x=>txt(x.id)==='sec_hero');
+    visible('.hero',c.hero?.isVisible!==false && (!heroSetting || heroSetting.isVisible!==false));
+    const categorySetting=sectionSettings.find(x=>txt(x.id)==='sec_categories');
+    visible('#categoriesSection',categories.isVisible!==false && (!categorySetting || categorySetting.isVisible!==false));
+    const announcementSetting=sectionSettings.find(x=>txt(x.id)==='sec_announcement');
+    visible('.announcement',a.isVisible!==false && (!announcementSetting || announcementSetting.isVisible!==false));
     if(home) sectionSettings.forEach(item=>{ const el=sectionMap.get(txt(item.id)); if(el && el.parentElement===home) home.appendChild(el); });
 
     // Why Elory cards.
