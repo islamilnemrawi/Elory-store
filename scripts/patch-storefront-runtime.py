@@ -39,3 +39,5 @@ if source.count("const $$ = (s, root=document)") != 1:
 
 path.write_text(source, encoding="utf-8")
 print("Fixed CMS selector helper declarations and array selector call sites.")
+
+# The selector helper patch is idempotent and is syntax-checked by CI.
