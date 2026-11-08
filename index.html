@@ -6396,7 +6396,7 @@ if(sIn){
     }
 
     async function loadShippingCenters() {
-      if (!hasSupabaseClient()) return;
+      if (!hasSupabaseClient()) return false;
 
       try {
         const [govResult, centerResult] = await Promise.all([
@@ -6416,11 +6416,15 @@ if(sIn){
         if (govResult.error) throw govResult.error;
         if (centerResult.error) throw centerResult.error;
 
+        const govSelect = document.getElementById("governorate");
+        const centerSelect = document.getElementById("center");
+        const selectedGovernorate = govSelect?.value || "";
+        const selectedCenter = centerSelect?.value || "";
+
         shippingGovernoratesRows = Array.isArray(govResult.data) ? govResult.data : [];
         shippingRows = Array.isArray(centerResult.data) ? centerResult.data : [];
 
-        const govSelect = document.getElementById("governorate");
-        if (!govSelect) return;
+        if (!govSelect) return true;
 
         const dbGovernors = shippingGovernoratesRows
           .filter(x => x.active !== false)
@@ -6437,19 +6441,28 @@ if(sIn){
 
         if (!governors.length) {
           govSelect.innerHTML = '<option value="">اختاري المحافظة</option>';
-          const center = document.getElementById("center");
-          if (center) center.innerHTML = '<option value="">اختاري المركز / المنطقة</option>';
-          return;
+          if (centerSelect) centerSelect.innerHTML = '<option value="">اختاري المركز / المنطقة</option>';
+          return true;
         }
 
         govSelect.innerHTML = '<option value="">اختاري المحافظة</option>' +
           governors.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join("");
 
+        if (governors.includes(selectedGovernorate)) {
+          govSelect.value = selectedGovernorate;
+        }
+
         loadCenters();
+
+        if (centerSelect && selectedCenter) {
+          const centerStillActive = Array.from(centerSelect.options).some(option => option.value === selectedCenter);
+          if (centerStillActive) centerSelect.value = selectedCenter;
+        }
+
+        return true;
       } catch (error) {
         console.warn("تعذر تحميل أسعار الشحن من Supabase:", error);
-        shippingGovernoratesRows = [];
-        shippingRows = [];
+        return false;
       }
     }
 
@@ -7686,13 +7699,15 @@ if(sIn){
       if(cart.some(item=>{const stock=getCartItemStock(item);return stock!==null&&(stock<=0||Number(item.qty||0)>stock);})){showToast("راجعي الكميات المتاحة في السلة قبل إتمام الطلب");closeModal("checkoutModal");openCart();return;}
       const customerName=document.getElementById("customerName").value.trim();
       const phone=document.getElementById("customerPhone").value.trim();
-      const governorate=document.getElementById("governorate").value;
-      const center=document.getElementById("center").value;
       const address=document.getElementById("customerAddress").value.trim();
       const notes=document.getElementById("orderNotes").value.trim();
+      if(!hasSupabaseClient()){showToast("Supabase غير متصل حالياً");return;}
+      const shippingRatesUpdated = await loadShippingCenters();
+      if(!shippingRatesUpdated){showToast("تعذر تحديث أسعار الشحن الآن. حاولي مرة أخرى قبل تأكيد الطلب.");return;}
+      const governorate=document.getElementById("governorate").value;
+      const center=document.getElementById("center").value;
       const centerRequired=!!document.getElementById("center")?.required;
       if(!governorate||(centerRequired&&!center)||center==="__manual__"){showToast("اختاري المحافظة والمركز/المنطقة");return;}
-      if(!hasSupabaseClient()){showToast("Supabase غير متصل حالياً");return;}
       const subtotal=getCheckoutSubtotal();
       const couponDiscount=getCouponDiscount();
       const primeFreeAvailable=primeActive&&Number(primeStatus?.free_shipping_remaining||0)>0;
