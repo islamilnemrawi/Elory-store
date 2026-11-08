@@ -9517,7 +9517,7 @@ if(sIn){
       if(templates.length){
         const slider=old.cloneNode(false); slider.removeAttribute('data-hero-ready');
         slides.forEach((item,i)=>{
-          const slide=templates[i%templates.length].cloneNode(true);
+          const match=txt(item.id).match(/hero_(\d+)/); const templateIndex=match ? Math.max(0,Math.min(templates.length-1,Number(match[1])-1)) : i%templates.length; const slide=templates[templateIndex].cloneNode(true);
           slide.classList.remove('active','is-current','is-entering','is-leaving'); slide.removeAttribute('style');
           const small=$('.hero-small',slide), title=$('.hero-title',slide), desc=$('.hero-text',slide), btn=$('.hero-btn',slide), img=$('.hero-product-image',slide);
           if(small) small.textContent=txt(item.smallText);
@@ -9541,6 +9541,17 @@ if(sIn){
         });
         slider.appendChild(dots); slider.dataset.heroCmsReady='true'; old.replaceWith(slider); window.heroIndex=0;
         if(typeof window.startHero==='function') window.startHero();
+        else if(slides.length>1){
+          let active=0;
+          const cards=$('.hero-slide',slider), indicators=$('.hero-dot',slider);
+          const show=index=>{
+            active=(index+cards.length)%cards.length;
+            cards.forEach((el,i)=>{el.classList.toggle('active',i===active);el.style.opacity=i===active?'1':'0';el.style.transform='translate3d(0,0,0)';});
+            indicators.forEach((el,i)=>el.classList.toggle('active',i===active));
+          };
+          indicators.forEach((el,i)=>el.addEventListener('click',()=>show(i)));
+          window.setInterval(()=>show(active+1),3500);
+        }
       }
     }
 
@@ -9556,7 +9567,7 @@ if(sIn){
     }
     if(color(h.backgroundColor) && $('.header')) $('.header').style.backgroundColor=color(h.backgroundColor);
     const logo=imageUrl(h.logoUrl); if(logo && $('.elory-logo-normal')) $('.elory-logo-normal').src=logo;
-    if(g.storeName){ document.title=txt(g.metaTitle||g.storeName); const meta=$('meta[name="description"]'); if(meta && g.metaDescription) meta.content=txt(g.metaDescription); }
+    if(g.storeName){ document.title=txt(g.metaTitle||g.storeName); const meta=$('meta[name="description"]'); if(meta && g.metaDescription) meta.content=txt(g.metaDescription); const footerLogo=$('.elory-footer-logo span:nth-child(2)'); if(footerLogo) footerLogo.textContent=txt(g.storeName); }
     if(color(g.primaryColor)) document.documentElement.style.setProperty('--pink',color(g.primaryColor));
     if(color(g.announcementColor)) document.documentElement.style.setProperty('--announcement',color(g.announcementColor));
     if(g.fontFamily){ const f=txt(g.fontFamily).replace(/[^A-Za-z0-9 ,'-]/g,'').slice(0,80); if(f) document.body.style.fontFamily=f; }
