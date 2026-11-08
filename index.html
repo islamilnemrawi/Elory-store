@@ -9619,7 +9619,7 @@ if(sIn){
     // Why Elory cards.
     if(Array.isArray(c.features)){
       const items=c.features.slice().sort((x,y)=>(+x.sortOrder||0)-(+y.sortOrder||0)), cards=$('.elory-why-section .elory-why-card');
-      cards.forEach((card,i)=>{ const item=items[i]; if(!item){visible(card,false);return;} text('h3',item.title) && (card.querySelector('h3').textContent=txt(item.title)); const p=$('p',card); if(p) p.textContent=txt(item.description); const icon=$('.elory-why-icon i',card); if(icon && /^[a-z0-9-]+$/i.test(txt(item.icon))) icon.className='fa-solid fa-'+item.icon; visible(card,item.isVisible!==false); });
+      cards.forEach((card,i)=>{ const item=items[i]; if(!item){visible(card,false);return;} const heading=$('h3',card); if(heading) heading.textContent=txt(item.title); const p=$('p',card); if(p) p.textContent=txt(item.description); const icon=$('.elory-why-icon i',card); if(icon && /^[a-z0-9-]+$/i.test(txt(item.icon))) icon.className='fa-solid fa-'+item.icon; visible(card,item.isVisible!==false); });
     }
     if(c.elements && typeof c.elements==='object') Object.entries(c.elements).forEach(([selector,value])=>{ const el=$(selector); if(!el)return; if(typeof value==='string')el.textContent=value; else if(value&&value.text!==undefined)el.textContent=txt(value.text); });
     if(c.css){ let style=$('#elory-site-custom-css'); if(!style){style=document.createElement('style');style.id='elory-site-custom-css';document.head.appendChild(style);} style.textContent=txt(c.css); }
