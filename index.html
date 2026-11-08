@@ -7709,7 +7709,7 @@ if(sIn){
         if(selectedPaymentMethod!=="cash_on_delivery"){
           const endpoint=window.ELORY_PAYMENT_CONFIG?.createPaymentUrl||"";
           if(!endpoint){showToast("بوابة Paymob تحتاج رابط الـBackend أولاً");return;}
-          const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"order_payment",...order})});
+          const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json",...(await getEloryAuthHeaders())},body:JSON.stringify({type:"order_payment",...order})});
           const result=await response.json().catch(()=>({}));
           if(!response.ok||!result.checkout_url){
             const details=result?.details?.detail||result?.details?.error||result?.error||"تعذر إنشاء عملية الدفع";
@@ -7962,7 +7962,8 @@ if(sIn){
           await fetch(endpoint,{
             method:"POST",
             headers:{
-              "Content-Type":"application/json"
+              "Content-Type":"application/json",
+              ...(await getEloryAuthHeaders())
             },
             body:JSON.stringify({
               type:"prime_subscription",
@@ -9237,13 +9238,23 @@ if(sIn){
        PAYMOB RETURN VERIFICATION
        ========================================================= */
 
+    async function getEloryAuthHeaders(){
+      try{
+        const {data}=await elorySupabase.auth.getSession();
+        const token=data?.session?.access_token;
+        return token?{Authorization:`Bearer ${token}`}:{};
+      }catch(_){
+        return {};
+      }
+    }
+
     async function verifyReturnedPaymentOnce(payment, attempt=0){
       const endpoint=window.ELORY_PAYMENT_CONFIG?.createPaymentUrl||"";
       if(!endpoint||!payment?.reference) return {confirmed:false};
       try{
         const response=await fetch(endpoint,{
           method:"POST",
-          headers:{"Content-Type":"application/json"},
+          headers:{"Content-Type":"application/json",...(await getEloryAuthHeaders())},
           body:JSON.stringify({
             action:"verify_payment",
             reference:String(payment.reference),
