@@ -9634,7 +9634,8 @@ if(sIn){
     visible('#prime',showPrime);
     visible('#primeHeaderBtn',showPrime); $('.footer a[href="#prime"]').forEach(el=>visible(el,showPrime));
     const heroSetting=sectionSettings.find(x=>txt(x.id)==='sec_hero');
-    visible('.hero',c.hero?.isVisible!==false && (!heroSetting || heroSetting.isVisible!==false));
+    const hasActiveHero=!Array.isArray(c.hero?.slides) || c.hero.slides.some(slide=>slide && slide.isActive!==false);
+    visible('.hero',c.hero?.isVisible!==false && hasActiveHero && (!heroSetting || heroSetting.isVisible!==false));
     const categorySetting=sectionSettings.find(x=>txt(x.id)==='sec_categories');
     visible('#categoriesSection',categories.isVisible!==false && (!categorySetting || categorySetting.isVisible!==false));
     const announcementSetting=sectionSettings.find(x=>txt(x.id)==='sec_announcement');
