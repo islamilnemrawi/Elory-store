@@ -9479,7 +9479,7 @@ if(sIn){
     const { data, error } = await db.from('site_customizations').select('config').eq('id', 1).maybeSingle();
     if (error || !data || !data.config) return;
     const c = data.config, $ = (s, root=document) => { try { return root.querySelector(s); } catch (_) { return null; } };
-    const $ = (s, root=document) => { try { return Array.from(root.querySelectorAll(s)); } catch (_) { return []; } };
+    const $$ = (s, root=document) => { try { return Array.from(root.querySelectorAll(s)); } catch (_) { return []; } };
     const txt = v => String(v ?? '');
     const color = v => /^#[0-9a-f]{3,8}$/i.test(txt(v).trim()) ? txt(v).trim() : '';
     const imageUrl = v => /^(https?:\/\/|data:image\/(png|jpeg|webp|avif);base64,)/i.test(txt(v).trim()) ? txt(v).trim() : '';
