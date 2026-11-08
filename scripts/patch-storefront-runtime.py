@@ -32,7 +32,7 @@ for old, new in array_selector_replacements:
     elif new not in source:
         raise SystemExit(f"Expected selector use not found: {old}")
 
-if source.count("const $ = (s, root=document)") != 1:
+if source.count(", $ = (s, root=document)") != 1:
     raise SystemExit("Unexpected number of single-element selector helpers")
 if source.count("const $$ = (s, root=document)") != 1:
     raise SystemExit("Array selector helper was not installed exactly once")
