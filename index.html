@@ -9248,6 +9248,40 @@ if(sIn){
       }
     }
 
+    async function loadPaymentCapabilities(){
+      const endpoint=window.ELORY_PAYMENT_CONFIG?.createPaymentUrl||"";
+      const setOption=(method,enabled)=>{
+        const input=document.querySelector(`input[name="paymentMethod"][value="${method}"]`);
+        if(!input)return;
+        const label=input.closest(".payment-option");
+        input.disabled=!enabled;
+        if(label)label.hidden=!enabled;
+        if(!enabled&&input.checked){
+          const cod=document.querySelector('input[name="paymentMethod"][value="cash_on_delivery"]');
+          if(cod)cod.checked=true;
+          selectPaymentMethod("cash_on_delivery");
+        }
+      };
+      setOption("card",false);
+      setOption("vodafone_cash",false);
+      if(!endpoint)return;
+      try{
+        const response=await fetch(endpoint,{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({action:"payment_capabilities"})
+        });
+        const capabilities=await response.json().catch(()=>({}));
+        if(!response.ok||capabilities?.ok!==true)throw new Error("Payment capabilities unavailable");
+        setOption("card",capabilities.card_enabled===true);
+        setOption("vodafone_cash",capabilities.wallet_enabled===true);
+      }catch(error){
+        console.warn("Elory payment methods are temporarily unavailable:",error);
+      }
+    }
+
+    window.addEventListener("load",()=>{void loadPaymentCapabilities();},{once:true});
+
     async function verifyReturnedPaymentOnce(payment, attempt=0){
       const endpoint=window.ELORY_PAYMENT_CONFIG?.createPaymentUrl||"";
       if(!endpoint||!payment?.reference) return {confirmed:false};
