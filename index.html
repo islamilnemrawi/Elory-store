@@ -9512,6 +9512,8 @@ if(sIn){
       .filter(x=>x && x.isActive!==false)
       .sort((a,b)=>(+a.sortOrder||0)-(+b.sortOrder||0));
     const old=$('#heroSlider');
+    if(c.hero && Array.isArray(c.hero.slides) && c.hero.slides.length && !slides.length) visible('.hero',false);
+    if(c.hero && c.hero.isVisible===false) visible('.hero',false);
     if(old && slides.length){
       const templates=$('.hero-slide',old), dotsTemplate=$('.hero-dots',old);
       if(templates.length){
