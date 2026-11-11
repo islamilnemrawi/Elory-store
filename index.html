@@ -5238,6 +5238,91 @@ body.prime-mode #heroSlider .hero-slide .hero-btn{
 }
 </style>
 
+
+<style id="elory-prime-hero-dot-size-lock-v1">
+/* Final Prime hero pagination: keep every indicator a small dot.
+   Overrides the legacy 150px active-label capsule and its mobile variant. */
+body.prime-mode #heroSlider > #heroDots,
+body.prime-mode #heroSlider .hero-dots{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  width:max-content!important;
+  max-width:calc(100% - 76px)!important;
+  min-height:12px!important;
+  height:12px!important;
+  padding:0!important;
+  margin:0 auto!important;
+  overflow:visible!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  direction:ltr!important;
+}
+body.prime-mode #heroSlider > #heroDots > button.hero-dot,
+body.prime-mode #heroSlider .hero-dots > .hero-dot,
+body.prime-mode #heroSlider .hero-dots > .hero-dot.active{
+  display:block!important;
+  position:relative!important;
+  box-sizing:border-box!important;
+  flex:0 0 7px!important;
+  width:7px!important;
+  min-width:7px!important;
+  max-width:7px!important;
+  height:7px!important;
+  min-height:7px!important;
+  max-height:7px!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:#a995b8!important;
+  color:transparent!important;
+  font-size:0!important;
+  line-height:0!important;
+  opacity:.62!important;
+  box-shadow:none!important;
+  transform:none!important;
+  overflow:hidden!important;
+  cursor:pointer!important;
+  pointer-events:auto!important;
+  transition:opacity .2s ease,background-color .2s ease,transform .2s ease!important;
+}
+body.prime-mode #heroSlider > #heroDots > button.hero-dot.active,
+body.prime-mode #heroSlider .hero-dots > .hero-dot.active{
+  flex-basis:7px!important;
+  width:7px!important;
+  min-width:7px!important;
+  max-width:7px!important;
+  height:7px!important;
+  min-height:7px!important;
+  max-height:7px!important;
+  background:#756282!important;
+  opacity:1!important;
+  transform:scale(1.12)!important;
+}
+body.prime-mode #heroSlider .hero-dot::before,
+body.prime-mode #heroSlider .hero-dot::after,
+body.prime-mode #heroSlider .hero-dot.active::before,
+body.prime-mode #heroSlider .hero-dot.active::after{
+  content:none!important;
+  display:none!important;
+}
+body.prime-mode #heroSlider .hero-dots::before,
+body.prime-mode #heroSlider .hero-dots::after{
+  content:none!important;
+  display:none!important;
+}
+@media(max-width:520px){
+  body.prime-mode #heroSlider > #heroDots,
+  body.prime-mode #heroSlider .hero-dots{
+    gap:7px!important;
+    max-width:calc(100% - 64px)!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div aria-live="polite" class="cart-add-notice" id="cartAddNotice" role="status"><img alt="" id="cartAddNoticeImage"/><span id="cartAddNoticeText"></span></div>
