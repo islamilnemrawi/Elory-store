@@ -10119,13 +10119,10 @@ body.prime-mode [style*="rgb(217, 107, 145)"],body.prime-mode [style*="rgb(185, 
  function observe(){
   const mo=new MutationObserver(records=>{
    if(!document.body?.classList.contains("prime-mode"))return;
-   let rebuild=false;
    for(const rec of records){
     if(rec.type==="attributes"&&rec.attributeName==="style")fixInline(rec.target);
     else if(rec.type==="childList")for(const node of rec.addedNodes)if(node.nodeType===1)fixInline(node);
-    if(rec.type==="childList")rebuild=true;
    }
-   if(rebuild)build();
   });
   mo.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["style"]});
   const classObserver=new MutationObserver(apply);
