@@ -5205,6 +5205,39 @@ body.prime-mode .hg-center-v19 .elory-logo-picture{
 }
 </style>
 
+<style id="elory-prime-interaction-visual-hotfix-v1">
+/* Restore the carousel's disabled controls only in Prime mode. */
+body.prime-mode #heroSlider .hero-arrow,
+body.prime-mode #heroSlider .hero-prev,
+body.prime-mode #heroSlider .hero-next{
+  position:absolute!important;top:50%!important;z-index:65!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:42px!important;height:42px!important;min-width:42px!important;padding:0!important;
+  border:1px solid rgba(120,80,168,.24)!important;border-radius:50%!important;
+  background:rgba(255,255,255,.94)!important;color:#62427f!important;
+  font-size:25px!important;line-height:1!important;opacity:.96!important;
+  visibility:visible!important;pointer-events:auto!important;cursor:pointer!important;
+  transform:translateY(-50%)!important;box-shadow:0 5px 18px rgba(75,48,100,.16)!important;
+  backdrop-filter:blur(8px);
+}
+body.prime-mode #heroSlider .hero-prev{left:14px!important;right:auto!important;}
+body.prime-mode #heroSlider .hero-next{right:14px!important;left:auto!important;}
+body.prime-mode #heroSlider .hero-slide .hero-btn{
+  display:inline-flex!important;position:relative!important;z-index:48!important;
+  align-items:center!important;justify-content:center!important;
+  visibility:visible!important;pointer-events:auto!important;
+}
+@media(max-width:520px){
+  body.prime-mode #heroSlider .hero-arrow,
+  body.prime-mode #heroSlider .hero-prev,
+  body.prime-mode #heroSlider .hero-next{
+    width:32px!important;height:32px!important;min-width:32px!important;font-size:20px!important;
+  }
+  body.prime-mode #heroSlider .hero-prev{left:7px!important;}
+  body.prime-mode #heroSlider .hero-next{right:7px!important;}
+}
+</style>
+
 </head>
 <body>
 <div aria-live="polite" class="cart-add-notice" id="cartAddNotice" role="status"><img alt="" id="cartAddNoticeImage"/><span id="cartAddNoticeText"></span></div>
@@ -9701,7 +9734,26 @@ if(sIn){
 (async function () {
   'use strict';
   try {
-    const db = window.elorySupabase;
+    const ensureDb = () => {
+      if (window.elorySupabase) return window.elorySupabase;
+      if (window.supabase?.createClient && window.SUPABASE_URL && window.SUPABASE_PUBLISHABLE_KEY) {
+        window.elorySupabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISHABLE_KEY);
+        return window.elorySupabase;
+      }
+      return null;
+    };
+    const db = ensureDb() || await new Promise(resolve => {
+      let settled = false;
+      const onReady = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(waitTimer);
+        window.removeEventListener('elory-supabase-ready', onReady);
+        resolve(ensureDb());
+      };
+      window.addEventListener('elory-supabase-ready', onReady, {once:true});
+      const waitTimer = setTimeout(onReady, 10000);
+    });
     if (!db) return;
     const { data, error } = await db.from('site_customizations').select('config').eq('id', 1).maybeSingle();
     if (error || !data || !data.config) return;
@@ -9726,8 +9778,16 @@ if(sIn){
       if(!el) return;
       const target=actionUrl(url);
       el.removeAttribute('onclick');
+      if(!target){
+        el.hidden=true;
+        el.disabled=true;
+        el.setAttribute('aria-disabled','true');
+        return;
+      }
+      el.hidden=false;
+      el.disabled=false;
+      el.removeAttribute('aria-disabled');
       el.onclick=e=>{
-        if(!target) return;
         e.preventDefault();
         if(target.startsWith('#')) { const dest=$(target); if(dest) dest.scrollIntoView({behavior:'smooth'}); else if(target==='#home') scrollTo({top:0,behavior:'smooth'}); }
         else location.assign(target);
@@ -9742,7 +9802,7 @@ if(sIn){
     if(c.hero && Array.isArray(c.hero.slides) && c.hero.slides.length && !slides.length) visible('.hero',false);
     if(c.hero && c.hero.isVisible===false) visible('.hero',false);
     if(old && slides.length){
-      const templates=$('.hero-slide',old), dotsTemplate=$('.hero-dots',old);
+      const templates=$$('.hero-slide',old), dotsTemplate=$('.hero-dots',old);
       if(templates.length){
         const slider=old.cloneNode(false); slider.removeAttribute('data-hero-ready');
         slides.forEach((item,i)=>{
@@ -9772,7 +9832,7 @@ if(sIn){
         if(typeof window.startHero==='function') window.startHero();
         else if(slides.length>1){
           let active=0;
-          const cards=$('.hero-slide',slider), indicators=$('.hero-dot',slider);
+          const cards=$$('.hero-slide',slider), indicators=$$('.hero-dot',slider);
           const show=index=>{
             active=(index+cards.length)%cards.length;
             cards.forEach((el,i)=>{el.classList.toggle('active',i===active);el.style.opacity=i===active?'1':'0';el.style.transform='translate3d(0,0,0)';});
@@ -9791,11 +9851,11 @@ if(sIn){
       if(color(a.backgroundColor)) announcement.style.backgroundColor=color(a.backgroundColor);
       if(color(a.textColor)) announcement.style.color=color(a.textColor);
       const msgs=[a.message1,a.message2,a.message3];
-      $('.announcement-item span',announcement).forEach((el,i)=>{ if(msgs[i%3]!==undefined) el.textContent=txt(msgs[i%3]); });
+      $$('.announcement-item span',announcement).forEach((el,i)=>{ if(msgs[i%3]!==undefined) el.textContent=txt(msgs[i%3]); });
       visible(announcement,a.isVisible!==false);
     }
     if(color(h.backgroundColor) && $('.header')) $('.header').style.backgroundColor=color(h.backgroundColor);
-    if(color(h.iconsColor)) $('.hg-icon-v19').forEach(el=>el.style.color=color(h.iconsColor));
+    if(color(h.iconsColor)) $$('.hg-icon-v19').forEach(el=>el.style.color=color(h.iconsColor));
     visible('.header-menu-btn',h.showMenuBtn);
     visible('.header-account-btn',h.showAccountBtn);
     visible('.header-cart-btn',h.showCartBtn);
@@ -9817,7 +9877,7 @@ if(sIn){
     text('#featured .view-all',featured.buttonText);
     text('#prime .prime-title',prime.title||prime.name);
     text('#prime .prime-desc',prime.description);
-    const benefits=$('#prime .prime-benefit');
+    const benefits=$$('#prime .prime-benefit');
     if(benefits[0]) benefits[0].lastChild.textContent=' خصم إضافي '+txt(prime.discountPercent??10)+'%';
     if(benefits[1]) benefits[1].lastChild.textContent=' شحن مجاني حتى '+txt(prime.freeShippingOrdersCount??6)+' طلبات';
     if(benefits[2] && prime.packagingFeature!==undefined) benefits[2].lastChild.textContent=' '+txt(prime.packagingFeature);
@@ -9825,7 +9885,7 @@ if(sIn){
     const primeVisible=prime.isVisible!==false;
     visible('#prime',primeVisible);
     visible('#primeHeaderBtn',primeVisible);
-    $('.footer a[href="#prime"]').forEach(el=>visible(el,primeVisible));
+    $$('.footer a[href="#prime"]').forEach(el=>visible(el,primeVisible));
     text('.elory-footer-brand > p',footer.aboutText);
     text('.developer-credit',footer.credits);
     text('.elory-copyright',footer.bottomText);
@@ -9859,7 +9919,7 @@ if(sIn){
     const primeSetting=sectionSettings.find(x=>txt(x.id)==='sec_prime_promo');
     const showPrime=primeVisible && (!primeSetting || primeSetting.isVisible!==false);
     visible('#prime',showPrime);
-    visible('#primeHeaderBtn',showPrime); $('.footer a[href="#prime"]').forEach(el=>visible(el,showPrime));
+    visible('#primeHeaderBtn',showPrime); $$('.footer a[href="#prime"]').forEach(el=>visible(el,showPrime));
     const heroSetting=sectionSettings.find(x=>txt(x.id)==='sec_hero');
     const hasActiveHero=!Array.isArray(c.hero?.slides) || c.hero.slides.some(slide=>slide && slide.isActive!==false);
     visible('.hero',c.hero?.isVisible!==false && hasActiveHero && (!heroSetting || heroSetting.isVisible!==false));
@@ -9871,7 +9931,7 @@ if(sIn){
 
     // Why Elory cards.
     if(Array.isArray(c.features)){
-      const items=c.features.slice().sort((x,y)=>(+x.sortOrder||0)-(+y.sortOrder||0)), cards=$('.elory-why-section .elory-why-card');
+      const items=c.features.slice().sort((x,y)=>(+x.sortOrder||0)-(+y.sortOrder||0)), cards=$$('.elory-why-section .elory-why-card');
       cards.forEach((card,i)=>{ const item=items[i]; if(!item){visible(card,false);return;} const heading=$('h3',card); if(heading) heading.textContent=txt(item.title); const p=$('p',card); if(p) p.textContent=txt(item.description); const icon=$('.elory-why-icon i',card); if(icon && /^[a-z0-9-]+$/i.test(txt(item.icon))) icon.className='fa-solid fa-'+item.icon; visible(card,item.isVisible!==false); });
     }
     if(c.elements && typeof c.elements==='object') Object.entries(c.elements).forEach(([selector,value])=>{ const el=$(selector); if(!el)return; if(typeof value==='string')el.textContent=value; else if(value&&value.text!==undefined)el.textContent=txt(value.text); });
