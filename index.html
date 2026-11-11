@@ -5717,6 +5717,20 @@ if(sIn){
 </div>
 <div class="coupon-message" id="couponMessage"></div>
 </div>
+<label class="cart-prime-option" hidden="" id="checkoutPrimeOption">
+<input id="checkoutPrime" onchange="toggleCheckoutPrime(this.checked)" type="checkbox"/>
+<span class="cart-prime-icon"><i class="fa-solid fa-crown"></i></span>
+<span class="cart-prime-copy">
+<b>إضافة Elory Prime إلى هذا الأوردر</b>
+<small>300 ج.م / 30 يومًا — يتم التفعيل تلقائيًا بعد تسليم الأوردر</small>
+<span class="cart-prime-benefits">
+<span><i class="fa-solid fa-percent"></i> خصم إضافي 10%</span>
+<span><i class="fa-solid fa-truck-fast"></i> 6 شحنات مجانية</span>
+<span><i class="fa-solid fa-gift"></i> تغليف مميز</span>
+</span>
+</span>
+<strong>+300 ج.م</strong>
+</label>
 <div class="checkout-total-card" id="checkoutTotalCard">
 <div><span>المنتجات</span><strong id="checkoutSubtotal">0 ج.م</strong></div>
 <div><span>الشحن</span><strong id="checkoutShipping">0 ج.م</strong></div>
@@ -7512,13 +7526,41 @@ if(sIn){
     const ELORY_PRIME_PRICE = 300;
     const ELORY_PRIME_DURATION_MS = 30*24*60*60*1000;
 
-    async function toggleCartPrime(checked){
+    async async function toggleCartPrime(checked){
       if(checked&&!primeActive){
         const {data:{user}}=hasSupabase()?await elorySupabase.auth.getUser():{data:{user:null}};
-        if(!user){const cb=document.getElementById("cartPrime");if(cb)cb.checked=false;closeModal("cartModal");openAccount();showToast("سجلي الدخول أولاً للاشتراك في Elory Prime");return;}
+        if(!user){
+          const cb=document.getElementById("cartPrime");if(cb)cb.checked=false;
+          cartPrimeSelected=false;checkoutPrimeSelected=false;
+          closeModal("cartModal");openAccount();
+          showToast("سجلي الدخول أولاً للاشتراك في Elory Prime");
+          return;
+        }
       }
       cartPrimeSelected=!!checked&&!primeActive;
+      checkoutPrimeSelected=cartPrimeSelected;
       renderCart();
+      updateCheckoutTotals();
+    }
+
+    async function toggleCheckoutPrime(checked){
+      if(checked&&!primeActive){
+        const {data:{user}}=hasSupabase()?await elorySupabase.auth.getUser():{data:{user:null}};
+        if(!user){
+          const cb=document.getElementById("checkoutPrime");if(cb)cb.checked=false;
+          checkoutPrimeSelected=false;cartPrimeSelected=false;
+          closeModal("checkoutModal");openAccount();
+          showToast("سجلي الدخول أولاً لإضافة Elory Prime إلى الطلب");
+          updateCheckoutTotals();
+          return;
+        }
+      }
+      checkoutPrimeSelected=!!checked&&!primeActive;
+      cartPrimeSelected=checkoutPrimeSelected;
+      const cartCheckbox=document.getElementById("cartPrime");
+      if(cartCheckbox)cartCheckbox.checked=cartPrimeSelected;
+      renderCart();
+      updateCheckoutTotals();
     }
 
     function openCheckout() {
@@ -7602,6 +7644,10 @@ if(sIn){
       const couponDiscount=getCouponDiscount();
       const shipping=(appliedCoupon?.free_shipping && !primeFreeAvailable)?0:baseShipping;
       const primeFee=checkoutPrimeSelected&&!primeActive?ELORY_PRIME_PRICE:0;
+      const checkoutPrimeOption=document.getElementById("checkoutPrimeOption");
+      const checkoutPrimeCheckbox=document.getElementById("checkoutPrime");
+      if(checkoutPrimeOption)checkoutPrimeOption.hidden=!!primeActive;
+      if(checkoutPrimeCheckbox)checkoutPrimeCheckbox.checked=!!checkoutPrimeSelected&&!primeActive;
       const total=Math.max(0,subtotal+shipping+primeFee-couponDiscount);
       const a=document.getElementById("checkoutSubtotal"); if(a)a.textContent=formatPrice(subtotal);
       const b=document.getElementById("checkoutShipping"); if(b)b.textContent=shipping===0?"مجاني 🎉":formatPrice(shipping);
@@ -7754,7 +7800,7 @@ if(sIn){
         // لا نستخدم select() هنا حتى لا يعتمد نجاح الطلب على صلاحية قراءة الطلب من جهة العميل.
         // كود المنتج وسعر الجملة لا يتم إرسالهما للعميل؛ الداشبورد يضيفهما داخليًا من بيانات المنتجات.
         if(appliedCoupon?.id){
-          const cr=await elorySupabase.rpc("redeem_coupon",{p_coupon_id:appliedCoupon.id,p_order_id:createdOrderSnapshot?.id||null});
+          const cr=await elorySupabase.rpc("redeem_coupon",{p_coupon_id:appliedCoupon.id,p_order_id:createdOrderSnapshot?.id||null,p_access_token:customerAccessToken});
           if(cr.error)console.warn("Coupon redemption failed:",cr.error);
         }
         const successOrder={...order,order_number:createdOrderSnapshot?.order_number||createdOrderSnapshot?.id||"",status:createdOrderSnapshot?.status||order.status,customer_name:customerName,governorate,center,address,payment_method:selectedPaymentMethod,items:order.items,subtotal,shipping_cost:shippingCost,total};
