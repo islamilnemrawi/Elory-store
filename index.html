@@ -9945,22 +9945,54 @@ if(sIn){
 })();
 </script>
 
+
+<style id="elory-prime-purple-complete">
+/* Prime mode: purple-only UI palette. Product photography and brand artwork remain unchanged. */
+body.prime-mode{
+ --bg:#fbf8ff!important;--surface:#fff!important;--surface-2:#f1eafa!important;
+ --text:#292136!important;--muted:#746783!important;
+ --pink:#7650a5!important;--pink-dark:#56317f!important;
+ --pink-light:#d8c8eb!important;--pink-soft:#eee6f7!important;
+ --border:#ded3e9!important;--announcement:#654286!important;
+}
+body.prime-mode .hero-slider,body.prime-mode .elory-code-hero,body.prime-mode .hero-slider>.hero-slide{
+ background:linear-gradient(120deg,#eee5f7 0%,#d9c9eb 52%,#f7f3fb 100%)!important;
+}
+body.prime-mode .hero-overlay{background:linear-gradient(90deg,rgba(248,244,253,.96),rgba(226,214,241,.78) 48%,rgba(255,255,255,.08))!important}
+body.prime-mode .hero-wave-top,body.prime-mode .hero-wave-bottom{filter:hue-rotate(55deg) saturate(.5)!important}
+body.prime-mode .hero-pedestal{background:linear-gradient(135deg,#e8dcf2,#cdb5e2)!important}
+body.prime-mode .announcement,body.prime-mode .hero-btn,body.prime-mode .checkout-btn,body.prime-mode .add-cart,
+body.prime-mode .search-compact-v19 .search-btn,body.prime-mode .nav-link.active,body.prime-mode .nav-link:hover,
+body.prime-mode .shop-category-pills button.active,body.prime-mode .category-panel-grid button:hover,
+body.prime-mode .prime-direct-btn,body.prime-mode .prime-status-refresh{
+ background:linear-gradient(135deg,#7954a8,#56317f)!important;border-color:#68438f!important;color:#fff!important;
+}
+body.prime-mode .section-title,body.prime-mode .current-price,body.prime-mode .cart-item-price,
+body.prime-mode .summary-row.total,body.prime-mode .prime-price,body.prime-mode .hero-title span,
+body.prime-mode .favorite-btn:hover,body.prime-mode .favorite-btn.active,
+body.prime-mode .elory-why-head h2,body.prime-mode .orders-page-head h1{color:#68438f!important}
+body.prime-mode .add-cart,body.prime-mode .checkout-note,body.prime-mode .feature-icon,
+body.prime-mode .close-menu,body.prime-mode .category-back,body.prime-mode .search-compact-v19,
+body.prime-mode .shop-category-pills button,body.prime-mode .category-context-item{border-color:#d8c8eb!important}
+body.prime-mode .add-cart,body.prime-mode .checkout-note,body.prime-mode .feature-icon,
+body.prime-mode .close-menu,body.prime-mode .category-back,body.prime-mode .shop-category-pills button,
+body.prime-mode .category-context-item{background-color:#eee6f7!important;color:#56317f!important}
+body.prime-mode .header-main-wrap,body.prime-mode .elory-reference-nav,
+body.prime-mode .header-search-line,body.prime-mode .search-compact-v19{background-color:#f6f1fb!important}
+body.prime-mode .category-image,body.prime-mode #categoriesSection .category-image,
+body.prime-mode .category-context-icon,body.prime-mode .hg-icon-v19,
+body.prime-mode .elory-modal,body.prime-mode .prime-modal-active,body.prime-mode .prime-modal-pending{border-color:#d8c8eb!important}
+body.prime-mode .prime-modal-active,body.prime-mode .prime-modal-pending{
+ background:linear-gradient(135deg,#f4effa,#fff)!important;color:#56317f!important;
+}
+body.prime-mode .prime-discount{background:#68438f!important}
+body.prime-mode .hero-dots .hero-dot.active{background:#68438f!important}
+body.prime-mode .announcement *,body.prime-mode .hero-btn *,body.prime-mode .checkout-btn *,body.prime-mode .add-cart *{color:#fff!important}
+body.prime-mode [style*="#d96b91"],body.prime-mode [style*="#b94e75"],
+body.prime-mode [style*="#f8dce6"],body.prime-mode [style*="#fff0f5"],
+body.prime-mode [style*="rgb(217, 107, 145)"],body.prime-mode [style*="rgb(185, 78, 117)"]{
+ background-color:#eee6f7!important;border-color:#d8c8eb!important;color:#56317f!important;
+}
+</style>
 </body>
 </html>
-
-
-/* Elory Prime visual system: neutralize legacy pink-only sections while preserving layout and artwork. */
-body.prime-mode .announcement,body.prime-mode .hero-btn,body.prime-mode .checkout-btn,body.prime-mode .add-cart,body.prime-mode .shop-category-pills button.active,body.prime-mode .category-panel-grid button:hover{background-color:var(--pink-dark)!important}
-body.prime-mode #heroSlider,body.prime-mode #heroSlider.elory-code-hero,body.prime-mode #heroSlider>.hero-slide,body.prime-mode main#home>.hero,body.prime-mode .elory-why-section,body.prime-mode #categoriesSection,body.prime-mode #featured,body.prime-mode .shop-page,body.prime-mode .product-details-page,body.prime-mode .customer-orders-page{background-color:var(--bg)!important;color:var(--text)!important}
-body.prime-mode .hero-overlay{background:linear-gradient(90deg,rgba(248,242,253,.96),rgba(229,215,244,.76) 48%,rgba(255,255,255,.08))!important}
-body.prime-mode .hero-wave-top,body.prime-mode .hero-wave-bottom{filter:hue-rotate(48deg) saturate(.62)!important}
-body.prime-mode .hero-pedestal{background:linear-gradient(135deg,#e8dcf2,#cdb5e2)!important}
-body.prime-mode .hero-slide{background-color:transparent!important}
-body.prime-mode #categoriesSection .category-image,body.prime-mode .category-context-icon{border-color:var(--pink-light)!important;box-shadow:0 8px 22px rgba(93,56,138,.10)!important}
-body.prime-mode #featured .section-title,body.prime-mode .elory-why-head h2,body.prime-mode .orders-page-head h1{color:var(--pink-dark)!important}
-body.prime-mode .prime-modal-active,body.prime-mode .prime-modal-pending{border:1px solid var(--border);border-radius:18px;padding:15px;background:linear-gradient(135deg,#f5effb,#fff);color:#5d388a;line-height:1.8;text-align:center}
-body.prime-mode .prime-modal-active b,body.prime-mode .prime-modal-pending b{display:block;font-weight:900}
-body.prime-mode .prime-modal-active span{display:block;font-size:12px;margin-top:5px}
-body.prime-mode .prime-modal-active p,body.prime-mode .prime-modal-pending p{font-size:11px;margin:8px 0}
-
-<!-- ELORY PRIME FIX VERIFICATION: 2026-11-11 -->
