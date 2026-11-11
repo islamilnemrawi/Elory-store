@@ -9717,24 +9717,6 @@ body.prime-mode #heroSlider .hero-dots::after{
     document.addEventListener(
       "DOMContentLoaded",
       () => {
-        const initialProductId=getProductIdFromHash();
-        const initialProductAlreadyInHistory=history.state?.view==="product"&&String(history.state.productId)===String(initialProductId);
-
-        /* Keep one same-document Elory entry behind the current home state.
-           This makes Android Back return inside the SPA before leaving GitHub Pages. */
-        if(!history.state?.eloryApp){
-          const homeState={eloryApp:"Elory",view:"home",eloryRoot:true};
-          const homeUrl=new URL(window.location.href);
-          homeUrl.searchParams.delete("product");
-          [...homeUrl.searchParams.keys()].forEach(key=>{if(key.startsWith("product="))homeUrl.searchParams.delete(key);});
-          homeUrl.hash="home";
-          history.replaceState(homeState,"",`${homeUrl.pathname}${homeUrl.search}${homeUrl.hash}`);
-          history.pushState({eloryApp:"Elory",view:"home",eloryBase:true},"",`${homeUrl.pathname}${homeUrl.search}${homeUrl.hash}`);
-        } else if(history.state.modal){
-          closeAllModalsVisual();
-          history.replaceState({eloryApp:"Elory",view:history.state.view||"home",eloryBase:true},"",window.location.pathname+window.location.search+"#home");
-        }
-
         /* Bind header and search controls before optional data/auth startup work. */
         const bindHeaderAction = (selector, handler) => {
           const el = document.querySelector(selector);
@@ -9782,6 +9764,24 @@ body.prime-mode #heroSlider .hero-dots::after{
         loadFavorites();
         refreshOrdersCount();
         setTimeout(()=>{handlePaymobReturn();},120);
+
+        const initialProductId=getProductIdFromHash();
+        const initialProductAlreadyInHistory=history.state?.view==="product"&&String(history.state.productId)===String(initialProductId);
+
+        /* Keep one same-document Elory entry behind the current home state.
+           This makes Android Back return inside the SPA before leaving GitHub Pages. */
+        if(!history.state?.eloryApp){
+          const homeState={eloryApp:"Elory",view:"home",eloryRoot:true};
+          const homeUrl=new URL(window.location.href);
+          homeUrl.searchParams.delete("product");
+          [...homeUrl.searchParams.keys()].forEach(key=>{if(key.startsWith("product="))homeUrl.searchParams.delete(key);});
+          homeUrl.hash="home";
+          history.replaceState(homeState,"",`${homeUrl.pathname}${homeUrl.search}${homeUrl.hash}`);
+          history.pushState({eloryApp:"Elory",view:"home",eloryBase:true},"",`${homeUrl.pathname}${homeUrl.search}${homeUrl.hash}`);
+        } else if(history.state.modal){
+          closeAllModalsVisual();
+          history.replaceState({eloryApp:"Elory",view:history.state.view||"home",eloryBase:true},"",window.location.pathname+window.location.search+"#home");
+        }
 
         const coreCategoriesSection=document.getElementById('categoriesSection');
         const coreFeaturedSection=document.getElementById('featured');
