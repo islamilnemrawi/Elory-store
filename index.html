@@ -9994,5 +9994,120 @@ body.prime-mode [style*="rgb(217, 107, 145)"],body.prime-mode [style*="rgb(185, 
  background-color:#eee6f7!important;border-color:#d8c8eb!important;color:#56317f!important;
 }
 </style>
+
+<script id="elory-prime-dynamic-color-normalizer">
+(function(){
+ "use strict";
+ if(window.__eloryPrimeColorNormalizerInstalled)return;
+ window.__eloryPrimeColorNormalizerInstalled=true;
+ const style=document.createElement("style");
+ style.id="elory-prime-dynamic-color-overrides";
+ const named={pink:"#c9a6e8",hotpink:"#b58ad9",deeppink:"#9a65c7",lightpink:"#e8dcf4",palevioletred:"#9a72bd",mediumvioletred:"#8150a8"};
+ function hueOf(r,g,b){
+  r/=255;g/=255;b/=255;const hi=Math.max(r,g,b),lo=Math.min(r,g,b),d=hi-lo;
+  if(!d)return 0;let h;
+  if(hi===r)h=((g-b)/d)%6;else if(hi===g)h=(b-r)/d+2;else h=(r-g)/d+4;
+  return (h*60+360)%360;
+ }
+ function hexToRgb(h){
+  let x=h.slice(1);if(x.length===3)x=x.split("").map(c=>c+c).join("");
+  if(x.length===4)x=x.slice(0,3).split("").map(c=>c+c).join("");
+  if(x.length===8)x=x.slice(0,6);if(x.length!==6)return null;
+  return [parseInt(x.slice(0,2),16),parseInt(x.slice(2,4),16),parseInt(x.slice(4,6),16)];
+ }
+ function rgbToHex(a){return "#"+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");}
+ function convertColor(token){
+  const low=token.toLowerCase();
+  if(named[low])return named[low];
+  let rgb=null;
+  if(low[0]==="#")rgb=hexToRgb(low);
+  else if(low.startsWith("rgb")){
+   const vals=low.match(/[\d.]+%?/g);if(vals&&vals.length>=3)rgb=vals.slice(0,3).map(v=>v.endsWith("%")?parseFloat(v)*2.55:parseFloat(v));
+  }else if(low.startsWith("hsl")){
+   const vals=low.match(/[\d.]+%?/g);if(vals&&vals.length>=3){
+    let h=parseFloat(vals[0]),sat=parseFloat(vals[1])/100,l=parseFloat(vals[2])/100;
+    const c=(1-Math.abs(2*l-1))*sat,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let q;
+    if(h<60)q=[c,x,0];else if(h<120)q=[x,c,0];else if(h<180)q=[0,c,x];else if(h<240)q=[0,x,c];else if(h<300)q=[x,0,c];else q=[c,0,x];
+    rgb=q.map(v=>(v+m)*255);
+   }
+  }
+  if(!rgb)return token;
+  const h=hueOf(rgb[0],rgb[1],rgb[2]);
+  // Replace pink/magenta hues only; leave red, gold, neutral, and product artwork intact.
+  if(!(h>=315&&h<=359))return token;
+  const max=Math.max(...rgb)/255,min=Math.min(...rgb)/255,l=(max+min)/2;
+  const d=max-min,sat=d===0?0:d/(1-Math.abs(2*l-1));
+  const hh=270/60,c=(1-Math.abs(2*l-1))*sat,x=c*(1-Math.abs(hh%2-1)),m=l-c/2;
+  const q=hh<1?[c,x,0]:hh<2?[x,c,0]:hh<3?[0,c,x]:hh<4?[0,x,c]:hh<5?[x,0,c]:[c,0,x];
+  return rgbToHex(q.map(v=>(v+m)*255));
+ }
+ function rewrite(value){
+  return value.replace(/#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)|\b(?:pink|hotpink|deeppink|lightpink|palevioletred|mediumvioletred)\b/gi,convertColor);
+ }
+ function scopedSelector(sel){
+  sel=sel.trim();
+  if(!sel)return null;
+  if(sel===":root"||sel==="html"||sel==="body")return "body.prime-mode";
+  if(sel.startsWith("body.prime-mode"))return sel;
+  return "body.prime-mode "+sel;
+ }
+ function walk(rules,out,inside){
+  for(const rule of Array.from(rules||[])){
+   if(rule.type===1&&rule.style){
+    const declarations=rewrite(rule.style.cssText);
+    if(declarations===rule.style.cssText)continue;
+    const selectors=rule.selectorText.split(",").map(scopedSelector).filter(Boolean);
+    if(selectors.length)out.push((inside||"")+selectors.join(",")+"{"+declarations+"}");
+   }else if(rule.cssRules){
+    const nested=[];walk(rule.cssRules,nested,inside);
+    if(nested.length){
+     if(rule.conditionText)out.push("@"+(rule.type===4?"media":rule.type===12?"supports":"container")+" "+rule.conditionText+"{"+nested.join("")+"}");
+     else out.push(nested.join(""));
+    }
+   }
+  }
+ }
+ function build(){
+  const rules=[];
+  for(const sheet of Array.from(document.styleSheets)){
+   if(sheet.ownerNode===style||sheet.ownerNode?.id==="elory-prime-dynamic-color-overrides")continue;
+   try{walk(sheet.cssRules,rules,"");}catch(e){}
+  }
+  style.textContent=rules.join("\n");
+  if(!style.isConnected)document.head.appendChild(style);
+ }
+ function fixInline(root){
+  const nodes=[];
+  if(root.nodeType===1&&root.hasAttribute("style"))nodes.push(root);
+  if(root.querySelectorAll)nodes.push(...root.querySelectorAll("[style]"));
+  for(const el of nodes){
+   const raw=el.getAttribute("style");if(!raw)continue;
+   const next=rewrite(raw);if(next!==raw)el.setAttribute("style",next);
+  }
+ }
+ function apply(){
+  if(!document.body||!document.body.classList.contains("prime-mode")){style.textContent="";return;}
+  build();fixInline(document.body);
+ }
+ function observe(){
+  const mo=new MutationObserver(records=>{
+   if(!document.body?.classList.contains("prime-mode"))return;
+   let rebuild=false;
+   for(const rec of records){
+    if(rec.type==="attributes"&&rec.attributeName==="style")fixInline(rec.target);
+    else if(rec.type==="childList")for(const node of rec.addedNodes)if(node.nodeType===1)fixInline(node);
+    if(rec.type==="childList")rebuild=true;
+   }
+   if(rebuild)build();
+  });
+  mo.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["style"]});
+  const classObserver=new MutationObserver(apply);
+  classObserver.observe(document.body,{attributes:true,attributeFilter:["class"]});
+ }
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{apply();observe();},{once:true});
+ else{apply();observe();}
+ window.addEventListener("pageshow",apply);
+})();
+</script>
 </body>
 </html>
