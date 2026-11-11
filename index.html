@@ -7526,7 +7526,7 @@ if(sIn){
     const ELORY_PRIME_PRICE = 300;
     const ELORY_PRIME_DURATION_MS = 30*24*60*60*1000;
 
-    async async function toggleCartPrime(checked){
+    async function toggleCartPrime(checked){
       if(checked&&!primeActive){
         const {data:{user}}=hasSupabase()?await elorySupabase.auth.getUser():{data:{user:null}};
         if(!user){
