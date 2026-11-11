@@ -5130,6 +5130,81 @@ main#home{
   .customer-order-status{font-size:8.5px !important;}
 }
 </style>
+
+<style id="elory-prime-header-layout-hotfix-v1">
+/* Prime header correction: keep the brand centered and prevent member labels
+   from becoming a second flex item beside the logo. */
+body.prime-mode .hg-center-v19::after{
+  content:none !important;
+  display:none !important;
+}
+body.prime-mode .hg-center-v19{
+  justify-content:center !important;
+  align-items:center !important;
+  min-width:0 !important;
+}
+body.prime-mode .hg-center-v19 .logo,
+body.prime-mode .hg-center-v19 .elory-logo-picture{
+  flex:0 1 auto !important;
+  max-width:100% !important;
+}
+/* Compact the three navigation cells on phones; the ACTIVE label previously
+   consumed space inside an already narrow Prime button. */
+@media (max-width:520px){
+  body.prime-mode .elory-reference-nav{
+    height:auto !important;
+    min-height:40px !important;
+    padding:3px 6px !important;
+  }
+  body.prime-mode .elory-reference-nav-inner{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr) !important;
+    gap:5px !important;
+    min-width:0 !important;
+  }
+  body.prime-mode .elory-reference-nav .nav-prime-btn{
+    min-width:0 !important;
+    width:100% !important;
+    padding:5px 4px !important;
+    gap:3px !important;
+    font-size:clamp(9px,2.7vw,11px) !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+  }
+  body.prime-mode .elory-reference-nav .nav-prime-btn::after{
+    display:none !important;
+    content:none !important;
+  }
+  body.prime-mode .elory-reference-nav .nav-prime-btn::before{
+    margin:0 0 0 2px !important;
+    font-size:10px !important;
+    flex:0 0 auto !important;
+  }
+  body.prime-mode .elory-reference-nav .nav-orders-btn{
+    min-width:0 !important;
+    width:100% !important;
+    padding:5px 3px !important;
+    gap:3px !important;
+    font-size:clamp(9px,2.7vw,11px) !important;
+    overflow:hidden !important;
+  }
+  body.prime-mode .elory-reference-nav .header-search-line{
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+  }
+  body.prime-mode .elory-reference-nav .search-compact-v19{
+    width:100% !important;
+    min-width:0 !important;
+    padding-inline:5px !important;
+  }
+  body.prime-mode .elory-reference-nav .search-compact-v19 input{
+    min-width:0 !important;
+    font-size:11px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div aria-live="polite" class="cart-add-notice" id="cartAddNotice" role="status"><img alt="" id="cartAddNoticeImage"/><span id="cartAddNoticeText"></span></div>
