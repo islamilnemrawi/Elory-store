@@ -10043,7 +10043,10 @@ body.prime-mode [style*="rgb(217, 107, 145)"],body.prime-mode [style*="rgb(185, 
   return rgbToHex(q.map(v=>(v+m)*255));
  }
  function rewrite(value){
-  return value.replace(/#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)|\b(?:pink|hotpink|deeppink|lightpink|palevioletred|mediumvioletred|magenta|fuchsia|orchid|plum|violet|mediumorchid|darkorchid|thistle)\b/gi,convertColor);
+  const names="pink|hotpink|deeppink|lightpink|palevioletred|mediumvioletred|magenta|fuchsia|orchid|plum|violet|mediumorchid|darkorchid|thistle";
+  const withFunctionalColors=value.replace(/#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)/gi,convertColor);
+  // Only convert standalone color keywords. Keep names such as var(--pink) intact.
+  return withFunctionalColors.replace(new RegExp("(^|[^-\\w])("+names+")(?=$|[^-\\w])","gi"),(match,prefix,color)=>prefix+convertColor(color));
  }
  function splitSelectorList(value){
   const output=[];let start=0,round=0,square=0,quote="",escaped=false;
