@@ -5732,7 +5732,8 @@ if(sIn){
 <strong>+300 ج.م</strong>
 </label>
 <div class="checkout-total-card" id="checkoutTotalCard">
-<div><span>المنتجات</span><strong id="checkoutSubtotal">0 ج.م</strong></div>
+<div><span>المنتجات بعد الخصم</span><strong id="checkoutSubtotal">0 ج.م</strong></div>
+<div id="checkoutPrimeDiscountRow" hidden><span>خصم Elory Prime (10%)</span><strong id="checkoutPrimeDiscount">0 ج.م</strong></div>
 <div><span>الشحن</span><strong id="checkoutShipping">0 ج.م</strong></div>
 <div hidden="" id="checkoutPrimeRow"><span>Elory Prime</span><strong>300 ج.م</strong></div>
 <div class="checkout-total-line"><span>الإجمالي النهائي</span><strong id="checkoutGrandTotal">0 ج.م</strong></div>
@@ -5797,10 +5798,7 @@ if(sIn){
           ثيم موف/بنفسجي خاص أثناء الاشتراك
         </div>
 </div>
-<button class="checkout-btn prime-direct-btn" onclick="subscribePrimeDirectly()">
-<i class="fa-solid fa-crown"></i>
-        اشتركي في Elory Prime
-      </button>
+<div id="primeModalStatus" class="prime-modal-status" aria-live="polite"><div class="prime-status-message">جاري التحقق من حالة عضويتك...</div></div>
 </div>
 </div>
 <!-- =========================================================
@@ -6043,6 +6041,7 @@ if(sIn){
       updateCheckoutTotals();
       renderProducts();
       renderCart();
+      updatePrimeModalStatus();
       // A refresh that confirms "not subscribed" must not erase the customer's
       // selected Prime add-on from the cart or checkout. Clear it only once the
       // membership is actually active.
@@ -7576,7 +7575,19 @@ if(sIn){
     }
 
     function getPrimeUnitPrice(price){const base=Number(price||0);return primeActive?Math.round(base*0.9*100)/100:base;}
-    function getCheckoutSubtotal(){ return cart.reduce((sum,item)=>sum+getPrimeUnitPrice(item.price)*Number(item.qty||0),0); }
+    function getCheckoutSubtotal(){
+      return cart.reduce((sum,item)=>{
+        const currentPrice=getCartItemCurrentPrice(item);
+        return sum+getPrimeUnitPrice(currentPrice)*Number(item.qty||0);
+      },0);
+    }
+    function getPrimeDiscountTotal(){
+      if(!primeActive)return 0;
+      return cart.reduce((sum,item)=>{
+        const price=getCartItemCurrentPrice(item);
+        return sum+Math.max(0,price-getPrimeUnitPrice(price))*Number(item.qty||0);
+      },0);
+    }
 
     function getCouponDiscount(){
       if(!appliedCoupon) return 0;
@@ -7637,6 +7648,7 @@ if(sIn){
 
     function updateCheckoutTotals(){
       const subtotal=getCheckoutSubtotal();
+      const primeDiscount=getPrimeDiscountTotal();
       const gov=document.getElementById("governorate")?.value||"";
       const center=document.getElementById("center")?.value||"";
       const primeFreeAvailable=primeActive&&Number(primeStatus?.free_shipping_remaining||0)>0;
@@ -7650,6 +7662,10 @@ if(sIn){
       if(checkoutPrimeCheckbox)checkoutPrimeCheckbox.checked=!!checkoutPrimeSelected&&!primeActive;
       const total=Math.max(0,subtotal+shipping+primeFee-couponDiscount);
       const a=document.getElementById("checkoutSubtotal"); if(a)a.textContent=formatPrice(subtotal);
+      const primeDiscountRow=document.getElementById("checkoutPrimeDiscountRow");
+      const primeDiscountValue=document.getElementById("checkoutPrimeDiscount");
+      if(primeDiscountRow)primeDiscountRow.hidden=!(primeActive&&primeDiscount>0);
+      if(primeDiscountValue)primeDiscountValue.textContent="-"+formatPrice(primeDiscount);
       const b=document.getElementById("checkoutShipping"); if(b)b.textContent=shipping===0?"مجاني 🎉":formatPrice(shipping);
       const r=document.getElementById("checkoutPrimeRow"); if(r)r.hidden=!primeFee;
 
@@ -7766,7 +7782,7 @@ if(sIn){
       const primeFee=primeRequested?ELORY_PRIME_PRICE:0;
       const total=Math.max(0,subtotal+shippingCost+primeFee-couponDiscount);
       const user=hasSupabaseClient()?(await elorySupabase.auth.getUser()).data?.user:null;
-      const order={user_id:user?.id||null,customer_access_token:customerAccessToken,customer_name:customerName,phone,governorate,center,address,notes:primeRequested?`طلب اشتراك Elory Prime بقيمة 300 ج.م — ${notes?notes+" — ":""}التفعيل بعد تسليم الطلب.`:notes,items:cart.map(item=>({product_id:item.id,name:item.name,price:getPrimeUnitPrice(item.price),quantity:Number(item.qty||0),image:item.image||null,color:item.color||null,color_hex:item.colorHex||null,size:item.size||null,code:item.code||null})),subtotal,shipping_cost:shippingCost,total,payment_method:selectedPaymentMethod,prime:!!(primeActive||primeRequested),prime_requested:primeRequested,status:"جديد",coupon_code:appliedCoupon?.code||null,coupon_discount:couponDiscount,coupon_free_shipping:!!(appliedCoupon?.free_shipping&&!primeFreeAvailable),prime_discount:primeActive?Number(subtotal)*0.10:0,prime_free_shipping:primeFreeAvailable};
+      const order={user_id:user?.id||null,customer_access_token:customerAccessToken,customer_name:customerName,phone,governorate,center,address,notes:primeRequested?`طلب اشتراك Elory Prime بقيمة 300 ج.م — ${notes?notes+" — ":""}التفعيل بعد تسليم الطلب.`:notes,items:cart.map(item=>({product_id:item.id,name:item.name,price:getPrimeUnitPrice(getCartItemCurrentPrice(item)),quantity:Number(item.qty||0),image:item.image||null,color:item.color||null,color_hex:item.colorHex||null,size:item.size||null,code:item.code||null})),subtotal,shipping_cost:shippingCost,total,payment_method:selectedPaymentMethod,prime:!!(primeActive||primeRequested),prime_requested:primeRequested,status:"جديد",coupon_code:appliedCoupon?.code||null,coupon_discount:couponDiscount,coupon_free_shipping:!!(appliedCoupon?.free_shipping&&!primeFreeAvailable),prime_discount:primeActive?getPrimeDiscountTotal():0,prime_free_shipping:primeFreeAvailable};
       const button=document.querySelector('#checkoutForm button[type="submit"]');
       if(button){button.disabled=true;button.dataset.oldText=button.textContent;button.textContent="جاري إرسال الطلب...";}
       try{
@@ -7854,7 +7870,33 @@ if(sIn){
 
     function openPrime(){
       const modal=document.getElementById("primeModal"); modal?.classList.add("prime-page-mode");
-      openModal("primeModal"); refreshPrimeState();
+      openModal("primeModal");
+      updatePrimeModalStatus();
+      refreshPrimeState().then(()=>updatePrimeModalStatus());
+    }
+
+    function updatePrimeModalStatus(){
+      const box=document.getElementById("primeModalStatus");
+      if(!box)return;
+      if(primeStatusLoadState==="loading" || primeStatusLoadState==="idle"){
+        box.innerHTML='<div class="prime-status-message">جاري التحقق من حالة عضويتك...</div>';return;
+      }
+      if(primeStatusLoadState==="error"){
+        box.innerHTML='<div class="prime-status-message prime-status-error">تعذر التحقق من الاشتراك. لن نبدأ عملية دفع جديدة قبل التأكد من الحالة.<button class="prime-status-refresh" type="button" onclick="refreshPrimeState().then(updatePrimeModalStatus)">إعادة التحقق</button></div>';return;
+      }
+      const expiry=primeStatus?.expires_at?new Date(primeStatus.expires_at):null;
+      const expiryMs=expiry?.getTime()||0;
+      const active=!!primeActive&&expiryMs>Date.now();
+      const status=String(primeStatus?.status||"").toLowerCase();
+      const pending=["pending","pending_payment","awaiting_payment","processing","قيد الدفع","بانتظار الدفع","بانتظار تأكيد الدفع"].includes(status);
+      if(active){
+        const date=expiry.toLocaleDateString("ar-EG",{year:"numeric",month:"long",day:"numeric"});
+        box.innerHTML='<div class="prime-modal-active"><b><i class="fa-solid fa-crown"></i> عضويتك Elory Prime نشطة</b><span>صالحة حتى '+escapeHtml(date)+'</span><p>الخصم الإضافي 10% والشحن المجاني المتاح يطبقان تلقائيًا على طلباتك المؤهلة.</p><button class="prime-status-refresh" type="button" onclick="closeModalVisual(\'primeModal\');openAccount()">عرض حسابي</button></div>';
+      }else if(pending){
+        box.innerHTML='<div class="prime-modal-pending"><b>اشتراكك قيد تأكيد الدفع</b><p>لن نطلب منك الدفع مرة أخرى أثناء انتظار التأكيد.</p><button class="prime-status-refresh" type="button" onclick="refreshPrimeState().then(updatePrimeModalStatus)">تحققي من حالة الدفع</button></div>';
+      }else{
+        box.innerHTML='<button class="checkout-btn prime-direct-btn" type="button" onclick="subscribePrimeDirectly()"><i class="fa-solid fa-crown"></i> اشتركي في Elory Prime</button>';
+      }
     }
 
     // Product Prime offer: open the Prime benefits page first.
@@ -9905,3 +9947,14 @@ if(sIn){
 </body>
 </html>
 
+
+/* Elory Prime visual system: neutralize legacy pink-only sections while preserving layout and artwork. */
+body.prime-mode .announcement,body.prime-mode .hero-btn,body.prime-mode .checkout-btn,body.prime-mode .add-cart,body.prime-mode .shop-category-pills button.active,body.prime-mode .category-panel-grid button:hover{background-color:var(--pink-dark)!important}
+body.prime-mode #heroSlider,body.prime-mode #heroSlider.elory-code-hero,body.prime-mode #heroSlider>.hero-slide,body.prime-mode main#home>.hero,body.prime-mode .elory-why-section,body.prime-mode #categoriesSection,body.prime-mode #featured,body.prime-mode .shop-page,body.prime-mode .product-details-page,body.prime-mode .customer-orders-page{background-color:var(--bg)!important;color:var(--text)!important}
+body.prime-mode #heroSlider>.hero-slide{background-image:linear-gradient(120deg,rgba(235,225,247,.94),rgba(248,241,252,.90))!important}
+body.prime-mode #categoriesSection .category-image,body.prime-mode .category-context-icon{border-color:var(--pink-light)!important;box-shadow:0 8px 22px rgba(93,56,138,.10)!important}
+body.prime-mode #featured .section-title,body.prime-mode .elory-why-head h2,body.prime-mode .orders-page-head h1{color:var(--pink-dark)!important}
+body.prime-mode .prime-modal-active,body.prime-mode .prime-modal-pending{border:1px solid var(--border);border-radius:18px;padding:15px;background:linear-gradient(135deg,#f5effb,#fff);color:#5d388a;line-height:1.8;text-align:center}
+body.prime-mode .prime-modal-active b,body.prime-mode .prime-modal-pending b{display:block;font-weight:900}
+body.prime-mode .prime-modal-active span{display:block;font-size:12px;margin-top:5px}
+body.prime-mode .prime-modal-active p,body.prime-mode .prime-modal-pending p{font-size:11px;margin:8px 0}
