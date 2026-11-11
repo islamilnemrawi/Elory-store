@@ -10002,7 +10002,7 @@ body.prime-mode [style*="rgb(217, 107, 145)"],body.prime-mode [style*="rgb(185, 
  window.__eloryPrimeColorNormalizerInstalled=true;
  const style=document.createElement("style");
  style.id="elory-prime-dynamic-color-overrides";
- const named={pink:"#b9a8c8",hotpink:"#b5a3c7",deeppink:"#a58fb9",lightpink:"#eee8f3",palevioletred:"#a995bd",mediumvioletred:"#8e7b9f"};
+ const named={pink:"#b9a8c8",hotpink:"#b5a3c7",deeppink:"#a58fb9",lightpink:"#eee8f3",palevioletred:"#a995bd",mediumvioletred:"#8e7b9f",magenta:"#aa98ba",fuchsia:"#aa98ba",orchid:"#b6a8c2",plum:"#b9aabe",violet:"#a99ab9",mediumorchid:"#a899bb",darkorchid:"#887895",thistle:"#e4dce9"};
  function hueOf(r,g,b){
   r/=255;g/=255;b/=255;const hi=Math.max(r,g,b),lo=Math.min(r,g,b),d=hi-lo;
   if(!d)return 0;let h;
@@ -10034,7 +10034,7 @@ body.prime-mode [style*="rgb(217, 107, 145)"],body.prime-mode [style*="rgb(185, 
   if(!rgb)return token;
   const h=hueOf(rgb[0],rgb[1],rgb[2]);
   // Replace pink/magenta hues only; leave red, gold, neutral, and product artwork intact.
-  if(!(h>=315&&h<=359))return token;
+  if(!(h>=300&&h<=359))return token;
   const max=Math.max(...rgb)/255,min=Math.min(...rgb)/255,l=(max+min)/2;
   const d=max-min,originalSat=d===0?0:d/(1-Math.abs(2*l-1));
   const sat=Math.min(originalSat*0.52,0.38);
@@ -10043,7 +10043,7 @@ body.prime-mode [style*="rgb(217, 107, 145)"],body.prime-mode [style*="rgb(185, 
   return rgbToHex(q.map(v=>(v+m)*255));
  }
  function rewrite(value){
-  return value.replace(/#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)|\b(?:pink|hotpink|deeppink|lightpink|palevioletred|mediumvioletred)\b/gi,convertColor);
+  return value.replace(/#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)|\b(?:pink|hotpink|deeppink|lightpink|palevioletred|mediumvioletred|magenta|fuchsia|orchid|plum|violet|mediumorchid|darkorchid|thistle)\b/gi,convertColor);
  }
  function splitSelectorList(value){
   const output=[];let start=0,round=0,square=0,quote="",escaped=false;
