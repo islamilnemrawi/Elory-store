@@ -10076,17 +10076,28 @@ body.prime-mode [style*="rgb(217, 107, 145)"],body.prime-mode [style*="rgb(185, 
   style.textContent=rules.join("\n");
   if(!style.isConnected)document.head.appendChild(style);
  }
+ const inlineOriginals=new WeakMap(),inlineLastWritten=new WeakMap(),trackedInline=new Set();
  function fixInline(root){
   const nodes=[];
   if(root.nodeType===1&&root.hasAttribute("style"))nodes.push(root);
   if(root.querySelectorAll)nodes.push(...root.querySelectorAll("[style]"));
   for(const el of nodes){
    const raw=el.getAttribute("style");if(!raw)continue;
-   const next=rewrite(raw);if(next!==raw)el.setAttribute("style",next);
+   if(!inlineOriginals.has(el)||raw!==inlineLastWritten.get(el)){inlineOriginals.set(el,raw);trackedInline.add(el);}
+   const original=inlineOriginals.get(el),next=rewrite(original);
+   if(next!==raw){inlineLastWritten.set(el,next);el.setAttribute("style",next);}
   }
  }
+ function restoreInline(){
+  for(const el of trackedInline){
+   const original=inlineOriginals.get(el),last=inlineLastWritten.get(el);
+   if(el.isConnected&&last&&el.getAttribute("style")===last)el.setAttribute("style",original);
+   inlineOriginals.delete(el);inlineLastWritten.delete(el);
+  }
+  trackedInline.clear();
+ }
  function apply(){
-  if(!document.body||!document.body.classList.contains("prime-mode")){style.textContent="";return;}
+  if(!document.body||!document.body.classList.contains("prime-mode")){style.textContent="";restoreInline();return;}
   build();fixInline(document.body);
  }
  function observe(){
