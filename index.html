@@ -7878,7 +7878,7 @@ if(sIn){
     function updatePrimeModalStatus(){
       const box=document.getElementById("primeModalStatus");
       if(!box)return;
-      if(primeStatusLoadState==="loading" || primeStatusLoadState==="idle"){
+      if(primeStatusLoadState==="loading"){
         box.innerHTML='<div class="prime-status-message">جاري التحقق من حالة عضويتك...</div>';return;
       }
       if(primeStatusLoadState==="error"){
