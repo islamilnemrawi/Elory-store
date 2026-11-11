@@ -10356,5 +10356,40 @@ body.prime-mode [style*="rgb(217, 107, 145)"],body.prime-mode [style*="rgb(185, 
  window.addEventListener("pageshow",apply);
 })();
 </script>
+<!-- Elory header action reliability + compact search: final overrides -->
+<style id="elory-header-actions-reliability-v1">
+  .header .hg-left-v19,.header .hg-right-v19,.header .hg-center-v19{position:relative;z-index:4;pointer-events:auto}
+  .header .hg-icon-v19{position:relative;z-index:5;display:inline-flex!important;align-items:center!important;justify-content:center!important;width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;padding:0!important;line-height:1!important;cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation}
+  .header .hg-icon-v19 i{font-size:17px!important;line-height:1!important;pointer-events:none}
+  .elory-reference-nav{position:relative;z-index:3}
+  .elory-reference-nav .nav-prime-btn,.elory-reference-nav .header-orders-btn{pointer-events:auto!important;cursor:pointer!important}
+  .elory-reference-nav .header-search-line{width:100%;min-width:0}
+  .elory-reference-nav .search-compact-v19{display:flex!important;align-items:center!important;gap:6px!important;width:min(100%,360px)!important;max-width:360px!important;min-height:38px!important;height:38px!important;margin:0 auto!important;padding:3px 5px 3px 10px!important;box-sizing:border-box!important;border-radius:22px!important;overflow:hidden!important}
+  .elory-reference-nav .search-compact-v19 input#searchInput{display:block!important;flex:1 1 auto!important;min-width:0!important;width:100%!important;height:30px!important;min-height:30px!important;max-height:30px!important;margin:0!important;padding:0 8px!important;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;font-size:13px!important;line-height:30px!important;transform:none!important;box-sizing:border-box!important}
+  .elory-reference-nav .search-compact-v19 .search-btn{display:inline-flex!important;flex:0 0 30px!important;align-items:center!important;justify-content:center!important;width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;max-width:30px!important;max-height:30px!important;margin:0!important;padding:0!important;border-radius:50%!important;font-size:14px!important;line-height:1!important;cursor:pointer!important;pointer-events:auto!important;transform:none!important}
+  .elory-reference-nav .search-compact-v19 .search-btn i{font-size:13px!important;pointer-events:none}
+  @media(max-width:480px){.header .hg-icon-v19{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important}.header .hg-icon-v19 i{font-size:16px!important}.elory-reference-nav .search-compact-v19{max-width:min(100%,320px)!important}}
+</style>
+<script id="elory-header-actions-delegated-v1">
+(function(){
+  'use strict';
+  if(window.__eloryHeaderActionsDelegatedV1)return;
+  window.__eloryHeaderActionsDelegatedV1=true;
+  document.addEventListener('click',function(event){
+    const target=event.target instanceof Element?event.target:null;
+    if(!target)return;
+    const button=target.closest('.header .header-account-btn,.header .header-cart-btn,.header .header-favorite-btn,.elory-reference-nav #primeHeaderBtn,.elory-reference-nav .search-compact-v19 .search-btn');
+    if(!button)return;
+    event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+    try{
+      if(button.matches('.header-account-btn')){if(typeof window.openAccount==='function')window.openAccount();}
+      else if(button.matches('.header-cart-btn')){if(typeof window.openCart==='function')window.openCart();}
+      else if(button.matches('.header-favorite-btn')){if(typeof window.openFavorites==='function')window.openFavorites();}
+      else if(button.matches('#primeHeaderBtn')){if(typeof window.openPrime==='function')window.openPrime();}
+      else if(button.matches('.search-btn')){if(typeof window.submitSearch==='function')window.submitSearch();}
+    }catch(error){console.error('Elory header action failed:',error);}
+  },true);
+})();
+</script>
 </body>
 </html>
