@@ -5733,7 +5733,7 @@ if(sIn){
 </label>
 <div class="checkout-total-card" id="checkoutTotalCard">
 <div><span>المنتجات بعد الخصم</span><strong id="checkoutSubtotal">0 ج.م</strong></div>
-<div id="checkoutPrimeDiscountRow" hidden><span>خصم Elory Prime (10%)</span><strong id="checkoutPrimeDiscount">0 ج.م</strong></div>
+<div id="checkoutPrimeDiscountRow" hidden><span>وفرتِ بفضل Elory Prime (10%)</span><strong id="checkoutPrimeDiscount">0 ج.م</strong></div>
 <div><span>الشحن</span><strong id="checkoutShipping">0 ج.م</strong></div>
 <div hidden="" id="checkoutPrimeRow"><span>Elory Prime</span><strong>300 ج.م</strong></div>
 <div class="checkout-total-line"><span>الإجمالي النهائي</span><strong id="checkoutGrandTotal">0 ج.م</strong></div>
@@ -7665,7 +7665,7 @@ if(sIn){
       const primeDiscountRow=document.getElementById("checkoutPrimeDiscountRow");
       const primeDiscountValue=document.getElementById("checkoutPrimeDiscount");
       if(primeDiscountRow)primeDiscountRow.hidden=!(primeActive&&primeDiscount>0);
-      if(primeDiscountValue)primeDiscountValue.textContent="-"+formatPrice(primeDiscount);
+      if(primeDiscountValue)primeDiscountValue.textContent=formatPrice(primeDiscount);
       const b=document.getElementById("checkoutShipping"); if(b)b.textContent=shipping===0?"مجاني 🎉":formatPrice(shipping);
       const r=document.getElementById("checkoutPrimeRow"); if(r)r.hidden=!primeFee;
 
