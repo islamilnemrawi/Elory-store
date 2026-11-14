@@ -7326,7 +7326,8 @@ main#home{
       const primeFreeAvailable=primeActive&&Number(primeStatus?.free_shipping_remaining||0)>0;
       const baseShipping=primeFreeAvailable?0:getShippingCost(gov,center);
       const couponDiscount=getCouponDiscount();
-      const shipping=(appliedCoupon?.free_shipping && !primeFreeAvailable)?0:baseShipping;
+      const couponFreeShipping=!!(appliedCoupon?.free_shipping && !primeFreeAvailable);
+      const shipping=couponFreeShipping?0:baseShipping;
       const primeFee=checkoutPrimeSelected&&!primeActive?ELORY_PRIME_PRICE:0;
       const checkoutPrimeOption=document.getElementById("checkoutPrimeOption");
       const checkoutPrimeCheckbox=document.getElementById("checkoutPrime");
@@ -7338,7 +7339,7 @@ main#home{
       const primeDiscountValue=document.getElementById("checkoutPrimeDiscount");
       if(primeDiscountRow)primeDiscountRow.hidden=!(primeActive&&primeDiscount>0);
       if(primeDiscountValue)primeDiscountValue.textContent=formatPrice(primeDiscount);
-      const b=document.getElementById("checkoutShipping"); if(b)b.textContent=shipping===0?"مجاني 🎉":formatPrice(shipping);
+      const b=document.getElementById("checkoutShipping"); if(b)b.textContent=(primeFreeAvailable||couponFreeShipping)?"مجاني 🎉":(!gov?"اختاري المحافظة":(Number(baseShipping)>0?formatPrice(shipping):"تعذر تحديد السعر"));
       const r=document.getElementById("checkoutPrimeRow"); if(r)r.hidden=!primeFee;
 
       let couponRow=document.getElementById("checkoutCouponRow");
@@ -7449,7 +7450,9 @@ main#home{
       const couponDiscount=getCouponDiscount();
       const primeFreeAvailable=primeActive&&Number(primeStatus?.free_shipping_remaining||0)>0;
       const baseShipping=primeFreeAvailable?0:getShippingCost(governorate,center);
-      const shippingCost=(appliedCoupon?.free_shipping&&!primeFreeAvailable)?0:baseShipping;
+      const couponFreeShipping=!!(appliedCoupon?.free_shipping&&!primeFreeAvailable);
+      if(!primeFreeAvailable&&!couponFreeShipping&&!(Number(baseShipping)>0)){showToast("تعذر تحديد سعر الشحن لهذه المحافظة. حدّثي الصفحة وحاولي مرة أخرى.");return;}
+      const shippingCost=couponFreeShipping?0:baseShipping;
       const primeRequested=checkoutPrimeSelected&&!primeActive;
       const primeFee=primeRequested?ELORY_PRIME_PRICE:0;
       const total=Math.max(0,subtotal+shippingCost+primeFee-couponDiscount);
@@ -9393,7 +9396,7 @@ main#home{
           const match=txt(item.id).match(/hero_(\d+)/); const templateIndex=match ? Math.max(0,Math.min(templates.length-1,Number(match[1])-1)) : i%templates.length; const slide=templates[templateIndex].cloneNode(true);
           slide.classList.remove('active','is-current','is-entering','is-leaving'); slide.removeAttribute('style');
           const fullBleed=item.fullBleed===true;
-          const fullBleedSource=fullBleed?mediaUrl(item.mediaUrl):'';
+          const fullBleedSource=fullBleed?mediaUrl(item.mediaUrl||item.imageUrl||item.mobileMediaUrl):'';
           if(fullBleed && fullBleedSource){
             slide.classList.add('elory-hero-fullbleed');
             ['.hero-copy','.hero-content','.hero-product-stage','.hero-wave-top','.hero-wave-bottom','.hero-decor'].forEach(sel=>$(sel,slide)?.remove());
