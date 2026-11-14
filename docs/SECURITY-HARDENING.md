@@ -19,11 +19,11 @@ The single migration `20261114180000_elory_security_privilege_hardening.sql` is 
 ## Intentionally preserved access
 
 - `get_customer_orders` remains available to `anon` and `authenticated` for guest order tracking. Its implementation accepts the authenticated owner or a high-entropy customer access token (minimum 24 characters).
-- `redeem_coupon` remains available to `anon`, `authenticated`, and `service_role` for the existing guest checkout and payment flow. Its original order-ownership/access-token checks are retained.
+- `redeem_coupon` remains available to `anon`, `authenticated`, and `service_role` for the existing guest checkout and payment flow. Its original order-ownership/access-token checks are retained. The Paymob callback uses the `service_role` key without a customer access token, so the regression suite exercises that exact server-side path.
 - Admin RPCs retain their authenticated role grants because the dashboard calls them. Their existing `has_staff_permission(...)` checks are retained in the private implementation; anonymous execution is not granted.
 - Staff helpers retain authenticated execution because existing RLS policies and dashboard code depend on them.
 
-The internal implementations remain SECURITY DEFINER by design. They are no longer exposed as functions in PostgREST's public schema. The `private` schema must not be added to the project's Data API Exposed Schemas.
+The internal implementations remain SECURITY DEFINER by design. They are no longer exposed as functions in PostgREST's public schema. The `private` schema must not be added to the project's Data API Exposed Schemas. The migration can detect explicit database-level or `authenticator` role overrides in `pg_db_role_setting`, but it cannot reliably read the Dashboard-managed Data API schema list; verify that list separately before applying the migration.
 
 ## Explicitly not changed
 
