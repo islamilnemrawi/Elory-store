@@ -199,7 +199,7 @@ BEGIN
     -- Empty search_path protects the privileged implementation from object
     -- shadowing. All application objects in these functions are schema-qualified.
     EXECUTE format(
-      'ALTER FUNCTION private.%I(%s) SET search_path TO ''''',
+      'ALTER FUNCTION private.%I(%s) SET search_path TO pg_catalog,
       r.proname,
       r.identity_args
     );
