@@ -3161,6 +3161,13 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
 .hero-dots{position:absolute;left:50%;right:auto;bottom:12px;z-index:42;display:flex;align-items:center;justify-content:center;gap:9px;transform:translateX(-50%);direction:ltr}
 .hero-dot{width:10px;height:10px;min-width:10px;padding:0;border:1px solid #c96a8a;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(96,40,61,.12);opacity:.82;transition:width .2s ease,background .2s ease}
 .hero-dot.active{width:28px;height:10px;border-radius:10px;background:var(--pink,#d96b91);opacity:1;box-shadow:0 2px 8px rgba(166,47,94,.24)}
+#heroSlider>.hero-slide.elory-hero-fullbleed{background:#111 !important;isolation:isolate !important;}
+#heroSlider .elory-hero-fullbleed-picture,#heroSlider .elory-hero-fullbleed-video{position:absolute !important;inset:0 !important;display:block !important;width:100% !important;height:100% !important;z-index:6 !important;overflow:hidden !important;}
+#heroSlider .elory-hero-fullbleed-picture img,#heroSlider .elory-hero-fullbleed-video{display:block !important;width:100% !important;height:100% !important;max-width:none !important;max-height:none !important;object-fit:cover !important;object-position:center center !important;border:0 !important;border-radius:0 !important;}
+#heroSlider .elory-hero-fullbleed-link{position:absolute !important;inset:0 !important;z-index:34 !important;display:block !important;background:transparent !important;cursor:pointer !important;}
+#heroSlider>.hero-slide.elory-hero-fullbleed .hero-copy,#heroSlider>.hero-slide.elory-hero-fullbleed .hero-content,#heroSlider>.hero-slide.elory-hero-fullbleed .hero-product-stage,#heroSlider>.hero-slide.elory-hero-fullbleed .hero-wave-top,#heroSlider>.hero-slide.elory-hero-fullbleed .hero-wave-bottom,#heroSlider>.hero-slide.elory-hero-fullbleed .hero-decor{display:none !important;visibility:hidden !important;}
+.hero.elory-hero-campaign-fullbleed>.elory-wave-scene{display:none !important;}
+#heroSlider>.hero-dots{z-index:45 !important;}
 .elory-wave-scene{position:absolute;top:auto;left:0;right:0;bottom:-18px;height:90px;z-index:28;overflow:visible;pointer-events:none}
 .elory-wave-top-persistent,.elory-wave-bottom-persistent{position:absolute;left:-2%;width:104%;overflow:visible;pointer-events:none}
 .elory-wave-top-persistent{top:auto;bottom:-49px;height:72px;z-index:29;animation:eloryWaveDrift 5.2s ease-in-out infinite}
@@ -7880,6 +7887,7 @@ main#home{
 
       function restartHeroTimer() {
         clearInterval(timer);
+        if (window.__eloryCampaignHeroLocked === true) return;
         timer = setInterval(() => nextHero(), AUTO_DELAY);
       }
 
@@ -9326,6 +9334,7 @@ main#home{
     const txt = v => String(v ?? '');
     const color = v => /^#[0-9a-f]{3,8}$/i.test(txt(v).trim()) ? txt(v).trim() : '';
     const imageUrl = v => /^(https?:\/\/|data:image\/(png|jpeg|webp|avif);base64,)/i.test(txt(v).trim()) ? txt(v).trim() : '';
+    const mediaUrl = v => /^https?:\/\//i.test(txt(v).trim()) ? txt(v).trim() : '';
     const actionUrl = v => {
       const u=txt(v).trim();
       if (/^(#|\/)/.test(u)) return u;
@@ -9358,45 +9367,96 @@ main#home{
       };
     };
 
-    // Hero: data-driven carousel; retains the storefront's visual slide templates and slider behavior.
+    // Hero: legacy slides remain unchanged; full-bleed campaigns use dedicated media fields.
     const slides=(Array.isArray(c.hero?.slides)?c.hero.slides:[])
       .filter(x=>x && x.isActive!==false)
       .sort((a,b)=>(+a.sortOrder||0)-(+b.sortOrder||0));
+    const requestedHeroId=new URLSearchParams(location.search).get('hero');
+    const campaignIndex=requestedHeroId?slides.findIndex(x=>String(x.id)===requestedHeroId):-1;
+    window.__eloryCampaignHeroLocked=campaignIndex>=0;
+    if(campaignIndex>0)slides.unshift(slides.splice(campaignIndex,1)[0]);
     const old=$('#heroSlider');
     if(c.hero && Array.isArray(c.hero.slides) && c.hero.slides.length && !slides.length) visible('.hero',false);
     if(c.hero && c.hero.isVisible===false) visible('.hero',false);
     if(old && slides.length){
-      const templates=$$('.hero-slide',old), dotsTemplate=$('.hero-dots',old);
+      const templates=$('.hero-slide',old), dotsTemplate=$('.hero-dots',old);
       if(templates.length){
         const slider=old.cloneNode(false); slider.removeAttribute('data-hero-ready');
         slides.forEach((item,i)=>{
           const match=txt(item.id).match(/hero_(\d+)/); const templateIndex=match ? Math.max(0,Math.min(templates.length-1,Number(match[1])-1)) : i%templates.length; const slide=templates[templateIndex].cloneNode(true);
           slide.classList.remove('active','is-current','is-entering','is-leaving'); slide.removeAttribute('style');
-          const small=$('.hero-small',slide), title=$('.hero-title',slide), desc=$('.hero-text',slide), btn=$('.hero-btn',slide), img=$('.hero-product-image',slide);
-          if(small) small.textContent=txt(item.smallText);
-          if(title){ title.textContent=txt(item.title); title.style.whiteSpace='pre-line'; }
-          let ar=$('.hero-arabic-title',slide);
-          if(txt(item.arabicTitle).trim()){
-            if(!ar && title){ ar=document.createElement('div'); ar.className='hero-arabic-title'; title.after(ar); }
-            if(ar) ar.textContent=txt(item.arabicTitle);
-          } else if(ar) visible(ar,false);
-          if(desc) desc.textContent=txt(item.description);
-          if(btn){ btn.textContent=txt(item.buttonText||'تسوقي الآن'); bindButton(btn,item.actionUrl||'#featured'); }
-          const src=imageUrl(item.imageUrl); if(img && src) img.src=src;
-          if(img && item.title) img.alt=txt(item.title);
+          const fullBleed=item.fullBleed===true;
+          const fullBleedSource=fullBleed?mediaUrl(item.mediaUrl):'';
+          if(fullBleed && fullBleedSource){
+            slide.classList.add('elory-hero-fullbleed');
+            const heroSection=old.closest('.hero');
+            if(heroSection)heroSection.classList.add('elory-hero-campaign-fullbleed');
+            ['.hero-copy','.hero-content','.hero-product-stage','.hero-wave-top','.hero-wave-bottom','.hero-decor'].forEach(sel=>$(sel,slide)?.remove());
+            slide.setAttribute('aria-label',txt(item.title||'Elory campaign'));
+            if(String(item.mediaType||'image').toLowerCase()==='video'){
+              const video=document.createElement('video');
+              video.className='elory-hero-fullbleed-video';
+              video.src=fullBleedSource;
+              const poster=imageUrl(item.posterUrl);
+              if(poster)video.poster=poster;
+              video.autoplay=true; video.muted=true; video.loop=true; video.playsInline=true; video.preload='metadata';
+              video.setAttribute('muted',''); video.setAttribute('playsinline',''); video.setAttribute('webkit-playsinline','');
+              slide.appendChild(video);
+              const attempt=video.play(); if(attempt&&typeof attempt.catch==='function')attempt.catch(()=>{});
+            }else{
+              const picture=document.createElement('picture');
+              picture.className='elory-hero-fullbleed-picture';
+              const mobile=imageUrl(item.mobileMediaUrl);
+              if(mobile){
+                const source=document.createElement('source');
+                source.media='(max-width: 700px)';
+                source.srcset=mobile;
+                picture.appendChild(source);
+              }
+              const image=document.createElement('img');
+              image.src=fullBleedSource;
+              image.alt=txt(item.title||'Elory campaign');
+              image.loading=i===0?'eager':'lazy';
+              image.decoding='async';
+              picture.appendChild(image);
+              slide.appendChild(picture);
+            }
+            const destination=actionUrl(item.actionUrl||'#featured');
+            if(destination){
+              const hitArea=document.createElement('a');
+              hitArea.className='elory-hero-fullbleed-link';
+              hitArea.href=destination;
+              hitArea.setAttribute('aria-label',txt(item.title||'مشاهدة العرض'));
+              hitArea.title=txt(item.title||'مشاهدة العرض');
+              slide.appendChild(hitArea);
+            }
+          }else{
+            const small=$('.hero-small',slide), title=$('.hero-title',slide), desc=$('.hero-text',slide), btn=$('.hero-btn',slide), img=$('.hero-product-image',slide);
+            if(small) small.textContent=txt(item.smallText);
+            if(title){ title.textContent=txt(item.title); title.style.whiteSpace='pre-line'; }
+            let ar=$('.hero-arabic-title',slide);
+            if(txt(item.arabicTitle).trim()){
+              if(!ar && title){ ar=document.createElement('div'); ar.className='hero-arabic-title'; title.after(ar); }
+              if(ar) ar.textContent=txt(item.arabicTitle);
+            } else if(ar) visible(ar,false);
+            if(desc) desc.textContent=txt(item.description);
+            if(btn){ btn.textContent=txt(item.buttonText||'تسوقي الآن'); bindButton(btn,item.actionUrl||'#featured'); }
+            const src=imageUrl(item.imageUrl); if(img && src) img.src=src;
+            if(img && item.title) img.alt=txt(item.title);
+          }
           slider.appendChild(slide);
         });
         const dots=dotsTemplate ? dotsTemplate.cloneNode(false) : document.createElement('div');
         dots.id='heroDots'; dots.className='hero-dots';
         slides.forEach((item,i)=>{
           const dot=document.createElement('button'); dot.type='button'; dot.className='hero-dot'+(i===0?' active':'');
-          dot.dataset.label=txt(item.buttonText||('الشريحة '+(i+1))); dot.setAttribute('aria-label',dot.dataset.label); dots.appendChild(dot);
+          dot.dataset.label=txt(item.buttonText||item.title||('الشريحة '+(i+1))); dot.setAttribute('aria-label',dot.dataset.label); dots.appendChild(dot);
         });
         slider.appendChild(dots); slider.dataset.heroCmsReady='true'; old.replaceWith(slider); window.heroIndex=0;
         if(typeof window.startHero==='function') window.startHero();
         else if(slides.length>1){
           let active=0;
-          const cards=$$('.hero-slide',slider), indicators=$$('.hero-dot',slider);
+          const cards=$('.hero-slide',slider), indicators=$('.hero-dot',slider);
           const show=index=>{
             active=(index+cards.length)%cards.length;
             cards.forEach((el,i)=>{el.classList.toggle('active',i===active);el.style.opacity=i===active?'1':'0';el.style.transform='translate3d(0,0,0)';});
