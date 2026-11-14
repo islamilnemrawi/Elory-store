@@ -1,3 +1,11 @@
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('elory-load-test', 'elory-load-test', true, 1048576, ARRAY['image/png'])
+ON CONFLICT (id) DO UPDATE
+SET name = EXCLUDED.name,
+    public = EXCLUDED.public,
+    file_size_limit = EXCLUDED.file_size_limit,
+    allowed_mime_types = EXCLUDED.allowed_mime_types;
+
 BEGIN;
 
 -- Re-running the seed is safe: remove only clearly marked local fixtures first.
@@ -27,7 +35,7 @@ INSERT INTO public.products (
 SELECT
   'Elory Synthetic Jewelry ' || lpad(g::text, 5, '0'),
   'Synthetic local load-test catalog row. Not a real product.',
-  'https://placehold.co/640x640/webp?text=Elory+Synthetic',
+  'http://127.0.0.1:54321/storage/v1/object/public/elory-load-test/product.png',
   'Synthetic Jewelry',
   100 + (g % 300),
   130 + (g % 300),
@@ -43,7 +51,7 @@ SELECT
   NULL,
   'ELORY-LOAD-' || lpad(g::text, 5, '0'),
   0.1,
-  jsonb_build_array('https://placehold.co/640x640/webp?text=Elory+Synthetic'),
+  jsonb_build_array('http://127.0.0.1:54321/storage/v1/object/public/elory-load-test/product.png'),
   '[]'::jsonb
 FROM generate_series(1, 10000) AS g;
 
@@ -55,11 +63,11 @@ INSERT INTO public.products (
 VALUES (
   'Elory Synthetic Stock Race Fixture',
   'One-unit concurrency fixture. Synthetic local test only.',
-  'https://placehold.co/640x640/webp?text=Elory+Race',
+  'http://127.0.0.1:54321/storage/v1/object/public/elory-load-test/product.png',
   'Synthetic Jewelry',
   100, 120, 40, 'ELORY-LOAD-RACE-CODE', 1, 0, false, true, now(),
   '[]'::jsonb, '[]'::jsonb, NULL, 'ELORY-LOAD-RACE', 0.1,
-  jsonb_build_array('https://placehold.co/640x640/webp?text=Elory+Race'),
+  jsonb_build_array('http://127.0.0.1:54321/storage/v1/object/public/elory-load-test/product.png'),
   '[]'::jsonb
 );
 

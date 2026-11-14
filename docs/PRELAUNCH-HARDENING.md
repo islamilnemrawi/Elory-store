@@ -18,7 +18,7 @@ The scripts block the known production project ID and require a localhost databa
 
 ## Prerequisites
 
-Install Supabase CLI, Docker Desktop (or compatible Docker runtime), Node.js 20+, PostgreSQL client psql, and k6 for load tests.
+Install Supabase CLI, Docker Desktop (or compatible Docker runtime), Node.js 20+, PostgreSQL client psql, Python 3, curl, and k6 for load tests.
 
 ## 1. Export the schema-only baseline
 
@@ -61,7 +61,7 @@ Only after local integration tests pass:
 ELORY_LOAD_TEST_APPROVED=YES scripts/seed-10000.sh
 ~~~
 
-The seed creates 10,000 synthetic products with unique SKU/code values and one separate product with exactly one unit for the stock-race scenario. All synthetic rows are clearly prefixed ELORY-LOAD-.
+The seed creates 10,000 synthetic products with unique SKU/code values, one separate product with exactly one unit for the stock-race scenario, and uploads a generated 512×512 PNG into a local-only public Supabase Storage bucket. All synthetic rows are clearly prefixed ELORY-LOAD-. Product image URLs point to that local Storage object.
 
 Cleanup:
 
@@ -117,7 +117,7 @@ k6 run \
 
 Expected: exactly one successful order consumes the last unit; other attempts receive HTTP 409 inventory conflicts. The k6 threshold requires exactly one winner.
 
-The script samples a synthetic product image every tenth iteration. Image latency is reported separately.
+The script samples the synthetic image from local Supabase Storage every tenth iteration. This measures the local Storage serving path, not the production R2/Storage/CDN throughput.
 
 ## 5. Paymob TEST
 

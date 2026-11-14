@@ -7,6 +7,11 @@ DELETE FROM public.orders
 DELETE FROM public.products
  WHERE sku LIKE 'ELORY-LOAD-%';
 
+DELETE FROM storage.objects
+ WHERE bucket_id = 'elory-load-test';
+DELETE FROM storage.buckets
+ WHERE id = 'elory-load-test';
+
 DELETE FROM public.shipping_centers
  WHERE governorate = 'ELORY LOAD TEST';
 DELETE FROM public.shipping_governorates
