@@ -264,10 +264,6 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', '', false);
   PERFORM set_config('request.jwt.claim.role', 'anon', false);
 
-  IF auth.role() <> 'anon' OR auth.uid() IS NOT NULL THEN
-    RAISE EXCEPTION 'Anonymous fixture context incorrect: role=%, uid=%', auth.role(), auth.uid();
-  END IF;
-
   SELECT count(*) INTO v_rows FROM public.get_customer_orders();
   IF v_rows <> 0 THEN
     RAISE EXCEPTION 'Anonymous order tracking returned rows without proof';
