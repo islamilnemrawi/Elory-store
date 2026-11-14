@@ -7,6 +7,11 @@ DELETE FROM public.orders
 DELETE FROM public.products
  WHERE sku LIKE 'ELORY-LOAD-%';
 
+DELETE FROM public.shipping_centers
+ WHERE governorate = 'ELORY LOAD TEST';
+DELETE FROM public.shipping_governorates
+ WHERE governorate = 'ELORY LOAD TEST';
+
 DO $$
 DECLARE
   v_count integer;

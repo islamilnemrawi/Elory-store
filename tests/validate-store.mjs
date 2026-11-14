@@ -66,6 +66,10 @@ assert.match(migration, /elory_claim_order_payment_session/);
 assert.match(migration, /uq_orders_idempotency_key/);
 assert.match(migration, /idx_orders_pending_payment_expiry/);
 
+const localSeed = fs.readFileSync(path.join(root, 'supabase/seed.sql'), 'utf8');
+assert.match(localSeed, /ELORY LOAD TEST/);
+assert.match(localSeed, /LOCAL TEST CENTER/);
+
 const load = fs.readFileSync(path.join(root, 'tests/load/elory-prelaunch.js'), 'utf8');
 assert.match(load, /dmttevcncsxzbamazmmq/);
 assert.match(load, /ELORY_LOAD_TEST_APPROVED/);

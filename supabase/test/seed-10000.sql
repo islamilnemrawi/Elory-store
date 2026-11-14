@@ -1,6 +1,19 @@
 BEGIN;
 
 -- Re-running the seed is safe: remove only clearly marked local fixtures first.
+INSERT INTO public.shipping_governorates (governorate, price, centers_enabled, active)
+VALUES ('ELORY LOAD TEST', 25, true, true)
+ON CONFLICT (governorate) DO UPDATE
+SET price = EXCLUDED.price,
+    centers_enabled = EXCLUDED.centers_enabled,
+    active = EXCLUDED.active,
+    updated_at = now();
+
+DELETE FROM public.shipping_centers
+WHERE governorate = 'ELORY LOAD TEST';
+INSERT INTO public.shipping_centers (governorate, center, price, active)
+VALUES ('ELORY LOAD TEST', 'LOCAL TEST CENTER', 25, true);
+
 DELETE FROM public.orders
  WHERE notes LIKE 'ELORY_LOAD_TEST:%';
 DELETE FROM public.products

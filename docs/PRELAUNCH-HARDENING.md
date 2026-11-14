@@ -12,7 +12,7 @@
 
 ## Cost and production safety
 
-No paid Supabase branch is created. No production migration, order, product, or payment is written by these scripts. The only remote setup action is a schema-only export to a local ignored file. The baseline contains schema definitions only, not customer/order rows or Storage objects.
+No paid Supabase branch is created. No production migration, order, product, or payment is written by these scripts. The only remote setup action is a schema-only export to a local ignored file. The baseline contains schema definitions only, not customer/order rows or Storage objects. A tiny local seed adds one synthetic shipping governorate and center so the checkout tests do not depend on production shipping data.
 
 The scripts block the known production project ID and require a localhost database URL before seeding, cleanup, or load tests. Local Supabase consumes local disk/CPU/network and Docker image downloads, not hosted Supabase quota. It does not incur a Supabase branch fee.
 
