@@ -95,6 +95,9 @@ BEGIN
 END;
 $metadata$;
 
+-- Fire the internal order trigger after its pg_catalog-only search_path update.
+INSERT INTO public.orders(id) VALUES (4242);
+
 -- Verify existing public tables no longer grant out-of-band privileges.
 DO $table_privileges$
 DECLARE
