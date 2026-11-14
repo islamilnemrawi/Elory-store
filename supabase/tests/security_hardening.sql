@@ -92,6 +92,20 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'Private order notification trigger is not hardened to pg_catalog-only search_path';
   END IF;
+
+  IF has_function_privilege('anon', 'private.elora_notify_new_order()', 'EXECUTE')
+     OR has_function_privilege('authenticated', 'private.elora_notify_new_order()', 'EXECUTE')
+     OR has_function_privilege('service_role', 'private.elora_notify_new_order()', 'EXECUTE')
+     OR EXISTS (
+       SELECT 1
+         FROM pg_proc p
+         CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) AS function_acl
+        WHERE p.oid = 'private.elora_notify_new_order()'::regprocedure
+          AND function_acl.grantee = 0
+          AND function_acl.privilege_type = 'EXECUTE'
+     ) THEN
+    RAISE EXCEPTION 'Private order notification trigger remains directly executable by API roles or PUBLIC';
+  END IF;
 END;
 $metadata$;
 
