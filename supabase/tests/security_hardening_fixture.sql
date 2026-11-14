@@ -264,7 +264,7 @@ END;
 $$;
 
 -- Mirror the production direct grants before the hardening migration.
-REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC;
+REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.admin_apply_shipping_governorate_price(text,numeric) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_delete_order(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_delete_shipping_center(text) TO authenticated;
