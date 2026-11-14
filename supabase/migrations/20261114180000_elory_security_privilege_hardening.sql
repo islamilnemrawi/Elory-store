@@ -196,10 +196,10 @@ BEGIN
       r.identity_args
     );
 
-    -- Empty search_path protects the privileged implementation from object
-    -- shadowing. All application objects in these functions are schema-qualified.
+    -- A pg_catalog-only search_path protects the privileged implementation from
+    -- object shadowing. All application objects in these functions are schema-qualified.
     EXECUTE format(
-      'ALTER FUNCTION private.%I(%s) SET search_path TO pg_catalog,
+      'ALTER FUNCTION private.%I(%s) SET search_path TO pg_catalog',
       r.proname,
       r.identity_args
     );
