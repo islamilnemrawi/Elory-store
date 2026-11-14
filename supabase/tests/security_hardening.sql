@@ -189,6 +189,69 @@ END;
 $rls_dependency$;
 RESET ROLE;
 
+-- Exercise every dashboard/admin RPC wrapper through the original PostgREST
+-- function names while authenticated. The synthetic staff gate accepts a
+-- non-null auth.uid(), so failures here indicate wrapper/grant/schema issues.
+SET ROLE authenticated;
+DO $dashboard_rpc_compatibility$
+DECLARE
+  v_ok boolean;
+  v_count integer;
+  v_json jsonb;
+BEGIN
+  PERFORM set_config(
+    'request.jwt.claim.sub',
+    '10000000-0000-4000-8000-000000000099',
+    false
+  );
+
+  IF public.has_staff_permission('fixture.view') IS NOT TRUE
+     OR public.elora_admin_allowed() IS NOT TRUE
+     OR public.is_elora_staff() IS NOT TRUE THEN
+    RAISE EXCEPTION 'Authenticated staff helper RPCs did not execute';
+  END IF;
+
+  IF public.admin_get_my_staff_profile() IS NULL THEN
+    RAISE EXCEPTION 'Staff profile RPC did not execute for authenticated user';
+  END IF;
+
+  v_json := public.admin_apply_shipping_governorate_price('Test Governorate', 25);
+  PERFORM public.admin_delete_order('10000000-0000-4000-8000-000000000010');
+  PERFORM public.admin_delete_shipping_center('test-center');
+  PERFORM public.admin_save_shipping_center('test-center', 'Test Governorate', 'Test Center', 25, true);
+  PERFORM public.admin_save_shipping_governorate('Test Governorate', 25, true, true);
+  PERFORM public.admin_set_prime_subscription_active('10000000-0000-4000-8000-000000000011', true);
+  PERFORM public.admin_set_staff_active('10000000-0000-4000-8000-000000000012', true);
+  PERFORM public.admin_update_order_status('10000000-0000-4000-8000-000000000013', 'جاري التجهيز');
+  PERFORM public.admin_upsert_staff_by_email('fixture@example.test', 'Fixture Staff', 'staff', '{}'::jsonb, true);
+
+  SELECT success INTO v_ok
+    FROM public.admin_grant_prime_by_email('fixture@example.test', 30);
+  IF v_ok IS NOT TRUE THEN
+    RAISE EXCEPTION 'Prime grant RPC returned an unsuccessful fixture result';
+  END IF;
+
+  SELECT count(*) INTO v_count FROM public.admin_list_orders(10);
+  SELECT count(*) INTO v_count FROM public.admin_list_prime_subscriptions();
+  SELECT count(*) INTO v_count FROM public.admin_list_staff();
+  v_json := public.admin_list_shipping();
+
+  IF v_json IS NULL THEN
+    RAISE EXCEPTION 'Shipping list RPC returned NULL';
+  END IF;
+
+  IF (public.get_my_prime_status()->>'active')::boolean IS NOT TRUE THEN
+    RAISE EXCEPTION 'Prime status RPC did not execute for authenticated user';
+  END IF;
+
+  v_json := public.register_dashboard_push_device('test-device-token-0123456789', 'android');
+  IF (v_json->>'ok')::boolean IS NOT TRUE THEN
+    RAISE EXCEPTION 'Dashboard push-device registration wrapper failed';
+  END IF;
+END;
+$dashboard_rpc_compatibility$;
+RESET ROLE;
+
 -- Public guest endpoints remain usable only with a valid auth identity or
 -- access token; the anonymous no-token path must not reveal order rows.
 SET ROLE anon;
