@@ -9704,6 +9704,9 @@ main#home{
   const out=[];
   for(let i=0;i<sourceStyle.length;i++){
    const property=sourceStyle[i], value=sourceStyle.getPropertyValue(property);
+   // Canonical Prime theme tokens must remain controlled by body.prime-mode.
+   // The legacy normalizer must not regenerate them from later :root rules.
+   if(/^--(pink|pink-dark|pink-light|pink-soft|announcement|border)$/.test(property))continue;
    const custom=property.startsWith("--") && (value.includes("#") || value.includes("rgb") || value.includes("hsl") || /pink|magenta|fuchsia|violet/i.test(value));
    if(!allowed.test(property)&&!custom)continue;
    const next=rewrite(value);
