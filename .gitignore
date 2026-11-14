@@ -1,0 +1,8 @@
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+supabase/.env.*
+!supabase/.env.test.example
+supabase/migrations/20261114000000_remote_schema.sql
+test-results/
+*.k6.json

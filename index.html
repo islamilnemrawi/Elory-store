@@ -4811,6 +4811,12 @@ main#home{
 }
 </style>
 
+<style id="elory-database-pagination-styles">
+.shop-products-pager{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:22px 8px;direction:rtl}
+.shop-page-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:22px;padding:9px 18px;font:inherit;font-weight:700;cursor:pointer}
+.shop-page-btn:disabled{opacity:.42;cursor:not-allowed}
+.shop-products-pager span{font-size:12px;color:var(--muted);font-weight:600}
+</style>
 </head>
 <body>
 <div aria-live="polite" class="cart-add-notice" id="cartAddNotice" role="status"><img alt="" id="cartAddNoticeImage"/><span id="cartAddNoticeText"></span></div>
@@ -5118,6 +5124,7 @@ main#home{
 <div aria-label="التنقل بين الأقسام" class="category-context-nav" id="categoryContextNav"></div>
 <div class="shop-category-pills" id="shopCategoryPills"></div>
 <div class="products-grid shop-products-grid" id="shopProductsGrid"></div>
+<div aria-label="التنقل بين صفحات المنتجات" class="shop-products-pager" id="shopProductsPager"></div>
 </div>
 </section>
 <section aria-hidden="true" aria-live="polite" class="product-details-page" hidden="" id="productDetailsPage">
@@ -5540,6 +5547,19 @@ main#home{
     let storeCategories = [];
     let cart = [];
 
+    function cacheCatalogProducts(rows) {
+      const cache = new Map(products.map(product => [String(product.id), product]));
+      const incoming = (Array.isArray(rows) ? rows : []).map(normalizeProduct);
+      incoming.forEach(product => {
+        const id = String(product.id);
+        cache.delete(id);
+        cache.set(id, product);
+      });
+      // Retain a bounded working set for cart/detail lookups; database pages remain authoritative.
+      products = Array.from(cache.values()).slice(-500);
+      return incoming;
+    }
+
     const PRIME_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 
     let primeActive = false;
@@ -5884,6 +5904,67 @@ main#home{
       }
     }
 
+    async function eloryFetchCatalogPage(options = {}) {
+      const baseUrl = String(window.SUPABASE_URL || '').trim();
+      const publishableKey = String(window.SUPABASE_PUBLISHABLE_KEY || '').trim();
+      if (!baseUrl || !publishableKey) throw new Error('Elory catalog: Supabase public configuration is missing');
+      const limit = Math.max(1, Math.min(24, Number(options.limit) || 12));
+      const offset = Math.max(0, Number(options.offset) || 0);
+      const params = new URLSearchParams();
+      params.set('select', 'id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at,stock,code,sku');
+      params.set('active', 'eq.true');
+      params.set('limit', String(limit));
+      params.set('offset', String(offset));
+      const search = String(options.query || '').toLocaleLowerCase('ar').replace(/[^0-9a-zA-Z\u0600-\u06FF\s_-]/g, ' ').trim().replace(/\s+/g, ' ').slice(0, 80);
+      if (search) {
+        const term = '*' + search + '*';
+        params.set('or', '(name.ilike.' + term + ',category.ilike.' + term + ',code.ilike.' + term + ',sku.ilike.' + term + ')');
+      }
+      const category = String(options.category || '').replace(/[^0-9a-zA-Z\u0600-\u06FF\s_-]/g, ' ').trim().replace(/\s+/g, ' ').slice(0, 80);
+      if (category) params.set('category', 'ilike.*' + category + '*');
+      const min = options.minPrice === null || options.minPrice === undefined || options.minPrice === '' ? null : Number(options.minPrice);
+      const max = options.maxPrice === null || options.maxPrice === undefined || options.maxPrice === '' ? null : Number(options.maxPrice);
+      if (min !== null && Number.isFinite(min) && min >= 0) params.append('price', 'gte.' + String(min));
+      if (max !== null && Number.isFinite(max) && max >= 0) params.append('price', 'lte.' + String(max));
+      const sortMap = {newest:'created_at.desc,id.desc',priceLow:'price.asc,id.asc',priceHigh:'price.desc,id.desc',name:'name.asc,id.asc'};
+      params.set('order', sortMap[options.sort] || sortMap.newest);
+      let lastError = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        try {
+          const response = await fetch(baseUrl + '/rest/v1/products?' + params.toString(), {
+            method:'GET',
+            headers:{apikey:publishableKey,Accept:'application/json',Prefer:'count=exact'},
+            cache:'no-store',
+            signal:controller.signal
+          });
+          const responseText = await response.text();
+          let rows = [];
+          try { rows = responseText ? JSON.parse(responseText) : []; } catch (_) { throw new Error('Elory catalog returned invalid JSON'); }
+          if (!response.ok) {
+            const message = rows?.message || rows?.details || responseText || ('HTTP ' + response.status);
+            const error = new Error('Elory catalog HTTP ' + response.status + ': ' + message);
+            error.status = response.status;
+            if (response.status !== 429 && response.status < 500) throw error;
+            throw error;
+          }
+          if (!Array.isArray(rows)) throw new Error('Elory catalog response is not an array');
+          const range = response.headers.get('content-range') || '';
+          const part = range.split('/')[1];
+          const total = part && part !== '*' && Number.isFinite(Number(part)) ? Number(part) : null;
+          return {rows,total,offset,limit,hasMore:total === null ? rows.length === limit : offset + rows.length < total};
+        } catch (error) {
+          lastError = error;
+          const retryable = !error?.status || error.status === 429 || error.status >= 500 || error.name === 'AbortError';
+          if (!retryable || attempt === 2) break;
+          console.warn('Elory catalog query retry ' + (attempt + 1) + '/2:', error);
+          await new Promise(resolve => setTimeout(resolve, 350 * Math.pow(2, attempt)));
+        } finally { clearTimeout(timeout); }
+      }
+      throw lastError || new Error('Elory catalog request failed');
+    }
+
     /* =========================================================
        SUPABASE LIVE CONNECTION — restored from the earlier working store build
        ========================================================= */
@@ -5990,58 +6071,21 @@ main#home{
     }
     async function loadProductsInternal(silent=false) {
       const client = ensureSupabaseClient();
-      if (!client) {
-        products = [];
-        filteredProducts = [];
-        showProductLoadIssue();
-        return;
-      }
-
-      // The storefront catalog is public. Read it through PostgREST with the
-      // publishable key only, so a customer's authenticated session cannot
-      // accidentally activate staff-only restrictive RLS policies.
-      const publicQuery =
-        "select=id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at&active=eq.true&order=created_at.desc";
-
+      if (!client) { products=[]; filteredProducts=[]; showProductLoadIssue(); return; }
+      const searchValue = document.getElementById('searchInput')?.value || '';
       try {
-        let rows = [];
-        let publicError = null;
-
-        try {
-          rows = await eloryFetchRows("products", publicQuery);
-        } catch (error) {
-          publicError = error;
-          console.warn("Elory public products REST query failed; trying catalog_products:", error);
-        }
-
-        if (publicError) {
-          try {
-            rows = await eloryFetchRows("catalog_products", publicQuery);
-            publicError = null;
-          } catch (error) {
-            publicError = error;
-          }
-        }
-
-        if (publicError) throw publicError;
-
-        products = rows.map(normalizeProduct);
-        const searchValue=document.getElementById("searchInput")?.value||"";
-        filteredProducts=products.filter(product=>productMatchesSearch(product,String(searchValue).trim().toLocaleLowerCase("ar")));
+        const page = await eloryFetchCatalogPage({query:searchValue,limit:8,offset:0,sort:'newest'});
+        products = page.rows.map(normalizeProduct);
+        filteredProducts = [...products];
         updateProductSearchSuggestions(searchValue);
         refreshCartFromProducts();
-        const shopPage=document.getElementById("shopPage");
-        if(shopPage?.classList.contains("show")){
-          shopBaseProducts=currentShopCategory
-            ?products.filter(product=>String(product.category||"").toLowerCase().includes(String(currentShopCategory).toLowerCase()))
-            :[...products];
-          applyShopFilters();
-        }else renderProducts();
-        if(productDetailState) renderProductDetails();
-
+        const shopPage = document.getElementById('shopPage');
+        if (shopPage?.classList.contains('show')) await loadShopProducts(shopPageNumber || 1);
+        else renderProducts();
+        if (productDetailState) renderProductDetails();
       } catch (error) {
-        if(!silent)console.warn("Elory Store product query failed:", error);
-        if(products.length)renderProducts();
+        console.error('Elory Store product page load failed:', error);
+        if (products.length) renderProducts();
         else showProductLoadIssue();
       }
     }
@@ -6733,16 +6777,31 @@ main#home{
     }
 
     function handleSearch(value) {
-      const query=String(value||"").trim().toLocaleLowerCase("ar");
+      const query = String(value || '').trim().toLocaleLowerCase('ar').slice(0, 80);
       updateProductSearchSuggestions(value);
-      const shopPage=document.getElementById("shopPage");
-      if(shopPage?.classList.contains("show")){
-        shopSearchQuery=query;
-        applyShopFilters();
+      const shopPage = document.getElementById('shopPage');
+      if (shopPage?.classList.contains('show')) {
+        shopSearchQuery = query;
+        if (shopSearchTimer) clearTimeout(shopSearchTimer);
+        shopSearchTimer = setTimeout(() => { void loadShopProducts(1); }, 250);
         return;
       }
-      filteredProducts=products.filter(product=>productMatchesSearch(product,query));
-      renderProducts();
+      if (homeSearchTimer) clearTimeout(homeSearchTimer);
+      const sequence = ++homeSearchSequence;
+      homeSearchTimer = setTimeout(async () => {
+        try {
+          const page = await eloryFetchCatalogPage({query,limit:8,offset:0,sort:'newest'});
+          if (sequence !== homeSearchSequence) return;
+          products = page.rows.map(normalizeProduct);
+          filteredProducts = [...products];
+          updateProductSearchSuggestions(value);
+          renderProducts();
+        } catch (error) {
+          if (sequence !== homeSearchSequence) return;
+          console.error('Elory live product search failed:', error);
+          showProductLoadIssue();
+        }
+      }, 250);
     }
 
     function submitSearch(){
@@ -6758,7 +6817,7 @@ main#home{
       filteredProducts=[...products];
       updateProductSearchSuggestions("");
       if(document.getElementById("shopPage")?.classList.contains("show")) applyShopFilters();
-      else renderProducts();
+      else void loadProducts();
     }
 
     /* =========================================================
@@ -6800,14 +6859,8 @@ main#home{
     }
 
     function saveCart() {
-
-      localStorage.setItem(
-        "elory_cart",
-        JSON.stringify(cart)
-      );
-
+      localStorage.setItem("elory_cart", JSON.stringify(cart));
       updateCartCount();
-
     }
 
     function updateCartCount() {
@@ -7420,6 +7473,7 @@ main#home{
       const total=Math.max(0,subtotal+shippingCost+primeFee-couponDiscount);
       const user=hasSupabaseClient()?(await elorySupabase.auth.getUser()).data?.user:null;
       const order={user_id:user?.id||null,customer_access_token:customerAccessToken,customer_name:customerName,phone,governorate,center,address,notes:primeRequested?`طلب اشتراك Elory Prime بقيمة 300 ج.م — ${notes?notes+" — ":""}التفعيل بعد تسليم الطلب.`:notes,items:cart.map(item=>({product_id:item.id,name:item.name,price:getPrimeUnitPrice(getCartItemCurrentPrice(item)),quantity:Number(item.qty||0),image:item.image||null,color:item.color||null,color_hex:item.colorHex||null,size:item.size||null,code:item.code||null})),subtotal,shipping_cost:shippingCost,total,payment_method:selectedPaymentMethod,prime:!!(primeActive||primeRequested),prime_requested:primeRequested,status:"جديد",coupon_code:appliedCoupon?.code||null,coupon_discount:couponDiscount,coupon_free_shipping:!!(appliedCoupon?.free_shipping&&!primeFreeAvailable),prime_discount:primeActive?getPrimeDiscountTotal():0,prime_free_shipping:primeFreeAvailable};
+      order.idempotency_key=await getCheckoutIdempotencyKey(order);
       const button=document.querySelector('#checkoutForm button[type="submit"]');
       if(button){button.disabled=true;button.dataset.oldText=button.textContent;button.textContent="جاري إرسال الطلب...";}
       try{
@@ -7428,6 +7482,7 @@ main#home{
           if(!endpoint){showToast("بوابة Paymob تحتاج رابط الـBackend أولاً");return;}
           const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json",...(await getEloryAuthHeaders())},body:JSON.stringify({type:"order_payment",...order})});
           const result=await response.json().catch(()=>({}));
+          if(result?.retry_with_new_key)clearCheckoutIdempotencyKey();
           if(!response.ok||!result.checkout_url){
             const details=result?.details?.detail||result?.details?.error||result?.error||"تعذر إنشاء عملية الدفع";
             throw new Error(details);
@@ -7436,19 +7491,29 @@ main#home{
             sessionStorage.setItem("elory_pending_payment",JSON.stringify({
               type:"order",
               reference:String(result.special_reference||result.order_id||""),
+              idempotency_key:order.idempotency_key,
               createdAt:Date.now()
             }));
           }catch(e){}
           window.location.assign(result.checkout_url);
           return;
         }
-        const {error}=await elorySupabase.from("orders").insert([order]);
-        if(error)throw error;
+        const endpoint=window.ELORY_PAYMENT_CONFIG?.createPaymentUrl||"";
+        if(!endpoint)throw new Error("خدمة إنشاء الطلب غير متاحة حاليًا");
+        const codResponse=await fetch(endpoint,{
+          method:"POST",
+          headers:{"Content-Type":"application/json",...(await getEloryAuthHeaders())},
+          body:JSON.stringify({type:"order_payment",...order})
+        });
+        const codResult=await codResponse.json().catch(()=>({}));
+        if(codResult?.retry_with_new_key)clearCheckoutIdempotencyKey();
+        if(!codResponse.ok||codResult?.ok!==true||!codResult?.order_id)throw new Error(codResult?.error||"تعذر تسجيل طلب الدفع عند الاستلام");
         let createdOrderSnapshot=null;
         try{
           const history=await elorySupabase.rpc("get_customer_orders",{p_access_token:customerAccessToken,p_phone:null});
-          if(!history.error&&Array.isArray(history.data)) createdOrderSnapshot=history.data.find(x=>String(x.status||"")!=="CANCELLED")||history.data[0]||null;
+          if(!history.error&&Array.isArray(history.data))createdOrderSnapshot=history.data.find(x=>String(x.id)===String(codResult.order_id))||null;
         }catch(e){console.warn("Order history snapshot unavailable",e);}
+        if(!createdOrderSnapshot)createdOrderSnapshot={id:codResult.order_id,order_number:codResult.order_number,status:codResult.status||"طلب جديد"};
         // رقم الطلب + ربط العميل يتم توليدهما داخل Supabase عبر الـtriggers الحالية.
         // لا نستخدم select() هنا حتى لا يعتمد نجاح الطلب على صلاحية قراءة الطلب من جهة العميل.
         // كود المنتج وسعر الجملة لا يتم إرسالهما للعميل؛ الداشبورد يضيفهما داخليًا من بيانات المنتجات.
@@ -7456,7 +7521,8 @@ main#home{
           const cr=await elorySupabase.rpc("redeem_coupon",{p_coupon_id:appliedCoupon.id,p_order_id:createdOrderSnapshot?.id||null,p_access_token:customerAccessToken});
           if(cr.error)console.warn("Coupon redemption failed:",cr.error);
         }
-        const successOrder={...order,order_number:createdOrderSnapshot?.order_number||createdOrderSnapshot?.id||"",status:createdOrderSnapshot?.status||order.status,customer_name:customerName,governorate,center,address,payment_method:selectedPaymentMethod,items:order.items,subtotal,shipping_cost:shippingCost,total};
+        const successOrder={...order,order_number:createdOrderSnapshot?.order_number||createdOrderSnapshot?.id||"",status:createdOrderSnapshot?.status||order.status,customer_name:customerName,governorate,center,address,payment_method:selectedPaymentMethod,items:Array.isArray(createdOrderSnapshot?.items)?createdOrderSnapshot.items:order.items,subtotal,shipping_cost:Number(createdOrderSnapshot?.shipping_cost??shippingCost),total:Number(createdOrderSnapshot?.total??total)};
+        clearCheckoutIdempotencyKey();
         cart=[];saveCart();cartPrimeSelected=false;appliedCoupon=null;closeModal("checkoutModal");closeModal("cartModal");document.getElementById("checkoutForm").reset();checkoutPrimeSelected=false;updateCheckoutTotals();
         animateOrderToOrdersIcon(successOrder.items?.[0]?.image||"");
         showOrderSuccessPage(successOrder,primeRequested);
@@ -8205,10 +8271,58 @@ main#home{
     const FAVORITE_DETAIL_CACHE_MS=45000;
     let authMode = "login";
     let selectedPaymentMethod = "cash_on_delivery";
+    const ELORY_CHECKOUT_KEY_STORAGE = "elory_checkout_idempotency_key";
+    const ELORY_CHECKOUT_FINGERPRINT_STORAGE = "elory_checkout_fingerprint";
+    function createEloryUuid(){
+      if(window.crypto?.randomUUID)return window.crypto.randomUUID();
+      if(!window.crypto?.getRandomValues)throw new Error('هذا المتصفح لا يوفر مولدًا آمنًا لمفتاح الطلب');
+      const bytes=new Uint8Array(16);window.crypto.getRandomValues(bytes);
+      bytes[6]=(bytes[6]&0x0f)|0x40;bytes[8]=(bytes[8]&0x3f)|0x80;
+      const hex=Array.from(bytes,value=>value.toString(16).padStart(2,'0')).join('');
+      return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);
+    }
+    async function getCheckoutIdempotencyKey(order){
+      const serialized=JSON.stringify(order||{});
+      let fingerprint='';
+      try{
+        if(window.crypto?.subtle&&window.TextEncoder){
+          const digest=await window.crypto.subtle.digest('SHA-256',new TextEncoder().encode(serialized));
+          fingerprint=Array.from(new Uint8Array(digest),value=>value.toString(16).padStart(2,'0')).join('');
+        }else{
+          let hash=2166136261;
+          for(let i=0;i<serialized.length;i++){hash^=serialized.charCodeAt(i);hash=Math.imul(hash,16777619);}
+          fingerprint='fnv1a-'+(hash>>>0).toString(16);
+        }
+        const saved=sessionStorage.getItem(ELORY_CHECKOUT_KEY_STORAGE)||'';
+        const savedFingerprint=sessionStorage.getItem(ELORY_CHECKOUT_FINGERPRINT_STORAGE)||'';
+        if(savedFingerprint===fingerprint&&/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(saved))return saved;
+        const key=createEloryUuid();
+        sessionStorage.setItem(ELORY_CHECKOUT_KEY_STORAGE,key);
+        sessionStorage.setItem(ELORY_CHECKOUT_FINGERPRINT_STORAGE,fingerprint);
+        return key;
+      }catch(error){
+        console.error('Elory idempotency fingerprint could not be stored:',error);
+        return createEloryUuid();
+      }
+    }
+    function clearCheckoutIdempotencyKey(){
+      try{
+        sessionStorage.removeItem(ELORY_CHECKOUT_KEY_STORAGE);
+        sessionStorage.removeItem(ELORY_CHECKOUT_FINGERPRINT_STORAGE);
+      }catch(_){}
+    }
     let shopProducts = [];
     let shopBaseProducts = [];
     let shopSearchQuery = "";
     let shopSortOrder = "newest";
+    let shopPageNumber = 1;
+    const shopPageSize = 12;
+    let shopTotalCount = null;
+    let shopHasMore = false;
+    let shopRequestVersion = 0;
+    let shopSearchTimer = null;
+    let homeSearchTimer = null;
+    let homeSearchSequence = 0;
     let currentShopCategory = "";
 
     function loadFavorites(){
@@ -8438,13 +8552,8 @@ main#home{
       const shop=document.getElementById("shopPage"); if(!shop) return; shop.classList.add("show"); shop.setAttribute("aria-hidden","false");
       shop.classList.toggle("category-only", !!category);
       currentShopCategory=category||"";
-      let source=[...products];
-      if(category){
-        const needle=String(category).trim().toLowerCase();
-        const exact=products.filter(p=>String(p.category||"").trim().toLowerCase()===needle);
-        source=exact.length?exact:products.filter(p=>String(p.category||"").toLowerCase().includes(needle));
-      }
-      shopBaseProducts=source;
+      shopPageNumber = 1;
+      shopBaseProducts = [];
       document.getElementById("shopPageTitle").textContent=title||category||"كل المنتجات";
       document.getElementById("shopPageSubtitle").textContent=category?`منتجات ${title||category} المختارة بعناية.`:"اكتشفي تشكيلتنا كاملة في مكان واحد.";
       renderCategoryContextNav();
@@ -8494,42 +8603,57 @@ main#home{
     }
 
     function renderShopProducts(){
-      const grid=document.getElementById("shopProductsGrid"); if(!grid) return;
+      const grid=document.getElementById('shopProductsGrid');
+      const pager=document.getElementById('shopProductsPager');
+      if(!grid)return;
       if(!shopProducts.length){
-        const hasFilters=!!shopSearchQuery||document.getElementById("shopPriceMin")?.value!==""||document.getElementById("shopPriceMax")?.value!=="";
-        grid.innerHTML=`<div class="search-empty-state"><i class="fa-solid fa-magnifying-glass"></i><strong>${hasFilters?"لا توجد منتجات مطابقة":"لا توجد منتجات في هذا القسم حالياً"}</strong><span>${hasFilters?"جرّبي تعديل البحث أو نطاق السعر.":"ستظهر المنتجات عند توفرها في المتجر."}</span>${hasFilters?'<button type="button" onclick="clearShopFilters()">مسح البحث والتصفية</button>':""}</div>`;
-        return;
+        const hasFilters=!!shopSearchQuery||document.getElementById('shopPriceMin')?.value!==''||document.getElementById('shopPriceMax')?.value!=='';
+        grid.innerHTML=`<div class="search-empty-state"><i class="fa-solid fa-magnifying-glass"></i><strong>${hasFilters?'لا توجد منتجات مطابقة':'لا توجد منتجات في هذا القسم حالياً'}</strong><span>${hasFilters?'جرّبي تعديل البحث أو نطاق السعر.':'ستظهر المنتجات عند توفرها في المتجر.'}</span>${hasFilters?'<button type="button" onclick="clearShopFilters()">مسح البحث والتصفية</button>':''}</div>`;
+      }else{grid.innerHTML=shopProducts.map(product=>productCardHtml(product)).join('');syncFavoriteButtons();}
+      if(pager){
+        const pages=shopTotalCount===null?shopPageNumber+(shopHasMore?1:0):Math.max(1,Math.ceil(shopTotalCount/shopPageSize));
+        const total=shopTotalCount===null?'عدد النتائج غير محدد':shopTotalCount+' منتج';
+        pager.innerHTML=shopProducts.length?`
+          <button type="button" class="shop-page-btn" onclick="goShopPage(${shopPageNumber-1})" ${shopPageNumber<=1?'disabled':''}>السابق</button>
+          <span>صفحة ${shopPageNumber} من ${pages} · ${total}</span>
+          <button type="button" class="shop-page-btn" onclick="goShopPage(${shopPageNumber+1})" ${!shopHasMore?'disabled':''}>التالي</button>`:''; }
+    }
+
+    async function loadShopProducts(pageNumber=1){
+      const page=Math.max(1,Math.floor(Number(pageNumber)||1));
+      const version=++shopRequestVersion;
+      shopPageNumber=page;
+      const minText=document.getElementById('shopPriceMin')?.value??'';
+      const maxText=document.getElementById('shopPriceMax')?.value??'';
+      const min=minText===''?null:Number(minText);
+      const max=maxText===''?null:Number(maxText);
+      const grid=document.getElementById('shopProductsGrid');
+      if(grid&&!shopProducts.length)grid.innerHTML='<div class="product-details-loading" role="status"><span class="spinner"></span><strong>جاري تحميل المنتجات...</strong></div>';
+      if(min!==null&&max!==null&&Number.isFinite(min)&&Number.isFinite(max)&&min>max){
+        shopProducts=[];shopTotalCount=0;shopHasMore=false;renderShopProducts();return;
       }
-      grid.innerHTML=shopProducts.map(p=>productCardHtml(p)).join(""); syncFavoriteButtons();
+      try{
+        const result=await eloryFetchCatalogPage({
+          query:shopSearchQuery,category:currentShopCategory,minPrice:min,maxPrice:max,
+          sort:shopSortOrder,limit:shopPageSize,offset:(page-1)*shopPageSize
+        });
+        if(version!==shopRequestVersion)return;
+        shopProducts=cacheCatalogProducts(result.rows);
+        shopBaseProducts=[...shopProducts];
+        filteredProducts=[...shopProducts];
+        shopTotalCount=result.total;shopHasMore=result.hasMore;
+        updateProductSearchSuggestions(document.getElementById('searchInput')?.value||'');
+        refreshCartFromProducts();renderShopProducts();
+      }catch(error){
+        if(version!==shopRequestVersion)return;
+        console.error('Elory database product filters failed:',error);
+        if(grid)grid.innerHTML='<div class="search-empty-state"><strong>تعذر تحميل هذه الصفحة</strong><span>تحققي من الاتصال ثم أعيدي المحاولة.</span><button type="button" onclick="applyShopFilters()">إعادة المحاولة</button></div>';
+        const pager=document.getElementById('shopProductsPager');if(pager)pager.innerHTML='';
+      }
     }
-
-    function sortShopProducts(value){
-      shopSortOrder=value||"newest";
-      applyShopFilters();
-    }
-
-    function applyShopFilters(){
-      const minInput=document.getElementById("shopPriceMin");
-      const maxInput=document.getElementById("shopPriceMax");
-      const min=minInput?.value!==""&&minInput?.value!=null?Number(minInput.value):null;
-      const max=maxInput?.value!==""&&maxInput?.value!=null?Number(maxInput.value):null;
-      const results=shopBaseProducts.filter(product=>
-        productMatchesSearch(product,shopSearchQuery)&&
-        (min===null||!Number.isFinite(min)||Number(product.price||0)>=min)&&
-        (max===null||!Number.isFinite(max)||Number(product.price||0)<=max)
-      );
-      results.sort((a,b)=>{
-        if(shopSortOrder==="priceLow") return Number(a.price||0)-Number(b.price||0);
-        if(shopSortOrder==="priceHigh") return Number(b.price||0)-Number(a.price||0);
-        if(shopSortOrder==="name") return String(a.name||"").localeCompare(String(b.name||""),"ar");
-        const aDate=Date.parse(a.createdAt||"");
-        const bDate=Date.parse(b.createdAt||"");
-        if(Number.isFinite(aDate)&&Number.isFinite(bDate)&&aDate!==bDate) return bDate-aDate;
-        return Number(a.sortIndex||0)-Number(b.sortIndex||0);
-      });
-      shopProducts=results;
-      renderShopProducts();
-    }
+    function goShopPage(page){if(Number(page)<1)return;void loadShopProducts(page);window.scrollTo({top:0,behavior:'smooth'});}
+    function sortShopProducts(value){shopSortOrder=value||'newest';void loadShopProducts(1);}
+    function applyShopFilters(){void loadShopProducts(1);}
 
     function clearShopFilters(){
       shopSearchQuery="";
@@ -8840,7 +8964,11 @@ main#home{
     /* =========================================================
        PAYMENT UI
        ========================================================= */
-    function selectPaymentMethod(method){ selectedPaymentMethod=method; document.querySelectorAll(".payment-option").forEach(x=>x.classList.toggle("selected",x.querySelector("input")?.value===method)); }
+    function selectPaymentMethod(method){
+      if(selectedPaymentMethod!==method) clearCheckoutIdempotencyKey();
+      selectedPaymentMethod=method;
+      document.querySelectorAll(".payment-option").forEach(x=>x.classList.toggle("selected",x.querySelector("input")?.value===method));
+    }
 
     /* =========================================================
        MODALS
@@ -9100,6 +9228,7 @@ main#home{
       // is shown as paid.
       const result=await verifyReturnedPaymentOnce(payment);
       if(result?.confirmed===true){
+        clearCheckoutIdempotencyKey();
         try{sessionStorage.removeItem("elory_pending_payment");}catch(e){}
         if(payment.type==="prime"){
           await refreshPrimeState();
@@ -9117,6 +9246,7 @@ main#home{
         if(pending){
           showToast("الدفع ما زال قيد التحقق من Paymob");
         }else if(finalFailure){
+          clearCheckoutIdempotencyKey();
           try{sessionStorage.removeItem("elory_pending_payment");}catch(e){}
           showToast("أكد Paymob أن عملية الدفع لم تكتمل.");
         }else{
@@ -9298,9 +9428,24 @@ main#home{
       window.addEventListener('elory-supabase-ready', onReady, {once:true});
       const waitTimer = setTimeout(onReady, 10000);
     });
-    if (!db) return;
-    const { data, error } = await db.from('site_customizations').select('config').eq('id', 1).maybeSingle();
-    if (error || !data || !data.config) return;
+    if (!db) throw new Error('Supabase client was not ready after 10 seconds');
+    let data = null;
+    let lastCmsError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const result = await db.from('site_customizations').select('config').eq('id', 1).maybeSingle();
+        if (result.error) throw result.error;
+        if (!result.data || !result.data.config || typeof result.data.config !== 'object') throw new Error('site_customizations row 1 has no valid config');
+        data = result.data;
+        lastCmsError = null;
+        break;
+      } catch (cmsError) {
+        lastCmsError = cmsError;
+        console.error('Elory CMS settings load failed (attempt ' + (attempt + 1) + '/3):', cmsError);
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+      }
+    }
+    if (!data || !data.config) throw lastCmsError || new Error('Elory CMS config unavailable');
     const c = data.config, $ = (s, root=document) => { try { return root.querySelector(s); } catch (_) { return null; } };
     const $$ = (s, root=document) => { try { return Array.from(root.querySelectorAll(s)); } catch (_) { return []; } };
     const txt = v => String(v ?? '');
@@ -9384,10 +9529,30 @@ main#home{
                 picture.appendChild(source);
               }
               const image=document.createElement('img');
-              image.src=fullBleedSource;
               image.alt=txt(item.title||'Elory campaign');
               image.loading=i===0?'eager':'lazy';
               image.decoding='async';
+              image.addEventListener('load',()=>{
+                if(image.naturalWidth>0&&image.naturalHeight>0){
+                  slide.dataset.heroMediaLoaded='true';
+                  console.info('Elory hero image loaded:',{slide:txt(item.id),width:image.naturalWidth,height:image.naturalHeight});
+                }else image.dispatchEvent(new Event('error'));
+              },{once:true});
+              image.addEventListener('error',()=>{
+                console.error('Elory hero image failed to load:',{slide:txt(item.id),url:fullBleedSource});
+                slide.hidden=true;slide.dataset.heroMediaError='true';
+                const cards=Array.from(slider.querySelectorAll('.hero-slide'));
+                const next=cards.find(card=>!card.hidden);
+                if(next){
+                  const nextIndex=cards.indexOf(next);
+                  cards.forEach((card,index)=>{card.classList.toggle('active',index===nextIndex);card.style.opacity=index===nextIndex?'1':'0';card.style.visibility=index===nextIndex?'visible':'hidden';});
+                  window.heroIndex=nextIndex;
+                }else{
+                  const heroSection=document.querySelector('.hero');
+                  if(heroSection){heroSection.hidden=true;heroSection.setAttribute('aria-hidden','true');}
+                }
+              },{once:true});
+              image.src=fullBleedSource;
               picture.appendChild(image);
               slide.appendChild(picture);
             }
@@ -9445,7 +9610,13 @@ main#home{
             } else if(ar) visible(ar,false);
             if(desc) desc.textContent=txt(item.description);
             if(btn){ btn.textContent=txt(item.buttonText||'تسوقي الآن'); bindButton(btn,item.actionUrl||'#featured'); }
-            const src=imageUrl(item.imageUrl); if(img){ if(src){ img.src=src; img.style.display=''; } else { img.removeAttribute('src'); img.style.display='none'; } }
+            const src=imageUrl(item.imageUrl); if(img){
+              if(src){
+                img.onload=()=>{if(!(img.naturalWidth>0)){console.error('Elory hero media decoded with zero width:',src);img.style.display='none';}};
+                img.onerror=()=>{console.error('Elory hero media failed to load:',src);img.removeAttribute('src');img.style.display='none';};
+                img.src=src;img.style.display='';
+              }else{img.removeAttribute('src');img.style.display='none';}
+            }
             if(img && item.title) img.alt=txt(item.title);
           }
           slider.appendChild(slide);

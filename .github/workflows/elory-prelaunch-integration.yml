@@ -1,0 +1,193 @@
+name: Elory isolated prelaunch integration
+
+on:
+  push:
+    branches:
+      - elory/prelaunch-hardening
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "supabase/**"
+      - "scripts/**"
+      - "tests/**"
+      - ".github/workflows/elory-prelaunch-integration.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: elory-prelaunch-isolated-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  isolated-supabase:
+    name: Isolated SQL, 10k catalog, COD and stock-race tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SUPABASE_TELEMETRY_DISABLED: "1"
+      LOCAL_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v3
+
+      - name: Prepare disposable schema fixture
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s supabase/tests/fixtures/local-prelaunch-schema.sql
+          cp supabase/tests/fixtures/local-prelaunch-schema.sql supabase/migrations/20261114000000_remote_schema.sql
+          test -s supabase/migrations/20261114000000_remote_schema.sql
+          supabase --version
+
+      - name: Start isolated local Supabase stack
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          supabase start -x studio,mailpit,logflare,vector,postgres-meta,realtime,imgproxy,supavisor
+
+      - name: Reset local database and apply migrations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          supabase db reset --local
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c "select current_database() as database, current_setting('server_version') as postgres_version;"
+
+      - name: Run static source and shell validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node tests/validate-store.mjs
+          bash -n scripts/*.sh
+
+      - name: Run transactional SQL integration tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/prelaunch-hardening.sql
+
+      - name: Load local Supabase test keys into ignored environment file
+        id: local-keys
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          supabase status -o env > /tmp/elory-supabase.env
+          set -a
+          source /tmp/elory-supabase.env
+          set +a
+          : "${API_URL:?Supabase local API URL was not returned}"
+          : "${ANON_KEY:?Supabase local anon key was not returned}"
+          : "${SERVICE_ROLE_KEY:?Supabase local service-role key was not returned}"
+          case "$API_URL" in
+            http://127.0.0.1:*|http://localhost:*) ;;
+            *) echo "Safety stop: local Supabase URL is not localhost."; exit 1 ;;
+          esac
+          cat > supabase/.env.test <<EOF
+          SUPABASE_URL=$API_URL
+          SUPABASE_ANON_KEY=$ANON_KEY
+          SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
+          ELORY_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
+          ELORY_ALLOWED_ORIGIN=http://127.0.0.1:3000
+          ELORY_SITE_URL=http://127.0.0.1:3000
+          PAYMOB_MODE=test
+          EOF
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+          } >> "$GITHUB_ENV"
+
+      - name: Start local Paymob Edge Function in TEST-only mode
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          nohup supabase functions serve paymob --env-file supabase/.env.test > /tmp/elory-paymob-function.log 2>&1 &
+          echo $! > /tmp/elory-paymob-function.pid
+          status=""
+          for attempt in $(seq 1 45); do
+            status="$(curl --silent --output /tmp/elory-paymob-health.json --write-out '%{http_code}' --max-time 4 \
+              -X POST "http://127.0.0.1:54321/functions/v1/paymob" \
+              -H "Content-Type: application/json" \
+              -d '{"action":"payment_capabilities"}' || true)"
+            if [[ "$status" == "200" ]]; then
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$status" != "200" ]]; then
+            echo "Local Edge Function did not become healthy (HTTP $status)."
+            cat /tmp/elory-paymob-function.log
+            exit 1
+          fi
+          node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('/tmp/elory-paymob-health.json','utf8')); if(x.ok!==true || x.mode!=='test') process.exit(1); console.log('Local payment endpoint healthy in TEST mode; no Paymob transaction was created.');"
+
+      - name: Seed 10,000 synthetic products and a local image
+        id: seed
+        shell: bash
+        env:
+          ELORY_LOAD_TEST_APPROVED: "YES"
+        run: |
+          set -Eeuo pipefail
+          scripts/seed-10000.sh
+          psql "$LOCAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c "select count(*) as synthetic_products from public.products where sku like 'ELORY-LOAD-%';"
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run 10k catalog, search, filters, image and COD load test
+        shell: bash
+        env:
+          ELORY_LOAD_TEST_APPROVED: "YES"
+          LOAD_VUS: "10"
+          LOAD_DURATION: "30s"
+        run: |
+          set -Eeuo pipefail
+          k6 run \
+            -e SUPABASE_URL="$SUPABASE_URL" \
+            -e SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+            -e ELORY_LOAD_TEST_APPROVED=YES \
+            -e LOAD_VUS="$LOAD_VUS" \
+            -e LOAD_DURATION="$LOAD_DURATION" \
+            tests/load/elory-prelaunch.js
+
+      - name: Run concurrent one-unit stock reservation race
+        shell: bash
+        env:
+          ELORY_LOAD_TEST_APPROVED: "YES"
+          RUN_STOCK_RACE: "1"
+          RACE_VUS: "100"
+          RACE_DURATION: "10s"
+        run: |
+          set -Eeuo pipefail
+          k6 run \
+            -e SUPABASE_URL="$SUPABASE_URL" \
+            -e SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+            -e ELORY_LOAD_TEST_APPROVED=YES \
+            -e RUN_STOCK_RACE=1 \
+            -e RACE_VUS="$RACE_VUS" \
+            -e RACE_DURATION="$RACE_DURATION" \
+            tests/load/elory-prelaunch.js
+
+      - name: Clean up all synthetic local data
+        if: always() && steps.seed.outcome == 'success'
+        shell: bash
+        env:
+          ELORY_LOAD_TEST_CLEANUP: "YES"
+        run: |
+          set -Eeuo pipefail
+          scripts/cleanup-10000.sh
+
+      - name: Stop isolated Supabase stack
+        if: always()
+        shell: bash
+        run: supabase stop --no-backup || true
