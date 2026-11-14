@@ -413,6 +413,10 @@ BEGIN
   END IF;
 
   EXECUTE 'ALTER FUNCTION private.elora_notify_new_order() SET search_path TO pg_catalog';
+
+  -- This function is invoked by the existing table trigger, not by API callers.
+  -- Keep direct execution limited to its owner while preserving trigger firing.
+  EXECUTE 'REVOKE ALL ON FUNCTION private.elora_notify_new_order() FROM PUBLIC, anon, authenticated, service_role';
 END;
 $private_notification_trigger_hardening$;
 
