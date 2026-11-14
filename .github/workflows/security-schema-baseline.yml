@@ -71,14 +71,9 @@ jobs:
                   )
 
           if candidate is not None:
-              # Some copied connection snippets bracket the DNS pooler host.
-              # Remove only the brackets immediately after @ and before :port.
-              if "@[" in candidate:
-                  candidate = candidate.replace("@[", "@", 1)
-                  authority_start = candidate.find("@") + 1
-                  bracket_end = candidate.find("]:", authority_start)
-                  if bracket_end >= 0:
-                      candidate = candidate[:bracket_end] + candidate[bracket_end + 1:]
+              # The copied dashboard snippet may display DNS host brackets.
+              # Square brackets are not valid around a DNS hostname in a URI.
+              candidate = candidate.replace("[", "").replace("]", "")
               parsed = urlsplit(candidate)
               if parsed.scheme not in ("postgres", "postgresql"):
                   raise SystemExit("The saved value does not contain a PostgreSQL URI.")
