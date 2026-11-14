@@ -24,6 +24,7 @@ jobs:
         shell: bash
         env:
           ELORY_SUPABASE_DB_URL: ${{ secrets.ELORY_SUPABASE_DB_URL }}
+          ELORY_SUPABASE_DB_PASSWORD: ${{ secrets.ELORY_SUPABASE_DB_PASSWORD }}
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
@@ -33,6 +34,7 @@ jobs:
           from urllib.parse import unquote, urlsplit
 
           raw = os.environ.get("ELORY_SUPABASE_DB_URL", "").strip()
+          separate_password = os.environ.get("ELORY_SUPABASE_DB_PASSWORD")
           if not raw:
               raise SystemExit("Required Actions secret ELORY_SUPABASE_DB_URL is missing.")
 
@@ -111,7 +113,7 @@ jobs:
               )
 
           username = user_value
-          password = password_value
+          password = password_value if password_value is not None else separate_password
           database = db_value
           if not username or not database or password is None:
               raise SystemExit("The connection string is missing username, database, or password.")
