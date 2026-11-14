@@ -111,7 +111,11 @@ $table_privileges$;
 -- default privileges rather than silently re-opening the API surface.
 CREATE TABLE public.security_fixture_future_probe(id integer);
 CREATE FUNCTION public.security_fixture_future_fn()
-RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$;
+RETURNS integer LANGUAGE sql AS $ SELECT 1 $;
+
+CREATE TABLE private.security_fixture_future_probe(id integer);
+CREATE FUNCTION private.security_fixture_future_fn()
+RETURNS integer LANGUAGE sql AS $ SELECT 1 $;
 
 DO $defaults$
 BEGIN
@@ -137,6 +141,25 @@ BEGIN
           AND function_acl.privilege_type = 'EXECUTE'
      ) THEN
     RAISE EXCEPTION 'Unsafe function default EXECUTE remains for postgres-owned functions';
+  END IF;
+
+  IF has_table_privilege('anon', 'private.security_fixture_future_probe', 'SELECT')
+     OR has_table_privilege('authenticated', 'private.security_fixture_future_probe', 'SELECT')
+     OR has_table_privilege('anon', 'private.security_fixture_future_probe', 'INSERT')
+     OR has_table_privilege('authenticated', 'private.security_fixture_future_probe', 'INSERT')
+     OR has_table_privilege('anon', 'private.security_fixture_future_probe', 'UPDATE')
+     OR has_table_privilege('authenticated', 'private.security_fixture_future_probe', 'UPDATE')
+     OR has_table_privilege('anon', 'private.security_fixture_future_probe', 'DELETE')
+     OR has_table_privilege('authenticated', 'private.security_fixture_future_probe', 'DELETE')
+     OR has_function_privilege('anon', 'private.security_fixture_future_fn()', 'EXECUTE')
+     OR has_function_privilege('authenticated', 'private.security_fixture_future_fn()', 'EXECUTE')
+     OR has_function_privilege('public', 'private.security_fixture_future_fn()', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Private-schema default privileges exposed a future object to API roles';
+  END IF;
+
+  IF has_schema_privilege('anon', 'private', 'CREATE')
+     OR has_schema_privilege('authenticated', 'private', 'CREATE') THEN
+    RAISE EXCEPTION 'API roles can create objects in the private schema';
   END IF;
 END;
 $defaults$;
