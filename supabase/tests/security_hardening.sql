@@ -40,7 +40,12 @@ BEGIN
       JOIN pg_namespace n ON n.oid = p.pronamespace
      WHERE n.nspname = 'public'
        AND p.proname = ANY (v_api_names)
-       AND has_function_privilege('public', p.oid, 'EXECUTE')
+       AND EXISTS (
+         SELECT 1
+           FROM aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) AS function_acl
+          WHERE function_acl.grantee = 0
+            AND function_acl.privilege_type = 'EXECUTE'
+       )
   ) THEN
     RAISE EXCEPTION 'A public Elory RPC is executable by PUBLIC';
   END IF;
@@ -123,7 +128,14 @@ BEGIN
 
   IF has_function_privilege('anon', 'public.security_fixture_future_fn()', 'EXECUTE')
      OR has_function_privilege('authenticated', 'public.security_fixture_future_fn()', 'EXECUTE')
-     OR has_function_privilege('public', 'public.security_fixture_future_fn()', 'EXECUTE') THEN
+     OR EXISTS (
+       SELECT 1
+         FROM pg_proc p
+         CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) AS function_acl
+        WHERE p.oid = 'public.security_fixture_future_fn()'::regprocedure
+          AND function_acl.grantee = 0
+          AND function_acl.privilege_type = 'EXECUTE'
+     ) THEN
     RAISE EXCEPTION 'Unsafe function default EXECUTE remains for postgres-owned functions';
   END IF;
 END;
