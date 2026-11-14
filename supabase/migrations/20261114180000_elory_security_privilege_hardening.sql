@@ -301,6 +301,38 @@ ALTER FUNCTION public.validate_coupon(text, numeric) SET search_path TO pg_catal
 REVOKE ALL ON FUNCTION public.validate_coupon(text, numeric) FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.validate_coupon(text, numeric) TO anon, authenticated;
 
+-- The original staff SELECT policy was RESTRICTIVE. Once coupon validation
+-- runs as SECURITY INVOKER, that restrictive policy would also block ordinary
+-- authenticated customers from seeing active coupons. Keep staff visibility
+-- as an additional permissive path: customers see active rows via the public
+-- policy; authorized staff can additionally see inactive rows in the dashboard.
+DO $coupon_staff_policy$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+      FROM pg_policies p
+     WHERE p.schemaname = 'public'
+       AND p.tablename = 'coupons'
+       AND p.policyname = 'Staff coupon select permission'
+       AND p.cmd IN ('SELECT', 'ALL')
+       AND 'authenticated' = ANY(p.roles)
+       AND coalesce(p.qual, '') ILIKE '%has_staff_permission%'
+       AND coalesce(p.qual, '') ILIKE '%coupons.view%'
+  ) THEN
+    RAISE EXCEPTION 'Elory security migration stopped: expected staff coupon SELECT policy was not found or did not match';
+  END IF;
+
+  DROP POLICY "Staff coupon select permission" ON public.coupons;
+
+  CREATE POLICY "Staff coupon select permission"
+    ON public.coupons
+    AS PERMISSIVE
+    FOR SELECT
+    TO authenticated
+    USING (public.has_staff_permission('coupons.view'::text));
+END;
+$coupon_staff_policy$;
+
 -- These privileges are not used by PostgREST and are not protected by RLS.
 -- Keep normal row-level grants and all existing RLS policies unchanged.
 REVOKE TRUNCATE, REFERENCES, TRIGGER
