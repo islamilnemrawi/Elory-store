@@ -12,8 +12,9 @@ The single migration `20261114180000_elory_security_privilege_hardening.sql` is 
 2. Before moving a function, the migration checks that it exists exactly once, has no PUBLIC execute grant, and contains the expected staff, user-identity, or guest access-token gate. The migration stops rather than proceeding if these safeguards are not present.
 3. `public.validate_coupon(text,numeric)` becomes `SECURITY INVOKER`. Its active-only coupon SELECT policy is checked before the change, so RLS applies to anonymous and ordinary authenticated buyers. The staff coupon SELECT policy is changed from RESTRICTIVE to PERMISSIVE: signed-in customers retain access to active coupons, while staff with `coupons.view` can additionally see inactive coupons in the dashboard.
 4. `TRUNCATE`, `REFERENCES`, `TRIGGER`, and (on PostgreSQL 17+) `MAINTAIN` are revoked from `anon` and `authenticated` on public objects. Existing SELECT/INSERT/UPDATE/DELETE grants and RLS policies are not rewritten.
-5. PostgreSQL defaults for objects created by `postgres` are tightened, including the global default PUBLIC function EXECUTE grant.
-6. `private.elora_push_config` remains RLS-protected and inaccessible to API roles. It deliberately has no client-facing policy.
+5. API roles receive `USAGE`, but not `CREATE`, on `private` so wrappers and policy helpers can resolve the approved implementations. New private tables/functions created by `postgres` default to no API-role access.
+6. PostgreSQL defaults for objects created by `postgres` are tightened, including the global default PUBLIC function EXECUTE grant.
+7. `private.elora_push_config` remains RLS-protected and inaccessible to API roles. It deliberately has no client-facing policy.
 
 ## Intentionally preserved access
 
@@ -39,4 +40,6 @@ The GitHub Actions workflow `.github/workflows/security-hardening.yml` starts a 
 2. The migration itself.
 3. Regression assertions for wrapper/security-definer placement, grant preservation, private helper access through RLS policies, anonymous guest-order restrictions, coupon RLS behavior, current-table privilege removal, and tightened defaults for future objects.
 
-This synthetic integration run is not a live Supabase branch test and does not use production records or credentials. Before applying the migration to production, the project must be backed up and the actual admin dashboard, guest-order tracking, coupon validation/redemption as both guest and signed-in customer, staff access to inactive coupons, and Auth flows must be verified against a no-cost isolated environment. Do not merge or apply the migration solely because static checks pass.
+A separate `.github/workflows/dashboard-security-compatibility.yml` workflow extracts the canonical dashboard ZIP from `pinky--dashboard`, runs its existing CMS/operations/order-item patch and verification scripts on that clean source archive, and builds the Android debug APK. This verifies that the current dashboard build and its patched source remain compilable without modifying the dashboard repository.
+
+These isolated CI checks do not use production records or credentials and are not a live Supabase branch test. Before applying the migration to production, the project must be backed up and the actual admin dashboard, guest-order tracking, coupon validation/redemption as both guest and signed-in customer, staff access to inactive coupons, and Auth flows must be verified against a no-cost isolated environment. Do not merge or apply the migration solely because static checks pass.
