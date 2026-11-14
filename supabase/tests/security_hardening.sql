@@ -78,6 +78,20 @@ BEGIN
      OR NOT has_schema_privilege('anon', 'private', 'USAGE') THEN
     RAISE EXCEPTION 'RPC roles cannot resolve private implementations';
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = 'private'
+       AND p.proname = 'elora_notify_new_order'
+       AND p.prokind = 'f'
+       AND p.prorettype = 'pg_catalog.trigger'::regtype
+       AND p.prosecdef IS TRUE
+       AND p.proconfig @> ARRAY['search_path=pg_catalog']
+  ) THEN
+    RAISE EXCEPTION 'Private order notification trigger is not hardened to pg_catalog-only search_path';
+  END IF;
 END;
 $metadata$;
 
