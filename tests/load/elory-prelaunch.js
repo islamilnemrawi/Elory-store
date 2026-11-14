@@ -25,6 +25,7 @@ const codFailureRate = new Rate('cod_failure_rate');
 const codSuccess = new Counter('cod_success');
 const stockRaceSuccess = new Counter('stockRaceSuccess');
 const stockRaceConflict = new Counter('stockRaceConflict');
+const stockRaceUnexpected = new Counter('stockRaceUnexpected');
 
 export const options = {
   scenarios: {
@@ -35,7 +36,7 @@ export const options = {
     }
   },
   thresholds: raceMode
-    ? { catalog_latency: ['p(95)<1500'], stockRaceSuccess: ['count==1'], stockRaceConflict: ['count>0'] }
+    ? { catalog_latency: ['p(95)<1500'], stockRaceSuccess: ['count==1'], stockRaceConflict: ['count>0'], stockRaceUnexpected: ['count==0'] }
     : {
         catalog_latency: ['p(95)<1500'],
         search_latency: ['p(95)<2000'],
@@ -149,6 +150,10 @@ function createOrder(data, paymentMethod = 'cash_on_delivery') {
 }
 
 export default function (data) {
+  // One checkout attempt per virtual user makes this a single, controlled
+  // race for the final unit instead of repeatedly retrying after stock is gone.
+  if (raceMode && __ITER > 0) return;
+
   catalogRequests(data.product.image || '');
 
   if (raceMode) {
@@ -161,7 +166,9 @@ export default function (data) {
       stockRaceConflict.add(1);
       check(result.response, { 'stock race loser receives inventory conflict': r => r.status === 409 });
     } else {
-      check(result.response, { 'stock race returns success or inventory conflict': r => r.status === 200 || r.status === 409 });
+      stockRaceUnexpected.add(1);
+      console.error(`Unexpected stock-race response: HTTP ${result.response.status}; body=${String(result.response.body || '').slice(0, 500)}`);
+      check(result.response, { 'stock race returns only success or inventory conflict': () => false });
     }
     sleep(0.05);
     return;
@@ -173,6 +180,7 @@ export default function (data) {
   const ok = result.response.status === 200 && result.body.ok === true;
   codFailureRate.add(!ok);
   if (ok) codSuccess.add(1);
+  else console.error(`COD load-test failure: HTTP ${result.response.status}; body=${String(result.response.body || '').slice(0, 500)}`);
   check(result.response, { 'COD order created': r => r.status === 200 && result.body.ok === true });
 
   if (paymobOnce && __VU === 1 && __ITER === 0) {
