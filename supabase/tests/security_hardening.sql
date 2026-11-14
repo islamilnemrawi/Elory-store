@@ -210,3 +210,57 @@ BEGIN
 END;
 $coupon_rls$;
 RESET ROLE;
+
+-- The staff-only SELECT path must be PERMISSIVE, not RESTRICTIVE, otherwise
+-- authenticated customers would lose access to active public coupons.
+DO $coupon_policy_metadata$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+      FROM pg_policies p
+     WHERE p.schemaname = 'public'
+       AND p.tablename = 'coupons'
+       AND p.policyname = 'Staff coupon select permission'
+       AND p.permissive = 'PERMISSIVE'
+       AND p.cmd = 'SELECT'
+       AND 'authenticated' = ANY(p.roles)
+  ) THEN
+    RAISE EXCEPTION 'Staff coupon SELECT policy is not permissive';
+  END IF;
+END;
+$coupon_policy_metadata$;
+
+-- A normal signed-in buyer must validate active coupons, while a staff member
+-- retains access to inactive coupon rows for dashboard administration.
+SET ROLE authenticated;
+DO $authenticated_coupon_rls$
+DECLARE
+  v_active_valid integer;
+  v_inactive_valid integer;
+  v_staff_visible integer;
+BEGIN
+  SELECT count(*) INTO v_active_valid
+    FROM public.validate_coupon('ACTIVE10', 100)
+   WHERE valid IS TRUE;
+
+  SELECT count(*) INTO v_inactive_valid
+    FROM public.validate_coupon('INACTIVE10', 100)
+   WHERE valid IS TRUE;
+
+  IF v_active_valid <> 1 OR v_inactive_valid <> 0 THEN
+    RAISE EXCEPTION 'Authenticated customer coupon validation did not preserve active-only access';
+  END IF;
+
+  PERFORM set_config(
+    'request.jwt.claim.sub',
+    '10000000-0000-4000-8000-000000000099',
+    false
+  );
+
+  SELECT count(*) INTO v_staff_visible FROM public.coupons;
+  IF v_staff_visible <> 2 THEN
+    RAISE EXCEPTION 'Authorized staff lost access to inactive coupons';
+  END IF;
+END;
+$authenticated_coupon_rls$;
+RESET ROLE;
