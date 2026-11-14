@@ -281,6 +281,29 @@ END;
 $guest_access$;
 RESET ROLE;
 
+-- Paymob's server-side callback uses the service_role key and deliberately
+-- passes no customer access token when redeeming a paid order coupon.
+SET ROLE service_role;
+DO $paymob_coupon_redemption$
+DECLARE
+  v_redeemed boolean;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+  PERFORM set_config('request.jwt.claim.role', 'service_role', false);
+
+  v_redeemed := public.redeem_coupon(
+    '10000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000010',
+    NULL
+  );
+
+  IF v_redeemed IS NOT TRUE THEN
+    RAISE EXCEPTION 'Paymob service_role coupon redemption path was not preserved';
+  END IF;
+END;
+$paymob_coupon_redemption$;
+RESET ROLE;
+
 -- SECURITY INVOKER coupon validation is subject to the active-only RLS policy.
 SET ROLE anon;
 DO $coupon_rls$
