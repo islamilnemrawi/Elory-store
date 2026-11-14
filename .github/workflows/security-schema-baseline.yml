@@ -71,9 +71,20 @@ jobs:
                   )
 
           if candidate is not None:
-              # The copied dashboard snippet may display DNS host brackets.
-              # Square brackets are not valid around a DNS hostname in a URI.
-              candidate = candidate.replace("[", "").replace("]", "")
+              # Normalize brackets around a DNS host only; preserve password
+              # placeholders such as [YOUR-PASSWORD] so they can be detected.
+              authority_start = candidate.find("@") + 1
+              if authority_start > 0:
+                  authority_end = candidate.find("/", authority_start)
+                  if authority_end < 0:
+                      authority_end = len(candidate)
+                  authority = candidate[authority_start:authority_end]
+                  close_host = authority.find("]:")
+                  if authority.startswith("[") and close_host > 1:
+                      bracketed_host = authority[1:close_host]
+                      if bracketed_host.lower().endswith(".pooler.supabase.com"):
+                          authority = bracketed_host + authority[close_host + 1:]
+                          candidate = candidate[:authority_start] + authority + candidate[authority_end:]
               parsed = urlsplit(candidate)
               if parsed.scheme not in ("postgres", "postgresql"):
                   raise SystemExit("The saved value does not contain a PostgreSQL URI.")
@@ -86,6 +97,13 @@ jobs:
                   raise SystemExit("The PostgreSQL URI has an invalid port.")
               user_value = unquote(parsed.username)
               password_value = unquote(parsed.password)
+              if password_value.strip("[]").strip().upper() in {
+                  "YOUR-PASSWORD", "YOUR_PASSWORD", "REPLACE_WITH_YOUR_PASSWORD"
+              }:
+                  raise SystemExit(
+                      "The copied Supabase URI still contains a password placeholder. "
+                      "Replace [YOUR-PASSWORD] with the actual Database password in the GitHub secret."
+                  )
               db_value = unquote(parsed.path.lstrip("/"))
 
           host = host_value.lower()
