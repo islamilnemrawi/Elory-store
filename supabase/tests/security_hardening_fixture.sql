@@ -62,6 +62,15 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $trigger$;
 
+CREATE TABLE public.orders (
+  id integer PRIMARY KEY
+);
+
+CREATE TRIGGER elora_new_order_push
+AFTER INSERT ON public.orders
+FOR EACH ROW
+EXECUTE FUNCTION private.elora_notify_new_order();
+
 CREATE OR REPLACE FUNCTION auth.uid()
 RETURNS uuid
 LANGUAGE sql
