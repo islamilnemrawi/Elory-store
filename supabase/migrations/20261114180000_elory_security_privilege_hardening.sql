@@ -382,6 +382,40 @@ BEGIN
 END;
 $private_push_config$;
 
+-- The private order-notification trigger is SECURITY DEFINER as well.
+-- Its table and pg_net references are schema-qualified, so it can safely use
+-- a pg_catalog-only search_path just like the moved RPC implementations.
+DO $private_notification_trigger_hardening$
+DECLARE
+  v_oid oid;
+  v_definition text;
+BEGIN
+  SELECT p.oid, lower(pg_get_functiondef(p.oid))
+    INTO v_oid, v_definition
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'private'
+     AND p.proname = 'elora_notify_new_order'
+     AND p.prokind = 'f'
+     AND p.prorettype = 'pg_catalog.trigger'::regtype;
+
+  IF v_oid IS NULL THEN
+    RAISE EXCEPTION 'Elory security migration stopped: private.elora_notify_new_order() trigger function is missing';
+  END IF;
+
+  IF NOT (
+    position('private.elora_push_config' IN v_definition) > 0
+    AND position('net.http_post' IN v_definition) > 0
+    AND position('jsonb_build_object' IN v_definition) > 0
+    AND position('to_jsonb' IN v_definition) > 0
+  ) THEN
+    RAISE EXCEPTION 'Elory security migration stopped: private.elora_notify_new_order() body no longer matches the audited schema-qualified implementation';
+  END IF;
+
+  EXECUTE 'ALTER FUNCTION private.elora_notify_new_order() SET search_path TO pg_catalog';
+END;
+$private_notification_trigger_hardening$;
+
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
