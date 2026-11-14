@@ -1,0 +1,89 @@
+name: Elory Supabase Security Hardening
+
+on:
+  push:
+    branches:
+      - elory/security-hardening
+    paths:
+      - "supabase/migrations/20261114180000_elory_security_privilege_hardening.sql"
+      - "supabase/tests/security_hardening*.sql"
+      - ".github/workflows/security-hardening.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "supabase/migrations/20261114180000_elory_security_privilege_hardening.sql"
+      - "supabase/tests/security_hardening*.sql"
+      - ".github/workflows/security-hardening.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-17-security-regression:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: elory-ci-only
+          POSTGRES_DB: elory_security_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d elory_security_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: elory-ci-only
+      PGDATABASE: elory_security_test
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Verify fixture and apply migration on disposable PostgreSQL 17
+        run: |
+          set -Eeuo pipefail
+          psql -v ON_ERROR_STOP=1 -f supabase/tests/security_hardening_fixture.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261114180000_elory_security_privilege_hardening.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/tests/security_hardening.sql
+
+      - name: Confirm no unexpected privileged public RPCs remain
+        run: |
+          set -Eeuo pipefail
+          psql -v ON_ERROR_STOP=1 -Atc "
+            SELECT count(*)
+              FROM pg_proc p
+              JOIN pg_namespace n ON n.oid = p.pronamespace
+             WHERE n.nspname = 'public'
+               AND p.prosecdef IS TRUE
+               AND p.proname = ANY (ARRAY[
+                 'admin_apply_shipping_governorate_price',
+                 'admin_delete_order',
+                 'admin_delete_shipping_center',
+                 'admin_get_my_staff_profile',
+                 'admin_grant_prime_by_email',
+                 'admin_list_orders',
+                 'admin_list_prime_subscriptions',
+                 'admin_list_shipping',
+                 'admin_list_staff',
+                 'admin_save_shipping_center',
+                 'admin_save_shipping_governorate',
+                 'admin_set_prime_subscription_active',
+                 'admin_set_staff_active',
+                 'admin_update_order_status',
+                 'admin_upsert_staff_by_email',
+                 'elora_admin_allowed',
+                 'get_customer_orders',
+                 'get_my_prime_status',
+                 'has_staff_permission',
+                 'is_elora_staff',
+                 'redeem_coupon',
+                 'register_dashboard_push_device'
+               ]);
+          " | grep -qx "0"
