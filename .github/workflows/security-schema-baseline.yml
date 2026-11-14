@@ -75,7 +75,7 @@ jobs:
               # Some dashboard connection snippets wrap a DNS host in square
               # brackets; normalize only that non-IPv6 pooler-host form.
               candidate = re.sub(
-                  r"@\\[([A-Za-z0-9.-]+\\.pooler\\.supabase\\.com)\\](?=:)",
+                  r"@\[([A-Za-z0-9.-]+\.pooler\.supabase\.com)\](?=:)",
                   r"@\\1",
                   candidate,
                   flags=re.IGNORECASE,
