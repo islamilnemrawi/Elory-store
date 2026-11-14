@@ -137,7 +137,7 @@ BEGIN
       r.return_body
     );
     EXECUTE format(
-      'CREATE FUNCTION public.%I(%s) RETURNS %s LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '''' AS %L',
+      'CREATE FUNCTION public.%I(%s) RETURNS %s LANGUAGE plpgsql SECURITY DEFINER SET search_path TO pg_catalog AS %L',
       r.function_name,
       r.declarations,
       r.result_type,
