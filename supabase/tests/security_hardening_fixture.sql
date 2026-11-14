@@ -12,6 +12,55 @@ $roles$;
 
 CREATE SCHEMA IF NOT EXISTS auth;
 CREATE SCHEMA IF NOT EXISTS private;
+CREATE SCHEMA IF NOT EXISTS net;
+
+-- Synthetic equivalent of the production private order-notification trigger.
+-- Its referenced objects are deliberately schema-qualified so the migration
+-- can safely narrow the trigger's search_path to pg_catalog.
+CREATE TABLE private.elora_push_config (
+  id integer PRIMARY KEY,
+  webhook_url text,
+  webhook_secret text,
+  enabled boolean NOT NULL DEFAULT false
+);
+
+CREATE FUNCTION net.http_post(url text, body jsonb, headers jsonb)
+RETURNS bigint
+LANGUAGE sql
+AS 'SELECT 1::bigint';
+
+CREATE FUNCTION private.elora_notify_new_order()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'private'
+AS $trigger$
+DECLARE
+  v_url text;
+  v_secret text;
+  v_request_id bigint;
+BEGIN
+  SELECT webhook_url, webhook_secret
+    INTO v_url, v_secret
+    FROM private.elora_push_config
+   WHERE id = 1 AND enabled IS TRUE;
+
+  IF v_url IS NULL OR v_secret IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT net.http_post(
+    url := v_url,
+    body := jsonb_build_object('record', to_jsonb(NEW), 'type', 'INSERT', 'table', 'orders', 'schema', 'public'),
+    headers := jsonb_build_object('Content-Type', 'application/json', 'X-Elora-Webhook-Secret', v_secret)
+  ) INTO v_request_id;
+
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'Elora Push trigger failed: %', SQLERRM;
+  RETURN NEW;
+END;
+$trigger$;
 
 CREATE OR REPLACE FUNCTION auth.uid()
 RETURNS uuid
