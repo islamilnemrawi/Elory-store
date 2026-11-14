@@ -55,8 +55,11 @@ BEGIN
 
   CREATE SCHEMA IF NOT EXISTS private;
 
-  -- private must remain outside PostgREST exposed schemas. Refuse to proceed
-  -- if a project-level or authenticator-level setting explicitly exposes it.
+  -- Refuse database-level or authenticator-role overrides that explicitly
+  -- expose private. Supabase Dashboard-managed Data API schema settings are
+  -- platform configuration and cannot be read reliably from SQL; verify that
+  -- private is absent from Project Settings > Data API > Exposed schemas before
+  -- applying this migration. The SQL check below is defense in depth only.
   IF EXISTS (
     SELECT 1
       FROM pg_db_role_setting s
