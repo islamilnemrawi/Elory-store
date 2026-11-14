@@ -111,11 +111,11 @@ $table_privileges$;
 -- default privileges rather than silently re-opening the API surface.
 CREATE TABLE public.security_fixture_future_probe(id integer);
 CREATE FUNCTION public.security_fixture_future_fn()
-RETURNS integer LANGUAGE sql AS $ SELECT 1 $;
+RETURNS integer LANGUAGE sql AS 'SELECT 1';
 
 CREATE TABLE private.security_fixture_future_probe(id integer);
 CREATE FUNCTION private.security_fixture_future_fn()
-RETURNS integer LANGUAGE sql AS $ SELECT 1 $;
+RETURNS integer LANGUAGE sql AS 'SELECT 1';
 
 DO $defaults$
 BEGIN
