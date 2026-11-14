@@ -28,6 +28,7 @@ jobs:
           set -Eeuo pipefail
           python3 - <<'PY'
           import os
+          import re
           import shlex
           from pathlib import Path
           from urllib.parse import unquote, urlsplit
@@ -71,6 +72,14 @@ jobs:
                   )
 
           if candidate is not None:
+              # Some dashboard connection snippets wrap a DNS host in square
+              # brackets; normalize only that non-IPv6 pooler-host form.
+              candidate = re.sub(
+                  r"@\\[([A-Za-z0-9.-]+\\.pooler\\.supabase\\.com)\\](?=:)",
+                  r"@\\1",
+                  candidate,
+                  flags=re.IGNORECASE,
+              )
               parsed = urlsplit(candidate)
               if parsed.scheme not in ("postgres", "postgresql"):
                   raise SystemExit("The saved value does not contain a PostgreSQL URI.")
