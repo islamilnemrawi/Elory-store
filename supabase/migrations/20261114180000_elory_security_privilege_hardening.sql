@@ -121,7 +121,17 @@ BEGIN
       RAISE EXCEPTION 'Elory security migration stopped: % has no verified user or long access-token gate', r.proname;
     END IF;
 
-    IF has_function_privilege('public', r.oid, 'EXECUTE') THEN
+    IF EXISTS (
+      SELECT 1
+        FROM aclexplode(
+          COALESCE(
+            (SELECT p.proacl FROM pg_proc p WHERE p.oid = r.oid),
+            acldefault('f', (SELECT p.proowner FROM pg_proc p WHERE p.oid = r.oid))
+          )
+        ) AS function_acl
+       WHERE function_acl.grantee = 0
+         AND function_acl.privilege_type = 'EXECUTE'
+    ) THEN
       RAISE EXCEPTION 'Elory security migration stopped: % is executable by PUBLIC; review its grants first', r.proname;
     END IF;
   END LOOP;
