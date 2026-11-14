@@ -72,9 +72,9 @@ assert.match(localSeed, /LOCAL TEST CENTER/);
 assert.match(localSeed, /elory-load-test/);
 
 const syntheticSeed = fs.readFileSync(path.join(root, 'supabase/test/seed-10000.sql'), 'utf8');
-assert.match(syntheticSeed, /storage\\/v1\\/object\\/public\\/elory-load-test\\/product\\.png/);
+assert.ok(syntheticSeed.includes('storage/v1/object/public/elory-load-test/product.png'));
 const imageSeedScript = fs.readFileSync(path.join(root, 'scripts/seed-10000.sh'), 'utf8');
-assert.match(imageSeedScript, /storage\\/v1\\/object\\/elory-load-test\\/product\\.png/);
+assert.ok(imageSeedScript.includes('storage/v1/object/elory-load-test/product.png'));
 const load = fs.readFileSync(path.join(root, 'tests/load/elory-prelaunch.js'), 'utf8');
 assert.match(load, /dmttevcncsxzbamazmmq/);
 assert.match(load, /ELORY_LOAD_TEST_APPROVED/);
