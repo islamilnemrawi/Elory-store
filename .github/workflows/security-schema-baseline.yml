@@ -36,6 +36,15 @@ jobs:
           if not raw:
               raise SystemExit("Required Actions secret ELORY_SUPABASE_DB_URL is missing.")
 
+          raw_upper = raw.upper()
+          if any(token in raw_upper for token in (
+              "[YOUR-PASSWORD]", "[YOUR_PASSWORD]", "[DB-PASSWORD]", "[PASSWORD]"
+          )):
+              raise SystemExit(
+                  "The saved Supabase connection string still contains a password placeholder. "
+                  "Replace it with the actual Database password in the GitHub secret."
+              )
+
           # Supabase can copy a raw URI, a psql command wrapping a URI, or
           # libpq key=value connection information.
           candidate = raw
@@ -71,20 +80,9 @@ jobs:
                   )
 
           if candidate is not None:
-              # Normalize brackets around a DNS host only; preserve password
-              # placeholders such as [YOUR-PASSWORD] so they can be detected.
-              authority_start = candidate.find("@") + 1
-              if authority_start > 0:
-                  authority_end = candidate.find("/", authority_start)
-                  if authority_end < 0:
-                      authority_end = len(candidate)
-                  authority = candidate[authority_start:authority_end]
-                  close_host = authority.find("]:")
-                  if authority.startswith("[") and close_host > 1:
-                      bracketed_host = authority[1:close_host]
-                      if bracketed_host.lower().endswith(".pooler.supabase.com"):
-                          authority = bracketed_host + authority[close_host + 1:]
-                          candidate = candidate[:authority_start] + authority + candidate[authority_end:]
+              # Supabase's copied text may bracket the DNS host. Bracketed
+              # password placeholders were rejected above before normalization.
+              candidate = candidate.replace("[", "").replace("]", "")
               parsed = urlsplit(candidate)
               if parsed.scheme not in ("postgres", "postgresql"):
                   raise SystemExit("The saved value does not contain a PostgreSQL URI.")
