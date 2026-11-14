@@ -259,6 +259,11 @@ DO $guest_access$
 DECLARE
   v_rows integer;
 BEGIN
+  -- Simulate a fresh anonymous PostgREST request, not the previous authenticated
+  -- fixture session on this same psql connection.
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+  PERFORM set_config('request.jwt.claim.role', 'anon', false);
+
   SELECT count(*) INTO v_rows FROM public.get_customer_orders();
   IF v_rows <> 0 THEN
     RAISE EXCEPTION 'Anonymous order tracking returned rows without proof';
