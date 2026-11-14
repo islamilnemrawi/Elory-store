@@ -1,0 +1,200 @@
+-- Run after security_hardening_fixture.sql and the migration on disposable PostgreSQL 17.
+
+DO $metadata$
+DECLARE
+  v_api_names text[] := ARRAY[
+    'admin_apply_shipping_governorate_price','admin_delete_order','admin_delete_shipping_center',
+    'admin_get_my_staff_profile','admin_grant_prime_by_email','admin_list_orders',
+    'admin_list_prime_subscriptions','admin_list_shipping','admin_list_staff',
+    'admin_save_shipping_center','admin_save_shipping_governorate','admin_set_prime_subscription_active',
+    'admin_set_staff_active','admin_update_order_status','admin_upsert_staff_by_email',
+    'elora_admin_allowed','get_customer_orders','get_my_prime_status','has_staff_permission',
+    'is_elora_staff','redeem_coupon','register_dashboard_push_device'
+  ];
+BEGIN
+  IF EXISTS (
+    SELECT 1
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = 'public'
+       AND p.proname = ANY (v_api_names)
+       AND p.prosecdef IS TRUE
+  ) THEN
+    RAISE EXCEPTION 'A public Elory RPC still runs as SECURITY DEFINER';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = 'private'
+       AND p.proname = ANY (v_api_names)
+       AND p.prosecdef IS NOT TRUE
+  ) THEN
+    RAISE EXCEPTION 'A private Elory implementation lost SECURITY DEFINER';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = 'public'
+       AND p.proname = ANY (v_api_names)
+       AND has_function_privilege('public', p.oid, 'EXECUTE')
+  ) THEN
+    RAISE EXCEPTION 'A public Elory RPC is executable by PUBLIC';
+  END IF;
+
+  IF NOT has_function_privilege('authenticated', 'public.admin_delete_order(uuid)', 'EXECUTE')
+     OR has_function_privilege('anon', 'public.admin_delete_order(uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Admin RPC grants were not narrowed to authenticated users';
+  END IF;
+
+  IF NOT has_function_privilege('anon', 'public.get_customer_orders(text,text)', 'EXECUTE')
+     OR NOT has_function_privilege('authenticated', 'public.get_customer_orders(text,text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Guest/customer order-tracking RPC access was not preserved';
+  END IF;
+
+  IF NOT has_function_privilege('anon', 'public.redeem_coupon(uuid,uuid,text)', 'EXECUTE')
+     OR NOT has_function_privilege('service_role', 'public.redeem_coupon(uuid,uuid,text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Coupon redemption grants were not preserved';
+  END IF;
+
+  IF NOT has_function_privilege('authenticated', 'private.has_staff_permission(text)', 'EXECUTE')
+     OR has_function_privilege('anon', 'private.has_staff_permission(text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'RLS helper privileges are incorrect';
+  END IF;
+
+  IF (SELECT prosecdef FROM pg_proc WHERE oid = 'public.validate_coupon(text,numeric)'::regprocedure) IS TRUE THEN
+    RAISE EXCEPTION 'validate_coupon is still SECURITY DEFINER';
+  END IF;
+
+  IF NOT has_schema_privilege('authenticated', 'private', 'USAGE')
+     OR NOT has_schema_privilege('anon', 'private', 'USAGE') THEN
+    RAISE EXCEPTION 'RPC roles cannot resolve private implementations';
+  END IF;
+END;
+$metadata$;
+
+-- Verify existing public tables no longer grant out-of-band privileges.
+DO $table_privileges$
+DECLARE
+  r record;
+BEGIN
+  FOR r IN
+    SELECT c.oid, c.relname
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE n.nspname = 'public'
+       AND c.relkind IN ('r', 'p')
+  LOOP
+    IF has_table_privilege('anon', r.oid, 'TRUNCATE')
+       OR has_table_privilege('authenticated', r.oid, 'TRUNCATE')
+       OR has_table_privilege('anon', r.oid, 'REFERENCES')
+       OR has_table_privilege('authenticated', r.oid, 'REFERENCES')
+       OR has_table_privilege('anon', r.oid, 'TRIGGER')
+       OR has_table_privilege('authenticated', r.oid, 'TRIGGER')
+       OR has_table_privilege('anon', r.oid, 'MAINTAIN')
+       OR has_table_privilege('authenticated', r.oid, 'MAINTAIN') THEN
+      RAISE EXCEPTION 'Unexpected table-level privilege remains on public.%', r.relname;
+    END IF;
+  END LOOP;
+END;
+$table_privileges$;
+
+-- Verify future postgres-owned public tables/functions inherit the tightened
+-- default privileges rather than silently re-opening the API surface.
+CREATE TABLE public.security_fixture_future_probe(id integer);
+CREATE FUNCTION public.security_fixture_future_fn()
+RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$;
+
+DO $defaults$
+BEGIN
+  IF has_table_privilege('anon', 'public.security_fixture_future_probe', 'TRUNCATE')
+     OR has_table_privilege('authenticated', 'public.security_fixture_future_probe', 'TRUNCATE')
+     OR has_table_privilege('anon', 'public.security_fixture_future_probe', 'REFERENCES')
+     OR has_table_privilege('authenticated', 'public.security_fixture_future_probe', 'REFERENCES')
+     OR has_table_privilege('anon', 'public.security_fixture_future_probe', 'TRIGGER')
+     OR has_table_privilege('authenticated', 'public.security_fixture_future_probe', 'TRIGGER')
+     OR has_table_privilege('anon', 'public.security_fixture_future_probe', 'MAINTAIN')
+     OR has_table_privilege('authenticated', 'public.security_fixture_future_probe', 'MAINTAIN') THEN
+    RAISE EXCEPTION 'Unsafe table default privileges remain for postgres-owned public tables';
+  END IF;
+
+  IF has_function_privilege('anon', 'public.security_fixture_future_fn()', 'EXECUTE')
+     OR has_function_privilege('authenticated', 'public.security_fixture_future_fn()', 'EXECUTE')
+     OR has_function_privilege('public', 'public.security_fixture_future_fn()', 'EXECUTE') THEN
+    RAISE EXCEPTION 'Unsafe function default EXECUTE remains for postgres-owned functions';
+  END IF;
+END;
+$defaults$;
+
+-- The RLS policy references the original has_staff_permission function OID.
+-- After that function moves to private, the dependency and its access must work.
+SET ROLE authenticated;
+DO $rls_dependency$
+DECLARE
+  v_rows integer;
+BEGIN
+  SELECT count(*) INTO v_rows FROM public.security_fixture_policy_probe;
+  IF v_rows <> 0 THEN
+    RAISE EXCEPTION 'Moved has_staff_permission policy did not deny an unverified user';
+  END IF;
+
+  BEGIN
+    PERFORM public.admin_delete_order('10000000-0000-4000-8000-000000000010');
+    RAISE EXCEPTION 'Admin RPC unexpectedly allowed an unverified authenticated user';
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLERRM <> 'fixture staff access denied' THEN
+        RAISE;
+      END IF;
+  END;
+END;
+$rls_dependency$;
+RESET ROLE;
+
+-- Public guest endpoints remain usable only with a valid auth identity or
+-- access token; the anonymous no-token path must not reveal order rows.
+SET ROLE anon;
+DO $guest_access$
+DECLARE
+  v_rows integer;
+BEGIN
+  SELECT count(*) INTO v_rows FROM public.get_customer_orders();
+  IF v_rows <> 0 THEN
+    RAISE EXCEPTION 'Anonymous order tracking returned rows without proof';
+  END IF;
+
+  IF public.redeem_coupon(
+    '10000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000010',
+    NULL
+  ) IS TRUE THEN
+    RAISE EXCEPTION 'Anonymous coupon redemption succeeded without proof';
+  END IF;
+END;
+$guest_access$;
+RESET ROLE;
+
+-- SECURITY INVOKER coupon validation is subject to the active-only RLS policy.
+SET ROLE anon;
+DO $coupon_rls$
+DECLARE
+  v_active_count integer;
+  v_inactive_valid_count integer;
+BEGIN
+  SELECT count(*) INTO v_active_count
+    FROM public.validate_coupon('ACTIVE10', 100)
+   WHERE valid IS TRUE;
+
+  SELECT count(*) INTO v_inactive_valid_count
+    FROM public.validate_coupon('INACTIVE10', 100)
+   WHERE valid IS TRUE;
+
+  IF v_active_count <> 1 OR v_inactive_valid_count <> 0 THEN
+    RAISE EXCEPTION 'Coupon validation did not respect active-only RLS visibility';
+  END IF;
+END;
+$coupon_rls$;
+RESET ROLE;
