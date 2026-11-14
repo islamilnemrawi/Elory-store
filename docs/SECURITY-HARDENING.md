@@ -15,7 +15,7 @@ The single migration `20261114180000_elory_security_privilege_hardening.sql` is 
 5. API roles receive `USAGE`, but not `CREATE`, on `private` so wrappers and policy helpers can resolve the approved implementations. New private tables/functions created by `postgres` default to no API-role access.
 6. PostgreSQL defaults for objects created by `postgres` are tightened, including the global default PUBLIC function EXECUTE grant.
 7. `private.elora_push_config` remains RLS-protected and inaccessible to API roles. It deliberately has no client-facing policy.
-8. The internal `private.elora_notify_new_order()` SECURITY DEFINER trigger is checked for its expected schema-qualified references and moved to a `pg_catalog`-only `search_path`; the trigger itself and its `net.http_post` behavior are retained.
+8. The internal `private.elora_notify_new_order()` SECURITY DEFINER trigger is checked for its expected schema-qualified references and moved to a `pg_catalog`-only `search_path`. Direct `EXECUTE` is revoked from `PUBLIC`, `anon`, `authenticated`, and `service_role`; the already-installed table trigger and its `net.http_post` behavior are retained and tested after revocation.
 
 ## Intentionally preserved access
 
