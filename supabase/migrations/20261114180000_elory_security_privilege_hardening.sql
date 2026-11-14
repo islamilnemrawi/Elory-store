@@ -258,6 +258,7 @@ BEGIN
   -- RLS policies that refer to the moved helper functions retain their function
   -- OIDs; authenticated must therefore retain private schema usage and execute
   -- on the exact original helper functions.
+  REVOKE CREATE ON SCHEMA private FROM PUBLIC, anon, authenticated, service_role;
   GRANT USAGE ON SCHEMA private TO anon, authenticated, service_role;
 END;
 $security_hardening$;
@@ -359,6 +360,14 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
 
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres
   REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
+
+-- Private schema objects are implementation details. API roles may receive
+-- USAGE for approved RPC wrappers, never implicit table or function access.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA private
+  REVOKE ALL ON TABLES FROM PUBLIC, anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA private
+  REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon, authenticated, service_role;
 
 -- Private push configuration remains intentionally inaccessible to API roles.
 DO $private_push_config$
