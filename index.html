@@ -9704,7 +9704,7 @@ main#home{
   const out=[];
   for(let i=0;i<sourceStyle.length;i++){
    const property=sourceStyle[i], value=sourceStyle.getPropertyValue(property);
-   const custom=property.startsWith("--") && /#[0-9a-f]{3,8}\\b|rgba?\\(|hsla?\\(|\\b(pink|magenta|fuchsia|violet)\\b/i.test(value);
+   const custom=property.startsWith("--") && (value.includes("#") || value.includes("rgb") || value.includes("hsl") || /pink|magenta|fuchsia|violet/i.test(value));
    if(!allowed.test(property)&&!custom)continue;
    const next=rewrite(value);
    if(next!==value)out.push(property+":"+next+(sourceStyle.getPropertyPriority(property)?" !important":"")+";");
@@ -9737,7 +9737,7 @@ main#home{
   for(const rule of Array.from(rules||[])){
    if(rule.type===1&&rule.style){
     const declarations=colorDeclarations(rule.style);
-    if(declarations===rule.style.cssText)continue;
+    if(!declarations)continue;
     const selectors=splitSelectorList(rule.selectorText).map(scopedSelector).filter(Boolean);
     if(selectors.length)out.push((inside||"")+selectors.join(",")+"{"+declarations+"}");
    }else if(rule.cssRules && rule.type!==7 && rule.type!==8){
