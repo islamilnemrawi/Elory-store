@@ -28,40 +28,80 @@ jobs:
           set -Eeuo pipefail
           python3 - <<'PY'
           import os
+          import shlex
           from pathlib import Path
           from urllib.parse import unquote, urlsplit
 
-          raw = os.environ.get("ELORY_SUPABASE_DB_URL", "")
+          raw = os.environ.get("ELORY_SUPABASE_DB_URL", "").strip()
           if not raw:
               raise SystemExit("Required Actions secret ELORY_SUPABASE_DB_URL is missing.")
 
-          parsed = urlsplit(raw)
-          if parsed.scheme not in ("postgres", "postgresql"):
-              raise SystemExit("The secret must be a PostgreSQL URI.")
-          if not parsed.hostname or not parsed.username or parsed.password is None:
-              raise SystemExit("The PostgreSQL URI is missing a required connection field.")
-
-          host = parsed.hostname.lower()
+          # Supabase can copy a raw URI, a psql command wrapping a URI, or
+          # libpq key=value connection information.
+          candidate = raw
           try:
-              port = parsed.port or 5432
+              tokens = shlex.split(raw)
           except ValueError:
-              raise SystemExit("The PostgreSQL URI has an invalid port.")
+              tokens = []
+          uri_token = next(
+              (token for token in tokens if token.startswith(("postgres://", "postgresql://"))),
+              None,
+          )
+          if uri_token:
+              candidate = uri_token
+          elif candidate.startswith(("postgres://", "postgresql://")):
+              pass
+          else:
+              params = {}
+              for token in tokens:
+                  if "=" in token:
+                      key, value = token.split("=", 1)
+                      params[key.lower()] = value
+              if params:
+                  host_value = params.get("host", "")
+                  port_value = params.get("port", "5432")
+                  user_value = params.get("user", "")
+                  db_value = params.get("dbname", params.get("database", ""))
+                  password_value = params.get("password")
+                  candidate = None
+              else:
+                  raise SystemExit(
+                      "The saved secret is not a complete PostgreSQL connection string. "
+                      "Copy the full Session Pooler URI or its complete PSQL connection command."
+                  )
 
-          # Require Supabase Session Pooler (5432), not Transaction Pooler (6543)
-          # and not a direct database connection.
+          if candidate is not None:
+              parsed = urlsplit(candidate)
+              if parsed.scheme not in ("postgres", "postgresql"):
+                  raise SystemExit("The saved value does not contain a PostgreSQL URI.")
+              if not parsed.hostname or not parsed.username or parsed.password is None:
+                  raise SystemExit("The PostgreSQL URI is missing a required connection field.")
+              host_value = parsed.hostname
+              try:
+                  port_value = str(parsed.port or 5432)
+              except ValueError:
+                  raise SystemExit("The PostgreSQL URI has an invalid port.")
+              user_value = unquote(parsed.username)
+              password_value = unquote(parsed.password)
+              db_value = unquote(parsed.path.lstrip("/"))
+
+          host = host_value.lower()
+          try:
+              port = int(port_value)
+          except (TypeError, ValueError):
+              raise SystemExit("The saved connection string has an invalid port.")
           if not host.endswith(".pooler.supabase.com") or port != 5432:
               raise SystemExit(
-                  "Use the Supabase Session Pooler URI (pooler.supabase.com, port 5432)."
+                  "Use the Supabase Session Pooler connection (pooler.supabase.com, port 5432)."
               )
 
-          username = unquote(parsed.username)
-          password = unquote(parsed.password)
-          database = unquote(parsed.path.lstrip("/"))
-          if not username or not database:
-              raise SystemExit("The PostgreSQL URI has an empty username or database.")
+          username = user_value
+          password = password_value
+          database = db_value
+          if not username or not database or password is None:
+              raise SystemExit("The connection string is missing username, database, or password.")
           if any("\n" in value or "\r" in value for value in (host, username, password, database)):
-              raise SystemExit("The PostgreSQL URI contains an unsupported line break.")
-
+              raise SystemExit("The connection string contains an unsupported line break.")
           def pgpass_escape(value: str) -> str:
               return value.replace("\\", "\\\\").replace(":", "\\:")
 
