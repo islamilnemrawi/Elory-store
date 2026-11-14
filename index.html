@@ -7835,6 +7835,11 @@ main#home{
           dot.classList.toggle("active", i === current);
           dot.setAttribute("aria-label", dot.dataset.label || ("الشريحة " + (i + 1)));
         });
+        const heroSection = slider.closest(".hero");
+        if (heroSection) {
+          const currentIsFullBleed = slides[current]?.classList.contains("elory-hero-fullbleed") === true;
+          heroSection.classList.toggle("elory-hero-campaign-fullbleed", currentIsFullBleed);
+        }
       }
 
       function finishTo(next) {
@@ -9391,8 +9396,6 @@ main#home{
           const fullBleedSource=fullBleed?mediaUrl(item.mediaUrl):'';
           if(fullBleed && fullBleedSource){
             slide.classList.add('elory-hero-fullbleed');
-            const heroSection=old.closest('.hero');
-            if(heroSection)heroSection.classList.add('elory-hero-campaign-fullbleed');
             ['.hero-copy','.hero-content','.hero-product-stage','.hero-wave-top','.hero-wave-bottom','.hero-decor'].forEach(sel=>$(sel,slide)?.remove());
             slide.setAttribute('aria-label',txt(item.title||'Elory campaign'));
             if(String(item.mediaType||'image').toLowerCase()==='video'){
