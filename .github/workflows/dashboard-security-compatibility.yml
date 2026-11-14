@@ -6,9 +6,6 @@ on:
       - main
     paths:
       - "supabase/migrations/20261114180000_elory_security_privilege_hardening.sql"
-      - "supabase/tests/security_hardening*.sql"
-      - ".github/workflows/dashboard-security-compatibility.yml"
-      - ".github/workflows/security-hardening.yml"
 
 permissions:
   contents: read
