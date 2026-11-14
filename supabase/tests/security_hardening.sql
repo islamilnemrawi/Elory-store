@@ -260,7 +260,8 @@ DECLARE
   v_rows integer;
 BEGIN
   -- Simulate a fresh anonymous PostgREST request, not the previous authenticated
-  -- fixture session on this same psql connection.
+  -- fixture session on this same psql connection. Do not call auth.* directly
+  -- under anon; the public RPC is the API surface this test is exercising.
   PERFORM set_config('request.jwt.claim.sub', '', false);
   PERFORM set_config('request.jwt.claim.role', 'anon', false);
 
