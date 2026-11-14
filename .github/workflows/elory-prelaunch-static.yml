@@ -1,0 +1,27 @@
+name: Elory pre-launch static validation
+
+on:
+  push:
+    branches:
+      - elory/prelaunch-hardening
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  static-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate storefront and hardening invariants
+        run: node tests/validate-store.mjs
+      - name: Validate shell scripts
+        run: bash -n scripts/prepare-local-schema.sh scripts/run-prelaunch-tests.sh scripts/seed-10000.sh scripts/cleanup-10000.sh
