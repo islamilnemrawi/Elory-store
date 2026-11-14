@@ -45,8 +45,7 @@ jobs:
                   "Replace it with the actual Database password in the GitHub secret."
               )
 
-          # Supabase can copy a raw URI, a psql command wrapping a URI, or
-          # libpq key=value connection information.
+          # Parse URI, libpq key/value, or the psql -h/-p/-d/-U form.
           candidate = raw
           try:
               tokens = shlex.split(raw)
@@ -56,53 +55,50 @@ jobs:
               (token for token in tokens if token.startswith(("postgres://", "postgresql://"))),
               None,
           )
-          if uri_token:
-              candidate = uri_token
-          elif candidate.startswith(("postgres://", "postgresql://")):
-              pass
-          else:
-              params = {}
-              for token in tokens:
-                  if "=" in token:
-                      key, value = token.split("=", 1)
-                      params[key.lower()] = value
-              if params:
-                  host_value = params.get("host", "")
-                  port_value = params.get("port", "5432")
-                  user_value = params.get("user", "")
-                  db_value = params.get("dbname", params.get("database", ""))
-                  password_value = params.get("password")
-                  candidate = None
-              else:
-                  raise SystemExit(
-                      "The saved secret is not a complete PostgreSQL connection string. "
-                      "Copy the full Session Pooler URI or its complete PSQL connection command."
-                  )
-
-          if candidate is not None:
-              # Supabase's copied text may bracket the DNS host. Bracketed
-              # password placeholders were rejected above before normalization.
+          host_value = user_value = db_value = password_value = None
+          port_value = "5432"
+          if uri_token or raw.startswith(("postgres://", "postgresql://")):
+              candidate = uri_token or raw
+              # Remove dashboard display brackets from the copied URI.
               candidate = candidate.replace("[", "").replace("]", "")
               parsed = urlsplit(candidate)
               if parsed.scheme not in ("postgres", "postgresql"):
                   raise SystemExit("The saved value does not contain a PostgreSQL URI.")
-              if not parsed.hostname or not parsed.username or parsed.password is None:
-                  raise SystemExit("The PostgreSQL URI is missing a required connection field.")
+              if not parsed.hostname or not parsed.username:
+                  raise SystemExit("The PostgreSQL URI is missing its host or username.")
               host_value = parsed.hostname
               try:
                   port_value = str(parsed.port or 5432)
               except ValueError:
                   raise SystemExit("The PostgreSQL URI has an invalid port.")
               user_value = unquote(parsed.username)
-              password_value = unquote(parsed.password)
-              if password_value.strip("[]").strip().upper() in {
-                  "YOUR-PASSWORD", "YOUR_PASSWORD", "REPLACE_WITH_YOUR_PASSWORD"
-              }:
-                  raise SystemExit(
-                      "The copied Supabase URI still contains a password placeholder. "
-                      "Replace [YOUR-PASSWORD] with the actual Database password in the GitHub secret."
-                  )
+              password_value = unquote(parsed.password) if parsed.password is not None else None
               db_value = unquote(parsed.path.lstrip("/"))
+          else:
+              params = {}
+              i = 0
+              while i < len(tokens):
+                  token = tokens[i]
+                  if token.startswith("--") and "=" in token:
+                      key, value = token[2:].split("=", 1)
+                      params[key.lower()] = value
+                  elif token in ("-h", "-p", "-d", "-U") and i + 1 < len(tokens):
+                      key = {"-h":"host", "-p":"port", "-d":"dbname", "-U":"user"}[token]
+                      params[key] = tokens[i + 1]
+                      i += 1
+                  elif "=" in token:
+                      key, value = token.split("=", 1)
+                      params[key.lower()] = value
+                  i += 1
+              host_value = params.get("host")
+              port_value = params.get("port", "5432")
+              user_value = params.get("user")
+              db_value = params.get("dbname", params.get("database"))
+              password_value = params.get("password")
+          if password_value is not None and password_value.strip("[]").strip().upper() in {
+              "YOUR-PASSWORD", "YOUR_PASSWORD", "REPLACE_WITH_YOUR_PASSWORD"
+          }:
+              raise SystemExit("The saved connection string still contains a password placeholder.")
 
           host = host_value.lower()
           try:
