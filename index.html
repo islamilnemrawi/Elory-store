@@ -167,14 +167,14 @@ window.ELORY_PAYMENT_CONFIG = Object.freeze({
       --surface-2: #fdf2f6;
       --text: #292126;
       --muted: #81747a;
-      --pink: #7850a8;
-      --pink-dark: #5d388a;
-      --pink-light: #ded0ee;
-      --pink-soft: #f2eafa;
+      --pink: #A56BD5;
+      --pink-dark: #8952BC;
+      --pink-light: #E5D3F5;
+      --pink-soft: #F3EAFB;
       --gold: #b79552;
       --gold-light: #e7d39b;
-      --border: #eadfe4;
-      --announcement: #6f4b8d;
+      --border: #E5D3F5;
+      --announcement: #8952BC;
       --shadow-sm: 0 4px 18px rgba(79, 38, 52, .07);
       --shadow: 0 12px 35px rgba(79, 38, 52, .10);
       --shadow-lg: 0 22px 60px rgba(79, 38, 52, .16);
@@ -2822,8 +2822,14 @@ body.prime-mode .header-logo-row .logo{color:#7850A8 !important;}
 .elory-logo-picture>img.elory-logo-normal{
   opacity:1!important;visibility:visible!important;pointer-events:auto!important;
 }
+body.prime-mode .elory-logo-picture>img.elory-logo-normal{
+  opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+}
 .elory-logo-picture>img.elory-logo-prime{
   opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+}
+body.prime-mode .elory-logo-picture>img.elory-logo-prime{
+  opacity:1!important;visibility:visible!important;pointer-events:auto!important;
 }
 
 
