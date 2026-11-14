@@ -104,6 +104,15 @@ AS $$
   SELECT auth.uid() IS NOT NULL;
 $$;
 
+-- Mirror production's original RESTRICTIVE staff SELECT policy so the
+-- migration must preserve active-coupon reads for regular authenticated buyers.
+CREATE POLICY "Staff coupon select permission"
+  ON public.coupons
+  AS RESTRICTIVE
+  FOR SELECT
+  TO authenticated
+  USING (public.has_staff_permission('coupons.view'));
+
 CREATE POLICY "fixture staff-only policy"
   ON public.security_fixture_policy_probe FOR SELECT TO authenticated
   USING (public.has_staff_permission('fixture.view'));
