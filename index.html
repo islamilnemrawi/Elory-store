@@ -9699,6 +9699,18 @@ main#home{
   // Only convert standalone color keywords. Keep names such as var(--pink) intact.
   return withFunctionalColors.replace(new RegExp("(^|[^-\\w])("+names+")(?=$|[^-\\w])","gi"),(match,prefix,color)=>prefix+convertColor(color));
  }
+ function colorDeclarations(sourceStyle){
+  const allowed=/^(color|background|background-color|background-image|border|border-color|border-(top|right|bottom|left)(-color)?|outline|outline-color|box-shadow|text-shadow|fill|stroke|stop-color|flood-color|lighting-color|caret-color|accent-color|column-rule|text-decoration(-color)?|text-emphasis-color|-webkit-text-fill-color|-webkit-text-stroke(-color)?)$/;
+  const out=[];
+  for(let i=0;i<sourceStyle.length;i++){
+   const property=sourceStyle[i], value=sourceStyle.getPropertyValue(property);
+   const custom=property.startsWith("--") && /#[0-9a-f]{3,8}\\b|rgba?\\(|hsla?\\(|\\b(pink|magenta|fuchsia|violet)\\b/i.test(value);
+   if(!allowed.test(property)&&!custom)continue;
+   const next=rewrite(value);
+   if(next!==value)out.push(property+":"+next+(sourceStyle.getPropertyPriority(property)?" !important":"")+";");
+  }
+  return out.join("");
+ }
  function splitSelectorList(value){
   const output=[];let start=0,round=0,square=0,quote="",escaped=false;
   for(let i=0;i<value.length;i++){
@@ -9724,11 +9736,11 @@ main#home{
  function walk(rules,out,inside){
   for(const rule of Array.from(rules||[])){
    if(rule.type===1&&rule.style){
-    const declarations=rewrite(rule.style.cssText);
+    const declarations=colorDeclarations(rule.style);
     if(declarations===rule.style.cssText)continue;
     const selectors=splitSelectorList(rule.selectorText).map(scopedSelector).filter(Boolean);
     if(selectors.length)out.push((inside||"")+selectors.join(",")+"{"+declarations+"}");
-   }else if(rule.cssRules){
+   }else if(rule.cssRules && rule.type!==7 && rule.type!==8){
     const nested=[];walk(rule.cssRules,nested,inside);
     if(nested.length){
      if(rule.conditionText)out.push("@"+(rule.type===4?"media":rule.type===12?"supports":"container")+" "+rule.conditionText+"{"+nested.join("")+"}");
