@@ -167,4 +167,6 @@ $function$;
 revoke all on function public.get_customer_orders(text, text) from public;
 grant execute on function public.get_customer_orders(text, text) to anon, authenticated;
 
+notify pgrst, 'reload schema';
+
 commit;
