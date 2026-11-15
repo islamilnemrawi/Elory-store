@@ -9951,5 +9951,181 @@ main#home{
  window.addEventListener("pageshow",apply);
 })();
 </script>
+
+<script id="elory-hero-render-recovery">
+/* Narrow recovery for CMS hero campaigns. It does not modify other storefront sections. */
+(async function () {
+  'use strict';
+  const endpoint = 'https://dmttevcncsxzbamazmmq.supabase.co/rest/v1/site_customizations?select=config&id=eq.1';
+  const apiKey = 'sb_publishable_UxXOA92gcX3CHzbU7h3udQ_3khfMMzH';
+  const media = value => {
+    const url = String(value || '').trim();
+    return /^https?:\/\//i.test(url) ? url : '';
+  };
+  const text = value => String(value ?? '');
+  const safeLink = value => {
+    const raw = text(value).trim();
+    if (!raw) return '';
+    if (/^(#|\/)/.test(raw)) return raw;
+    try {
+      const parsed = new URL(raw, location.origin);
+      return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+    } catch (_) { return ''; }
+  };
+  try {
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: { apikey: apiKey, Authorization: 'Bearer ' + apiKey }
+    });
+    if (!response.ok) throw new Error('Hero config request returned HTTP ' + response.status);
+    const rows = await response.json();
+    const record = Array.isArray(rows) ? rows[0] : rows;
+    const config = record && record.config;
+    if (!config) throw new Error('Hero config row is empty');
+    const sectionSetting = Array.isArray(config.sections)
+      ? config.sections.find(item => item && item.id === 'sec_hero') : null;
+    if (config.hero?.isVisible === false || sectionSetting?.isVisible === false) return;
+
+    const campaigns = (Array.isArray(config.hero?.slides) ? config.hero.slides : [])
+      .map((item, index) => ({ item, index }))
+      .filter(entry => {
+        const item = entry.item;
+        return item && item.isActive !== false &&
+          !!media(item.mediaUrl || item.imageUrl || item.mobileMediaUrl);
+      })
+      .sort((a, b) => (+a.item.sortOrder || 0) - (+b.item.sortOrder || 0));
+    if (!campaigns.length) return;
+
+    const hero = document.querySelector('.hero');
+    const slider = document.getElementById('heroSlider');
+    const template = slider && slider.querySelector(':scope > .hero-slide');
+    if (!hero || !slider || !template) throw new Error('Hero container or slide template not found');
+
+    /* If the primary CMS renderer already built campaign slides, leave it untouched. */
+    if (slider.querySelector(':scope > .hero-slide.elory-hero-fullbleed .elory-hero-fullbleed-picture img')) return;
+
+    const cards = campaigns.map((entry, index) => {
+      const item = entry.item;
+      const source = media(item.mediaUrl || item.imageUrl || item.mobileMediaUrl);
+      if (!source) return null;
+      const slide = template.cloneNode(false);
+      slide.className = 'hero-slide elory-hero-fullbleed' + (index === 0 ? ' active' : '');
+      slide.removeAttribute('style');
+      slide.setAttribute('aria-label', text(item.buttonText || item.title || 'إعلان Elory'));
+      slide.style.opacity = index === 0 ? '1' : '0';
+      slide.style.visibility = 'visible';
+      slide.style.transform = 'translate3d(0,0,0)';
+      slide.style.zIndex = index === 0 ? '3' : '1';
+
+      const picture = document.createElement('picture');
+      picture.className = 'elory-hero-fullbleed-picture';
+      const mobileSource = item.useSeparateMobileMedia === true ? media(item.mobileMediaUrl) : '';
+      if (mobileSource) {
+        const sourceElement = document.createElement('source');
+        sourceElement.media = '(max-width: 700px)';
+        sourceElement.srcset = mobileSource;
+        picture.appendChild(sourceElement);
+      }
+      const image = document.createElement('img');
+      image.src = source;
+      image.alt = text(item.title || 'Elory campaign');
+      image.loading = index === 0 ? 'eager' : 'lazy';
+      image.decoding = 'async';
+      image.addEventListener('error', () => {
+        console.warn('Elory hero campaign image could not be loaded:', source);
+      }, { once: true });
+      picture.appendChild(image);
+      slide.appendChild(picture);
+
+      let destination = '';
+      const actionType = text(item.actionType || (item.actionUrl ? 'url' : 'none')).toLowerCase();
+      if (actionType === 'product') {
+        const productId = text(item.productId).trim();
+        if (/^[A-Za-z0-9_-]{1,128}$/.test(productId)) {
+          const target = new URL(location.href);
+          target.searchParams.set('product', productId);
+          target.hash = 'product';
+          destination = target.href;
+        }
+      } else if (actionType === 'url') {
+        destination = safeLink(item.actionUrl);
+      }
+      if (destination) {
+        const hitArea = document.createElement('a');
+        hitArea.className = 'elory-hero-fullbleed-link';
+        hitArea.href = destination;
+        hitArea.setAttribute('aria-label', text(item.buttonText || item.title || 'مشاهدة الإعلان'));
+        slide.appendChild(hitArea);
+        if (item.buttonVisible === true && text(item.buttonText).trim()) {
+          const cta = document.createElement('a');
+          cta.className = 'elory-hero-fullbleed-cta';
+          cta.href = destination;
+          cta.textContent = text(item.buttonText);
+          const positions = {
+            'top-left': { top: '18px', left: '18px' },
+            'top-center': { top: '18px', left: '50%', transform: 'translateX(-50%)' },
+            'top-right': { top: '18px', right: '18px' },
+            'center-left': { top: '50%', left: '18px', transform: 'translateY(-50%)' },
+            'center': { top: '50%', left: '50%', transform: 'translate(-50%,-50%)' },
+            'center-right': { top: '50%', right: '18px', transform: 'translateY(-50%)' },
+            'bottom-left': { bottom: '58px', left: '18px' },
+            'bottom-center': { bottom: '58px', left: '50%', transform: 'translateX(-50%)' },
+            'bottom-right': { bottom: '58px', right: '18px' }
+          };
+          Object.assign(cta.style, positions[text(item.buttonPosition)] || positions['bottom-center']);
+          slide.appendChild(cta);
+        }
+      }
+      return slide;
+    }).filter(Boolean);
+
+    if (!cards.length) return;
+    const dots = document.createElement('div');
+    dots.id = 'heroDots';
+    dots.className = 'hero-dots';
+    let current = 0;
+    let timer = null;
+    const show = next => {
+      current = (next + cards.length) % cards.length;
+      cards.forEach((card, index) => {
+        const active = index === current;
+        card.classList.toggle('active', active);
+        card.style.opacity = active ? '1' : '0';
+        card.style.visibility = 'visible';
+        card.style.zIndex = active ? '3' : '1';
+      });
+      Array.from(dots.children).forEach((dot, index) => dot.classList.toggle('active', index === current));
+    };
+    cards.forEach((card, index) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'hero-dot' + (index === 0 ? ' active' : '');
+      dot.setAttribute('aria-label', 'الشريحة ' + (index + 1));
+      dot.addEventListener('click', () => {
+        show(index);
+        if (timer) clearInterval(timer);
+        timer = cards.length > 1 ? setInterval(() => show(current + 1), 3500) : null;
+      });
+      dots.appendChild(dot);
+    });
+    slider.replaceChildren(...cards, dots);
+    slider.dataset.heroReady = 'true';
+    slider.dataset.heroCmsReady = 'true';
+    slider.__eloryRestartHero = () => show(current);
+    hero.classList.add('elory-hero-campaign-fullbleed');
+    hero.hidden = false;
+    hero.style.removeProperty('display');
+    show(0);
+    if (timer) clearInterval(timer);
+    timer = cards.length > 1 ? setInterval(() => show(current + 1), 3500) : null;
+    window.__eloryHeroRecoveryTimer = timer;
+    console.info('Elory hero campaigns rendered by recovery path:', cards.length);
+  } catch (error) {
+    console.warn('Elory hero recovery did not complete:', error);
+  }
+})();
+</script>
+
 </body>
 </html>
