@@ -7237,7 +7237,7 @@ main#home{
       const subtotal=getCheckoutSubtotal();
       if(btn){btn.disabled=true;btn.textContent="جاري التحقق...";}
       try{
-        const {data,error}=await elorySupabase.rpc("validate_coupon",{p_code:code,p_subtotal:subtotal});
+        const {data,error}=await elorySupabase.rpc("validate_coupon",{p_code:code,p_subtotal:subtotal,p_phone:(document.getElementById("customerPhone")?.value||"").trim()});
         if(error) throw error;
         const row=Array.isArray(data)?data[0]:data;
         if(!row?.valid){
