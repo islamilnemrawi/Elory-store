@@ -162,7 +162,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           SQL="$(cat <<'SQL'
-          BEGIN READ ONLY;
+          COPY (
           WITH expected(name) AS (
             SELECT unnest(ARRAY[
               'admin_apply_shipping_governorate_price',
@@ -265,8 +265,8 @@ jobs:
             ),
             'private_schema_usage_anon', has_schema_privilege('anon', 'private', 'USAGE'),
             'private_schema_usage_authenticated', has_schema_privilege('authenticated', 'private', 'USAGE')
-          )::text;
-          -- The connection closes after this read-only SELECT; no COMMIT output can mask its JSON result.
+          )::text
+          ) TO STDOUT;
           SQL
           )"
           docker run --rm --network host \
@@ -280,8 +280,12 @@ jobs:
             -e PGSSLMODE=require \
             -e PGOPTIONS="-c default_transaction_read_only=on" \
             postgres:17 \
-            psql -X -v ON_ERROR_STOP=1 -A -t --command "$SQL" > "$RUNNER_TEMP/elory-catalog.json"
-          test -s "$RUNNER_TEMP/elory-catalog.json"
+            psql -X -q -v ON_ERROR_STOP=1 --command "$SQL" > "$RUNNER_TEMP/elory-catalog.json"
+          test -s "$RUNNER_TEMP/elory-catalog.json" || {
+            echo "Catalog export returned no JSON bytes; refusing to continue."
+            exit 1
+          }
+          python3 -c 'import json, pathlib, sys; json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))' "$RUNNER_TEMP/elory-catalog.json"
 
       - name: Fingerprint dump and validate audited baseline gates
         shell: bash
