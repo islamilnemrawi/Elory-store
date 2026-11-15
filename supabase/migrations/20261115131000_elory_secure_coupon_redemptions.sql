@@ -4,7 +4,7 @@
 
 ALTER TABLE public.coupons
   ADD COLUMN IF NOT EXISTS first_order_only boolean NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS per_customer_limit integer NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS per_customer_limit integer DEFAULT 1,
   ADD COLUMN IF NOT EXISTS audience_mode text NOT NULL DEFAULT 'all_customers';
 
 DO $$
