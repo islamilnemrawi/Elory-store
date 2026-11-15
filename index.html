@@ -7237,7 +7237,15 @@ main#home{
       const subtotal=getCheckoutSubtotal();
       if(btn){btn.disabled=true;btn.textContent="جاري التحقق...";}
       try{
-        const {data,error}=await elorySupabase.rpc("validate_coupon",{p_code:code,p_subtotal:subtotal});
+        const phoneInput=document.getElementById("customerPhone");
+        const customerPhone=(phoneInput?.value||"").trim();
+        if(!customerPhone){
+          appliedCoupon=null;
+          if(msg){msg.textContent="اكتبي رقم الهاتف أولاً للتحقق من أهلية الكوبون";msg.className="coupon-message error";}
+          updateCheckoutTotals();
+          return;
+        }
+        const {data,error}=await elorySupabase.rpc("validate_coupon",{p_code:code,p_subtotal:subtotal,p_phone:customerPhone});
         if(error) throw error;
         const row=Array.isArray(data)?data[0]:data;
         if(!row?.valid){
@@ -9305,6 +9313,29 @@ main#home{
     const { data, error } = await db.from('site_customizations').select('config').eq('id', 1).maybeSingle();
     if (error || !data || !data.config) return;
     const c = data.config, $ = (s, root=document) => { try { return root.querySelector(s); } catch (_) { return null; } };
+
+    // Respect the dashboard's global store availability switch without deleting or changing any store content.
+    if (c.global && c.global.isStoreOpen === false) {
+      document.documentElement.classList.add('elory-store-closed');
+      let closedStyle = document.getElementById('elory-store-closed-style');
+      if (!closedStyle) {
+        closedStyle = document.createElement('style');
+        closedStyle.id = 'elory-store-closed-style';
+        closedStyle.textContent = 'html.elory-store-closed,html.elory-store-closed body{min-height:100%;background:#fffafb!important}html.elory-store-closed body>*:not(#elory-store-closed-overlay){display:none!important}#elory-store-closed-overlay{min-height:100vh;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;background:#fffafb;color:#381528;font-family:Cairo,Arial,sans-serif}#elory-store-closed-overlay .elory-closed-card{max-width:520px;padding:34px 26px;border:1px solid #eadfe4;border-radius:24px;background:#fff;box-shadow:0 18px 55px rgba(79,38,52,.09)}#elory-store-closed-overlay h1{margin:0 0 12px;font-size:clamp(23px,5vw,34px)}#elory-store-closed-overlay p{margin:0;color:#81747a;line-height:1.9;font-size:14px}';
+        document.head.appendChild(closedStyle);
+      }
+      const showClosedNotice = () => {
+        if (!document.body || document.getElementById('elory-store-closed-overlay')) return;
+        const overlay = document.createElement('main');
+        overlay.id = 'elory-store-closed-overlay';
+        overlay.setAttribute('role', 'status');
+        overlay.setAttribute('aria-live', 'polite');
+        overlay.innerHTML = '<section class="elory-closed-card"><h1>متجر Elory مغلق مؤقتًا</h1><p>نعتذر عن استقبال الطلبات في الوقت الحالي. نعمل على تجهيز المتجر وسنعود قريبًا.</p></section>';
+        document.body.appendChild(overlay);
+      };
+      if (document.body) showClosedNotice();
+      else document.addEventListener('DOMContentLoaded', showClosedNotice, { once: true });
+    }
     const $$ = (s, root=document) => { try { return Array.from(root.querySelectorAll(s)); } catch (_) { return []; } };
     const txt = v => String(v ?? '');
     const color = v => /^#[0-9a-f]{3,8}$/i.test(txt(v).trim()) ? txt(v).trim() : '';
