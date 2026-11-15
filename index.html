@@ -7448,8 +7448,7 @@ main#home{
         try{
           const history=await elorySupabase.rpc("get_customer_orders",{p_access_token:customerAccessToken,p_phone:null});
           if(!history.error&&Array.isArray(history.data)){
-            const numberedHistory=addCustomerOrderSequence(history.data);
-            createdOrderSnapshot=numberedHistory.find(x=>String(x.status||"")!=="CANCELLED")||numberedHistory[0]||null;
+            createdOrderSnapshot=history.data[0]||null;
           }
         }catch(e){console.warn("Order history snapshot unavailable",e);}
         // رقم الطلب + ربط العميل يتم توليدهما داخل Supabase عبر الـtriggers الحالية.
@@ -7459,7 +7458,7 @@ main#home{
           const cr=await elorySupabase.rpc("redeem_coupon",{p_coupon_id:appliedCoupon.id,p_order_id:createdOrderSnapshot?.id||null,p_access_token:customerAccessToken});
           if(cr.error)console.warn("Coupon redemption failed:",cr.error);
         }
-        const successOrder={...order,order_number:createdOrderSnapshot?.order_number||createdOrderSnapshot?.id||"",customer_order_number:createdOrderSnapshot?.customer_order_number||null,status:createdOrderSnapshot?.status||order.status,customer_name:customerName,governorate,center,address,payment_method:selectedPaymentMethod,items:order.items,subtotal,shipping_cost:shippingCost,total};
+        const successOrder={...order,order_number:createdOrderSnapshot?.order_number||createdOrderSnapshot?.id||"",customer_order_code:createdOrderSnapshot?.customer_order_code||"",status:createdOrderSnapshot?.status||order.status,customer_name:customerName,governorate,center,address,payment_method:selectedPaymentMethod,items:order.items,subtotal,shipping_cost:shippingCost,total};
         cart=[];saveCart();cartPrimeSelected=false;appliedCoupon=null;closeModal("checkoutModal");closeModal("cartModal");document.getElementById("checkoutForm").reset();checkoutPrimeSelected=false;updateCheckoutTotals();
         animateOrderToOrdersIcon(successOrder.items?.[0]?.image||"");
         showOrderSuccessPage(successOrder,primeRequested);
@@ -7477,14 +7476,14 @@ main#home{
       const name=document.getElementById('successCustomerName');
       if(name)name.textContent=order.customer_name||'';
       const orderStatus=orderStatusLabel(order.status||"طلب جديد");
-      const orderNo=order.order_number||order.order_code||order.id||"—";
+      const customerCode=order.customer_order_code||order.public_order_code||"";
       const statusBox=document.getElementById("orderSuccessStatus");
-      if(statusBox) statusBox.innerHTML=`<span>${escapeHtml(orderStatus)}</span><small>رقم الطلب العام #${escapeHtml(String(orderNo))}</small>${order.customer_order_number?`<small>ترتيب طلبك على حسابك: ${escapeHtml(String(order.customer_order_number))}</small>`:""}`;
+      if(statusBox) statusBox.innerHTML=`<span>${escapeHtml(orderStatus)}</span><small>رمز طلبك: ${escapeHtml(String(customerCode||"سيظهر في طلباتي"))}</small>`;
       const ordersPage=document.getElementById("customerOrdersPage"); if(ordersPage){ordersPage.hidden=true;ordersPage.style.display="none";}
       const details=document.getElementById('orderSuccessDetails');
       const paymentLabel=order.payment_method==='cash_on_delivery'?'الدفع عند الاستلام':(order.payment_method||'');
       if(details)details.innerHTML=[
-        ['رقم الطلب',order.order_number||order.order_code||'سيظهر في طلباتي'],['الحالة',orderStatusLabel(order.status||'NEW')],['المحافظة',order.governorate],['المركز / المنطقة',order.center],['العنوان',order.address],['طريقة الدفع',paymentLabel]
+        ['رمز الطلب',customerCode||'سيظهر في طلباتي'],['الحالة',orderStatusLabel(order.status||'NEW')],['المحافظة',order.governorate],['المركز / المنطقة',order.center],['العنوان',order.address],['طريقة الدفع',paymentLabel]
       ].map(([k,v])=>`<div class="success-detail"><small>${escapeHtml(k)}</small><strong>${escapeHtml(String(v||'—'))}</strong></div>`).join('');
       const productsEl=document.getElementById('orderSuccessProducts');
       if(productsEl)productsEl.innerHTML=(order.items||[]).map(item=>`<div class="success-product"><img src="${escapeHtml(item.image||'')}" alt="${escapeHtml(item.name||'')}"><div class="success-product-main"><b>${escapeHtml(item.name||'منتج')}</b><small>الكمية: ${Number(item.quantity||0)}${item.color?` • اللون: ${escapeHtml(item.color)}`:''}${item.size?` • المقاس: ${escapeHtml(item.size)}`:''}</small></div><div class="success-product-price">${formatPrice(Number(item.price||0)*Number(item.quantity||0))}</div></div>`).join('');
@@ -8563,31 +8562,6 @@ main#home{
       if(index<0) return "";
       return `<ol class="order-status-timeline" aria-label="مراحل الطلب">${stages.map((stage,stageIndex)=>`<li class="${stageIndex<index?"complete":stageIndex===index?"current":""}"><span class="order-status-dot">${stageIndex<index?'<i class="fa-solid fa-check"></i>':""}</span><span>${stage.label}</span></li>`).join("")}</ol>`;
     }
-    function addCustomerOrderSequence(rows){
-      const source=Array.isArray(rows)?rows:[];
-      const chronological=[...source].sort((a,b)=>{
-        const aTime=Date.parse(a?.created_at||"")||0;
-        const bTime=Date.parse(b?.created_at||"")||0;
-        if(aTime!==bTime)return aTime-bTime;
-        const aNumber=Number(a?.order_number)||0;
-        const bNumber=Number(b?.order_number)||0;
-        return aNumber-bNumber;
-      });
-      const counts=new Map();
-      const sequenceById=new Map();
-      chronological.forEach(order=>{
-        const id=String(order?.id||order?.order_number||order?.order_code||"");
-        if(!id)return;
-        const customerKey=String(order?.user_id||order?.customer_user_id||"guest");
-        const next=(counts.get(customerKey)||0)+1;
-        counts.set(customerKey,next);
-        sequenceById.set(id,next);
-      });
-      return source.map(order=>{
-        const id=String(order?.id||order?.order_number||order?.order_code||"");
-        return {...order,customer_order_number:sequenceById.get(id)||null};
-      });
-    }
     function renderCustomerOrderCard(order){
       const items=Array.isArray(order.items)?order.items:[];
       const details=[
@@ -8604,7 +8578,7 @@ main#home{
         ["الإجمالي النهائي",order.total]
       ].filter(([,value])=>value!==undefined&&value!==null&&value!=="");
       return `<article class="customer-order-card">
-        <div class="customer-order-top"><div><div class="customer-order-number">طلب #${escapeHtml(String(order.order_number||order.order_code||order.id||"—"))}</div><div class="customer-order-date">${order.created_at?new Date(order.created_at).toLocaleString("ar-EG"):""}${order.customer_order_number?` • طلبك رقم ${escapeHtml(String(order.customer_order_number))} على حسابك`:""}</div></div><span class="customer-order-status">${escapeHtml(orderStatusLabel(order.status))}</span></div>
+        <div class="customer-order-top"><div><div class="customer-order-number">رمز الطلب: ${escapeHtml(String(order.customer_order_code||"سيظهر قريبًا"))}</div><div class="customer-order-date">${order.created_at?new Date(order.created_at).toLocaleString("ar-EG"):""}</div></div><span class="customer-order-status">${escapeHtml(orderStatusLabel(order.status))}</span></div>
         ${orderStatusTimelineHtml(order.status)}
         <div class="customer-order-items">${items.length?items.map(item=>{
           const id=item.product_id??item.productId??item.id;
@@ -8630,7 +8604,7 @@ main#home{
         const result=await elorySupabase.rpc("get_customer_orders",{p_access_token:customerAccessToken,p_phone:null});
         if(result.error) throw result.error;
         const rows=Array.isArray(result.data)?result.data:[];
-        const numberedRows=addCustomerOrderSequence(rows);
+        const customerOrders=rows;
         if(!rows.length){
           state.textContent="";
           list.innerHTML='<div class="orders-empty"><i class="fa-solid fa-box-open" style="font-size:30px;color:var(--pink)"></i><p>لا توجد طلبات محفوظة حتى الآن.</p><button class="add-cart" onclick="goHome()">ابدئي التسوق</button></div>';
@@ -8638,7 +8612,7 @@ main#home{
           return;
         }
         state.textContent=`${rows.length} طلب`;
-        list.innerHTML=numberedRows.map(renderCustomerOrderCard).join("");
+        list.innerHTML=customerOrders.map(renderCustomerOrderCard).join("");
         updateOrderNotificationState(rows,{markRead:true});
       }catch(error){
         console.error("CUSTOMER ORDERS ERROR",error);
