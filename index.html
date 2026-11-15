@@ -7787,7 +7787,32 @@ main#home{
 
       const slides = Array.from(slider.querySelectorAll(":scope > .hero-slide"));
       const dots = Array.from(slider.querySelectorAll(".hero-dot"));
-      if (slides.length < 2) return;
+
+      // A single published slide is a valid hero state: show it on its own.
+      // Only multiple slides need carousel controls and an automatic timer.
+      if (slides.length === 1) {
+        const onlySlide = slides[0];
+        onlySlide.classList.remove("is-current", "is-entering", "is-leaving");
+        onlySlide.classList.add("active");
+        onlySlide.style.transition = "none";
+        onlySlide.style.zIndex = "3";
+        onlySlide.style.transform = "translate3d(0,0,0)";
+        onlySlide.style.opacity = "1";
+        onlySlide.style.visibility = "visible";
+        dots.forEach(dot => { dot.hidden = true; dot.style.display = "none"; });
+        const heroSection = slider.closest(".hero");
+        if (heroSection) {
+          heroSection.classList.toggle("elory-hero-campaign-fullbleed", onlySlide.classList.contains("elory-hero-fullbleed"));
+        }
+        window.heroIndex = 0;
+        return;
+      }
+      if (slides.length === 0) {
+        slider.hidden = true;
+        const heroSection = slider.closest(".hero");
+        if (heroSection) heroSection.style.display = "none";
+        return;
+      }
 
       const DURATION = 520;
       const AUTO_DELAY = 3000;
@@ -9382,7 +9407,12 @@ main#home{
     window.__eloryCampaignHeroLocked=campaignIndex>=0;
     if(campaignIndex>0)slides.unshift(slides.splice(campaignIndex,1)[0]);
     const old=$('#heroSlider');
-    if(c.hero && Array.isArray(c.hero.slides) && c.hero.slides.length && !slides.length) visible('.hero',false);
+    const heroConfigHasSlides=!!(c.hero && Array.isArray(c.hero.slides));
+    if(heroConfigHasSlides && !slides.length){
+      // No published slides means no hero at all; never leave the starter artwork behind.
+      if(old){ old.replaceChildren(); old.hidden=true; old.removeAttribute('data-hero-ready'); }
+      visible('.hero',false);
+    }
     if(c.hero && c.hero.isVisible===false) visible('.hero',false);
     if(old && slides.length){
       const templates=$('.hero-slide',old), dotsTemplate=$('.hero-dots',old);
