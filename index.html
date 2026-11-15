@@ -9375,7 +9375,7 @@ main#home{
 
     // Hero: legacy slides remain unchanged; full-bleed campaigns use dedicated media fields.
     const slides=(Array.isArray(c.hero?.slides)?c.hero.slides:[])
-      .filter(x=>x && x.isActive!==false)
+      .filter(x=>x && x.isActive!==false && (mediaUrl(x.mediaUrl) || imageUrl(x.imageUrl) || imageUrl(x.mobileMediaUrl)))
       .sort((a,b)=>(+a.sortOrder||0)-(+b.sortOrder||0));
     const requestedHeroId=new URLSearchParams(location.search).get('hero');
     const campaignIndex=requestedHeroId?slides.findIndex(x=>String(x.id)===requestedHeroId):-1;
@@ -9584,7 +9584,7 @@ main#home{
     visible('#prime',showPrime);
     visible('#primeHeaderBtn',showPrime); $$('.footer a[href="#prime"]').forEach(el=>visible(el,showPrime));
     const heroSetting=sectionSettings.find(x=>txt(x.id)==='sec_hero');
-    const hasActiveHero=!Array.isArray(c.hero?.slides) || c.hero.slides.some(slide=>slide && slide.isActive!==false);
+    const hasActiveHero=!Array.isArray(c.hero?.slides) || c.hero.slides.some(slide=>slide && slide.isActive!==false && (mediaUrl(slide.mediaUrl) || imageUrl(slide.imageUrl) || imageUrl(slide.mobileMediaUrl)));
     visible('.hero',c.hero?.isVisible!==false && hasActiveHero && (!heroSetting || heroSetting.isVisible!==false));
     const categorySetting=sectionSettings.find(x=>txt(x.id)==='sec_categories');
     visible('#categoriesSection',categories.isVisible!==false && (!categorySetting || categorySetting.isVisible!==false));
