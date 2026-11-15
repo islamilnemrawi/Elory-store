@@ -266,7 +266,7 @@ jobs:
             'private_schema_usage_anon', has_schema_privilege('anon', 'private', 'USAGE'),
             'private_schema_usage_authenticated', has_schema_privilege('authenticated', 'private', 'USAGE')
           )::text;
-          COMMIT;
+          -- The connection closes after this read-only SELECT; no COMMIT output can mask its JSON result.
           SQL
           )"
           docker run --rm --network host \
