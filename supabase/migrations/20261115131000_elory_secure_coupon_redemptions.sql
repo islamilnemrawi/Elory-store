@@ -346,7 +346,6 @@ BEGIN
       + v_shipping
       + CASE WHEN coalesce(NEW.prime_requested, false) THEN coalesce(v_prime_fee, 300) ELSE 0 END
       - v_discount
-      - coalesce(NEW.prime_discount, 0)
   );
 
   UPDATE public.orders
