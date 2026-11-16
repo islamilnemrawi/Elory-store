@@ -3,6 +3,7 @@ name: Validate Elory storefront scripts
 on:
   push:
     branches:
+      - main
       - elory/prime-config-live-sync
     paths:
       - index.html
