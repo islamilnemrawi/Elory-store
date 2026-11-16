@@ -66,5 +66,11 @@ jobs:
               assert "v_current_store_open" in sql and "'{global,isStoreOpen}'" in sql
               assert "SECURITY INVOKER" in sql
               print(f"Validated CMS versioning migration: {migrations[0].name}")
+          atomic_restore = Path("supabase/migrations/20261117093000_elory_cms_restore_atomic_draft_clear.sql")
+          if atomic_restore.exists():
+              atomic_sql = atomic_restore.read_text(encoding="utf-8")
+              restore_body = atomic_sql[atomic_sql.index("CREATE OR REPLACE FUNCTION public.admin_restore_site_customization_version"):]
+              assert "PERFORM public.admin_clear_site_customization_draft();" in restore_body, "Version restore must clear the draft in the same transaction"
+              print(f"Validated atomic CMS restore migration: {atomic_restore.name}")
           print(f"Validated {checked} inline JavaScript blocks.")
           PY
