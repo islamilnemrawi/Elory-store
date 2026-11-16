@@ -6172,7 +6172,7 @@ main#home{
               <span class="current-price">${formatPrice(salePrice)}</span>
               ${originalPrice>salePrice?`<span class="old-price">${formatPrice(originalPrice)}</span>`:""}
             </div>
-            <button type="button" class="product-prime-price${primeActive?' is-active':''}" aria-label="سعر Prime ${formatPrice(primePrice)}" title="Elory Prime — ${formatPrice(primePrice)}" onclick="handleProductPrimeOffer(event)">
+            <button type="button" class="product-prime-price${primeActive?' is-active':''}" style="${primeActive||isPrimeEnabled()?'':'display:none'}" aria-label="سعر Prime ${formatPrice(primePrice)}" title="Elory Prime — ${formatPrice(primePrice)}" onclick="handleProductPrimeOffer(event)">
               <span class="product-prime-label"><i class="fa-solid fa-crown" aria-hidden="true"></i><span>Prime</span></span>
               <strong>${formatPrice(primePrice)}</strong>
             </button>
@@ -6485,7 +6485,7 @@ main#home{
             <h1>${escapeHtml(product.name)}</h1>
             <div class="product-details-price-line">
               <div class="product-details-normal-price"><strong>${formatPrice(currentPrice)}</strong>${oldPrice>currentPrice?`<del>${formatPrice(oldPrice)}</del>`:""}${discount>0?`<span class="product-details-discount">خصم ${discount}%</span>`:""}</div>
-              <button type="button" class="product-details-prime-price${primeActive?' is-active':''}" aria-label="Prime = ${formatPrice(Math.round(currentPrice*.9*100)/100)} + شحن مجاني" title="Elory Prime — ${formatPrice(Math.round(currentPrice*.9*100)/100)} + شحن مجاني" onclick="handleProductPrimeOffer(event)"><span><i class="fa-solid fa-crown"></i> Prime</span><b class="product-details-prime-equals" aria-hidden="true">=</b><strong>${formatPrice(Math.round(currentPrice*.9*100)/100)}</strong><small>+ شحن مجاني</small></button>
+              <button type="button" class="product-details-prime-price${primeActive?' is-active':''}" style="${primeActive||isPrimeEnabled()?'':'display:none'}" aria-label="Prime = ${formatPrice(getPrimeUnitPrice(currentPrice))} ${getPrimeFreeShippingCount()>0?'+ شحن مجاني':''}" title="Elory Prime — ${formatPrice(getPrimeUnitPrice(currentPrice))} ${getPrimeFreeShippingCount()>0?'+ شحن مجاني':''}" onclick="handleProductPrimeOffer(event)"><span><i class="fa-solid fa-crown"></i> Prime</span><b class="product-details-prime-equals" aria-hidden="true">=</b><strong>${formatPrice(getPrimeUnitPrice(currentPrice))}</strong><small>${getPrimeFreeShippingCount()>0?'+ شحن مجاني':''}</small></button>
             </div>
             ${product.description?`<p class="product-details-description">${escapeHtml(product.description)}</p>`:""}
             ${product.code?`<div class="product-details-code">الكود الداخلي: <b>${escapeHtml(product.code)}</b></div>`:""}
@@ -6507,7 +6507,7 @@ main#home{
         </div>
         ${renderProductDetailRecommendations(product)}
         <div id="productDetailsStickyCart" class="product-details-sticky" aria-label="إضافة المنتج إلى السلة">
-          <strong>${formatPrice(primeActive?Math.round(currentPrice*.9):currentPrice)}</strong>
+          <strong>${formatPrice(primeActive?getPrimeUnitPrice(currentPrice):currentPrice)}</strong>
           <button type="button" ${canAdd?"":"disabled"} onclick="addProductDetailsToCart()"><i class="fa-solid fa-bag-shopping"></i>${stock===0?"غير متوفر حاليًا":"أضف إلى السلة"}</button>
         </div>
         <div id="productDetailsLightbox" class="product-details-lightbox" hidden role="dialog" aria-modal="true" aria-label="عرض صورة المنتج" onclick="closeProductLightboxOutside(event)">
@@ -7211,6 +7211,7 @@ main#home{
     function getPrimeDurationDays(){const n=Number(window.ELORY_PRIME_CONFIG?.durationDays??30);return Number.isFinite(n)&&n>0?Math.min(3650,Math.round(n)):30;}
     function isPrimeEnabled(){return window.ELORY_PRIME_CONFIG?.enabled!==false;}
     function getPrimeDiscountPercent(){const saved=Number(primeStatus?.discount_percent);const configured=Number(window.ELORY_PRIME_CONFIG?.discountPercent??10);const n=primeActive&&Number.isFinite(saved)?saved:configured;return Number.isFinite(n)?Math.max(0,Math.min(100,n)):10;}
+    function getPrimeFreeShippingCount(){const saved=Number(primeStatus?.free_shipping_limit);const configured=Number(window.ELORY_PRIME_CONFIG?.freeShippingOrdersCount??6);const n=primeActive&&Number.isFinite(saved)?saved:configured;return Number.isFinite(n)?Math.max(0,Math.min(100,n)):6;}
     function getPrimeUnitPrice(price){const base=Number(price||0);return primeActive?Math.round(base*(1-getPrimeDiscountPercent()/100)*100)/100:base;}
     function getCheckoutSubtotal(){
       return cart.reduce((sum,item)=>{
