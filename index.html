@@ -5664,7 +5664,7 @@ main#home{
       const benefitText=isActive?(benefitParts.join(' • ')||'لا توجد مزايا إضافية مفعلة حالياً'):paymentPending?'تُفعّل المزايا بعد تأكيد الدفع من Paymob.':'تتضمن الباقة المزايا الموضحة في تفاصيل Prime.';
       let action="";
       if(paymentPending) action='<button class="prime-status-refresh" onclick="refreshPrimeState()" type="button">تحققي من حالة الدفع</button>';
-      else if(!isActive) action='<button class="prime-status-cta" onclick="subscribePrimeDirectly()" type="button">الاشتراك في Elory Prime <i class="fa-solid fa-arrow-left"></i></button>';
+      else if(!isActive) action=isPrimeEnabled()?'<button class="prime-status-cta" onclick="subscribePrimeDirectly()" type="button">الاشتراك في Elory Prime <i class="fa-solid fa-arrow-left"></i></button>':'<span class="prime-status-message">اشتراكات Elory Prime متوقفة مؤقتًا.</span>';
       box.innerHTML='<section class="prime-status-card"><div class="prime-status-heading"><span>Elory Prime</span><b class="prime-status-badge '+statusClass+'">'+statusLabel+'</b></div><div class="prime-status-grid">'+tiles.join("")+'</div><p class="prime-status-benefits">'+benefitText+'</p>'+action+'</section>';
     }
     function setPrimeTheme(active){
