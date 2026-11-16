@@ -5664,7 +5664,7 @@ main#home{
       const benefitText=isActive?(benefitParts.join(' • ')||'لا توجد مزايا إضافية مفعلة حالياً'):paymentPending?'تُفعّل المزايا بعد تأكيد الدفع من Paymob.':'تتضمن الباقة المزايا الموضحة في تفاصيل Prime.';
       let action="";
       if(paymentPending) action='<button class="prime-status-refresh" onclick="refreshPrimeState()" type="button">تحققي من حالة الدفع</button>';
-      else if(!isActive) action=isPrimeEnabled()?'<button class="prime-status-cta" onclick="subscribePrimeDirectly()" type="button">الاشتراك في Elory Prime <i class="fa-solid fa-arrow-left"></i></button>':'<span class="prime-status-message">اشتراكات Elory Prime متوقفة مؤقتًا.</span>';
+      else if(!isActive) action=isPrimeEnabled()?'<button class="prime-status-cta" onclick="subscribePrimeDirectly()" type="button">'+escapeHtml(window.ELORY_PRIME_CONFIG?.buttonText||'الاشتراك في Elory Prime')+' <i class="fa-solid fa-arrow-left"></i></button>':'<span class="prime-status-message">اشتراكات Elory Prime متوقفة مؤقتًا.</span>';
       box.innerHTML='<section class="prime-status-card"><div class="prime-status-heading"><span>Elory Prime</span><b class="prime-status-badge '+statusClass+'">'+statusLabel+'</b></div><div class="prime-status-grid">'+tiles.join("")+'</div><p class="prime-status-benefits">'+benefitText+'</p>'+action+'</section>';
     }
     function setPrimeTheme(active){
@@ -7568,7 +7568,7 @@ main#home{
       }else if(!isPrimeEnabled()){
         box.innerHTML='<div class="prime-status-message">اشتراكات Elory Prime متوقفة مؤقتًا. يمكنك الاستفادة من عضويتك الحالية حتى تاريخ انتهائها.</div>';
       }else{
-        box.innerHTML='<button class="checkout-btn prime-direct-btn" type="button" onclick="subscribePrimeDirectly()"><i class="fa-solid fa-crown"></i> اشتركي في Elory Prime</button>';
+        box.innerHTML='<button class="checkout-btn prime-direct-btn" type="button" onclick="subscribePrimeDirectly()"><i class="fa-solid fa-crown"></i> '+escapeHtml(window.ELORY_PRIME_CONFIG?.buttonText||'اشتركي في Elory Prime')+'</button>';
       }
     }
 
@@ -9603,9 +9603,11 @@ main#home{
     const packagingFeature=String(prime.packagingFeature??'').trim();
     const themeFeature=String(prime.themeFeature??'').trim();
     const extraPrimeFeatures=Array.isArray(prime.features)?prime.features.filter(x=>typeof x==='string').map(x=>x.trim()).filter(Boolean).slice(0,12):[];
-    window.ELORY_PRIME_CONFIG={enabled:primeEnabled,price:primePrice,durationDays:primeDurationDays,discountPercent:primeDiscountPercent,freeShippingOrdersCount:primeFreeShippingOrdersCount,packagingEnabled:!!packagingFeature,themeEnabled:!!themeFeature,packagingFeature,themeFeature,features:extraPrimeFeatures};
+    window.ELORY_PRIME_CONFIG={enabled:primeEnabled,price:primePrice,durationDays:primeDurationDays,discountPercent:primeDiscountPercent,freeShippingOrdersCount:primeFreeShippingOrdersCount,packagingEnabled:!!packagingFeature,themeEnabled:!!themeFeature,packagingFeature,themeFeature,buttonText:String(prime.buttonText??'اشتركي الآن'),features:extraPrimeFeatures};
     text('#prime .prime-title',prime.title||prime.name);
     text('#prime .prime-desc',prime.description);
+    const primeCta=$('#prime .prime-activate');
+    if(primeCta){const ctaTextNode=[...primeCta.childNodes].find(node=>node.nodeType===3);if(ctaTextNode)ctaTextNode.textContent=' '+String(prime.buttonText??'اشتركي الآن');}
     const primeBenefitItems=[];
     if(primeDiscountPercent>0) primeBenefitItems.push({icon:'fa-percent',label:'خصم إضافي '+primeDiscountPercent+'% فوق خصم المنتج'});
     if(primeFreeShippingOrdersCount>0) primeBenefitItems.push({icon:'fa-truck-fast',label:'شحن مجاني حتى '+primeFreeShippingOrdersCount+' طلبات'});
