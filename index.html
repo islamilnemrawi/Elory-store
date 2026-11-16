@@ -9773,7 +9773,7 @@ main#home{
 
     // Announcement: per-message timing and optional safe destination.
     const rotationSeconds = Math.max(1, Math.min(30, Number(a.rotationSeconds || 3) || 3));
-    const announcementItems = $('.announcement-item', announcement || document);
+    const announcementItems = $$('.announcement-item', announcement || document);
     announcementItems.forEach((item, index) => {
       item.style.animationDuration = (rotationSeconds * Math.max(1, announcementItems.length)) + 's';
       item.style.animationDelay = (rotationSeconds * index) + 's';
