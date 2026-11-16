@@ -33,7 +33,7 @@ jobs:
           assert "ELORY_PRIME_PRICE" not in html, "Hardcoded Prime price constant remains"
           assert "if (c.global && c.global.isStoreOpen === false)" in html, "The existing store availability guard must remain intact"
           cms_start = html.index('if (c.global && c.global.isStoreOpen === false)')
-          cms_helpers = html.index('    const $ =', cms_start)
+          cms_helpers = html.index('    const $$ =', cms_start)
           assert cms_helpers > cms_start, "The store availability guard must stay at the start of the CMS bootstrap"
           assert "const popupConfig = c.popup || {};" in html, "CMS promotional popup renderer is missing"
           assert "productCards.showPrimePrice" in html, "CMS product-card visual settings are missing"
