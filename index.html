@@ -5654,16 +5654,23 @@ main#home{
         const remaining=rawRemaining!==undefined && rawRemaining!==null?Math.min(max,Math.max(0,Number(rawRemaining)||0)):Math.max(0,max-used);
         tiles.push('<div><small>الشحن المجاني</small><b>'+used+' مستخدم • '+remaining+' متبقٍ / '+max+'</b></div>');
       }
-      const benefitText=isActive?'خصم إضافي 10% عند انطباق الشروط • تغليف مميز':paymentPending?'تُفعّل المزايا بعد تأكيد الدفع من Paymob.':'تتضمن الباقة خصمًا إضافيًا 10% وفق الشروط وتغليفًا مميزًا.';
+      const benefitParts=[];
+      const discountPercent=Number(primeStatus.discount_percent??getPrimeDiscountPercent())||0;
+      if(discountPercent>0)benefitParts.push('خصم إضافي '+discountPercent+'%');
+      if(Number(primeStatus.free_shipping_limit??0)>0)benefitParts.push('الشحن المجاني وفق الحد المتاح');
+      if(primeStatus.packaging_enabled===true)benefitParts.push('التغليف المميز');
+      if(primeStatus.theme_enabled===true)benefitParts.push('ثيم Prime');
+      if(Array.isArray(primeStatus.features))primeStatus.features.filter(x=>typeof x==='string'&&x.trim()).forEach(x=>benefitParts.push(x.trim()));
+      const benefitText=isActive?(benefitParts.join(' • ')||'لا توجد مزايا إضافية مفعلة حالياً'):paymentPending?'تُفعّل المزايا بعد تأكيد الدفع من Paymob.':'تتضمن الباقة المزايا الموضحة في تفاصيل Prime.';
       let action="";
       if(paymentPending) action='<button class="prime-status-refresh" onclick="refreshPrimeState()" type="button">تحققي من حالة الدفع</button>';
-      else if(!isActive) action='<button class="prime-status-cta" onclick="subscribePrimeDirectly()" type="button">الاشتراك في Elory Prime <i class="fa-solid fa-arrow-left"></i></button>';
+      else if(!isActive) action=isPrimeEnabled()?'<button class="prime-status-cta" onclick="subscribePrimeDirectly()" type="button">'+escapeHtml(window.ELORY_PRIME_CONFIG?.buttonText||'الاشتراك في Elory Prime')+' <i class="fa-solid fa-arrow-left"></i></button>':'<span class="prime-status-message">اشتراكات Elory Prime متوقفة مؤقتًا.</span>';
       box.innerHTML='<section class="prime-status-card"><div class="prime-status-heading"><span>Elory Prime</span><b class="prime-status-badge '+statusClass+'">'+statusLabel+'</b></div><div class="prime-status-grid">'+tiles.join("")+'</div><p class="prime-status-benefits">'+benefitText+'</p>'+action+'</section>';
     }
     function setPrimeTheme(active){
       const wasActive=primeActive;
       primeActive=!!active;
-      document.body.classList.toggle("prime-mode",primeActive);
+      document.body.classList.toggle("prime-mode",primeActive&&primeStatus?.theme_enabled!==false);
       updateCheckoutTotals();
       renderProducts();
       renderCart();
@@ -6151,7 +6158,8 @@ main#home{
       const oldPrice=Number(product.oldPrice||0);
       const derivedOriginal=discount>0 && salePrice>0 ? salePrice/(1-discount/100) : 0;
       const originalPrice=oldPrice>salePrice ? oldPrice : (derivedOriginal>salePrice ? derivedOriginal : 0);
-      const primePrice=Math.round(salePrice*0.9*100)/100;
+      const primeDiscount=getPrimeDiscountPercent();
+      const primePrice=Math.round(salePrice*(1-primeDiscount/100)*100)/100;
       return `
         <article class="product-card" data-product-card="true" data-product-id="${escapeHtml(product.id)}" tabindex="0" role="group" aria-label="عرض تفاصيل ${escapeHtml(product.name)}">
           <div class="product-image">
@@ -6166,7 +6174,7 @@ main#home{
               <span class="current-price">${formatPrice(salePrice)}</span>
               ${originalPrice>salePrice?`<span class="old-price">${formatPrice(originalPrice)}</span>`:""}
             </div>
-            <button type="button" class="product-prime-price${primeActive?' is-active':''}" aria-label="سعر Prime ${formatPrice(primePrice)}" title="Elory Prime — ${formatPrice(primePrice)}" onclick="handleProductPrimeOffer(event)">
+            <button type="button" class="product-prime-price${primeActive?' is-active':''}" style="${primeActive||isPrimeEnabled()?'':'display:none'}" aria-label="سعر Prime ${formatPrice(primePrice)}" title="Elory Prime — ${formatPrice(primePrice)}" onclick="handleProductPrimeOffer(event)">
               <span class="product-prime-label"><i class="fa-solid fa-crown" aria-hidden="true"></i><span>Prime</span></span>
               <strong>${formatPrice(primePrice)}</strong>
             </button>
@@ -6479,7 +6487,7 @@ main#home{
             <h1>${escapeHtml(product.name)}</h1>
             <div class="product-details-price-line">
               <div class="product-details-normal-price"><strong>${formatPrice(currentPrice)}</strong>${oldPrice>currentPrice?`<del>${formatPrice(oldPrice)}</del>`:""}${discount>0?`<span class="product-details-discount">خصم ${discount}%</span>`:""}</div>
-              <button type="button" class="product-details-prime-price${primeActive?' is-active':''}" aria-label="Prime = ${formatPrice(Math.round(currentPrice*.9*100)/100)} + شحن مجاني" title="Elory Prime — ${formatPrice(Math.round(currentPrice*.9*100)/100)} + شحن مجاني" onclick="handleProductPrimeOffer(event)"><span><i class="fa-solid fa-crown"></i> Prime</span><b class="product-details-prime-equals" aria-hidden="true">=</b><strong>${formatPrice(Math.round(currentPrice*.9*100)/100)}</strong><small>+ شحن مجاني</small></button>
+              <button type="button" class="product-details-prime-price${primeActive?' is-active':''}" style="${primeActive||isPrimeEnabled()?'':'display:none'}" aria-label="Prime = ${formatPrice(getPrimeOfferPrice(currentPrice))} ${getPrimeFreeShippingCount()>0?'+ شحن مجاني':''}" title="Elory Prime — ${formatPrice(getPrimeOfferPrice(currentPrice))} ${getPrimeFreeShippingCount()>0?'+ شحن مجاني':''}" onclick="handleProductPrimeOffer(event)"><span><i class="fa-solid fa-crown"></i> Prime</span><b class="product-details-prime-equals" aria-hidden="true">=</b><strong>${formatPrice(getPrimeOfferPrice(currentPrice))}</strong><small>${getPrimeFreeShippingCount()>0?'+ شحن مجاني':''}</small></button>
             </div>
             ${product.description?`<p class="product-details-description">${escapeHtml(product.description)}</p>`:""}
             ${product.code?`<div class="product-details-code">الكود الداخلي: <b>${escapeHtml(product.code)}</b></div>`:""}
@@ -6501,7 +6509,7 @@ main#home{
         </div>
         ${renderProductDetailRecommendations(product)}
         <div id="productDetailsStickyCart" class="product-details-sticky" aria-label="إضافة المنتج إلى السلة">
-          <strong>${formatPrice(primeActive?Math.round(currentPrice*.9):currentPrice)}</strong>
+          <strong>${formatPrice(primeActive?getPrimeUnitPrice(currentPrice):currentPrice)}</strong>
           <button type="button" ${canAdd?"":"disabled"} onclick="addProductDetailsToCart()"><i class="fa-solid fa-bag-shopping"></i>${stock===0?"غير متوفر حاليًا":"أضف إلى السلة"}</button>
         </div>
         <div id="productDetailsLightbox" class="product-details-lightbox" hidden role="dialog" aria-modal="true" aria-label="عرض صورة المنتج" onclick="closeProductLightboxOutside(event)">
@@ -7115,17 +7123,17 @@ main#home{
       const primeOption=document.getElementById("cartPrimeOption");
       const primeCheckbox=document.getElementById("cartPrime");
       if(primeOption){
-        primeOption.hidden=!!primeActive;
+        primeOption.hidden=!!primeActive||!isPrimeEnabled();
         if(primeCheckbox) primeCheckbox.checked=!!cartPrimeSelected&&!primeActive;
       }
-      const primeFee=cartPrimeSelected&&!primeActive?ELORY_PRIME_PRICE:0;
+      const primeFee=cartPrimeSelected&&!primeActive?getPrimePrice():0;
       document.getElementById("summaryTotal").textContent = formatPrice(subtotal+primeFee);
       const existingPrimeRow=document.getElementById("cartPrimeSummaryRow");
       if(existingPrimeRow) existingPrimeRow.remove();
       if(primeFee){
         const row=document.createElement("div");
         row.className="summary-row prime-summary"; row.id="cartPrimeSummaryRow";
-        row.innerHTML='<span>Elory Prime</span><strong>+300 ج.م</strong>';
+        row.innerHTML='<span>Elory Prime</span><strong>+'+formatPrice(getPrimePrice())+'</strong>';
         const totalRow=summary.querySelector(".summary-row.total");
         if(totalRow) summary.insertBefore(row,totalRow); else summary.appendChild(row);
       }
@@ -7148,10 +7156,10 @@ main#home{
     let cartPrimeSelected = false;
     let checkoutPrimeSelected = false;
     let appliedCoupon = null;
-    const ELORY_PRIME_PRICE = 300;
-    const ELORY_PRIME_DURATION_MS = 30*24*60*60*1000;
+    // Prime price and duration are read from the validated live store configuration.
 
     async function toggleCartPrime(checked){
+      if(checked&&!isPrimeEnabled()){showToast('اشتراكات Elory Prime متوقفة حاليًا');return;}
       if(checked&&!primeActive){
         const {data:{user}}=hasSupabase()?await elorySupabase.auth.getUser():{data:{user:null}};
         if(!user){
@@ -7169,6 +7177,7 @@ main#home{
     }
 
     async function toggleCheckoutPrime(checked){
+      if(checked&&!isPrimeEnabled()){showToast('اشتراكات Elory Prime متوقفة حاليًا');return;}
       if(checked&&!primeActive){
         const {data:{user}}=hasSupabase()?await elorySupabase.auth.getUser():{data:{user:null}};
         if(!user){
@@ -7200,7 +7209,13 @@ main#home{
       updateCheckoutTotals();
     }
 
-    function getPrimeUnitPrice(price){const base=Number(price||0);return primeActive?Math.round(base*0.9*100)/100:base;}
+    function getPrimePrice(){const n=Number(window.ELORY_PRIME_CONFIG?.price??300);return Number.isFinite(n)&&n>0?n:300;}
+    function getPrimeDurationDays(){const n=Number(window.ELORY_PRIME_CONFIG?.durationDays??30);return Number.isFinite(n)&&n>0?Math.min(3650,Math.round(n)):30;}
+    function isPrimeEnabled(){return window.ELORY_PRIME_CONFIG?.enabled!==false;}
+    function getPrimeDiscountPercent(){const saved=Number(primeStatus?.discount_percent);const configured=Number(window.ELORY_PRIME_CONFIG?.discountPercent??10);const n=primeActive&&Number.isFinite(saved)?saved:configured;return Number.isFinite(n)?Math.max(0,Math.min(100,n)):10;}
+    function getPrimeFreeShippingCount(){const saved=Number(primeStatus?.free_shipping_limit);const configured=Number(window.ELORY_PRIME_CONFIG?.freeShippingOrdersCount??6);const n=primeActive&&Number.isFinite(saved)?saved:configured;return Number.isFinite(n)?Math.max(0,Math.min(100,n)):6;}
+    function getPrimeOfferPrice(price){const base=Number(price||0);return Math.round(base*(1-getPrimeDiscountPercent()/100)*100)/100;}
+    function getPrimeUnitPrice(price){const base=Number(price||0);return primeActive?getPrimeOfferPrice(base):base;}
     function getCheckoutSubtotal(){
       return cart.reduce((sum,item)=>{
         const currentPrice=getCartItemCurrentPrice(item);
@@ -7290,10 +7305,10 @@ main#home{
       const couponDiscount=getCouponDiscount();
       const couponFreeShipping=!!(appliedCoupon?.free_shipping && !primeFreeAvailable);
       const shipping=couponFreeShipping?0:baseShipping;
-      const primeFee=checkoutPrimeSelected&&!primeActive?ELORY_PRIME_PRICE:0;
+      const primeFee=checkoutPrimeSelected&&!primeActive?getPrimePrice():0;
       const checkoutPrimeOption=document.getElementById("checkoutPrimeOption");
       const checkoutPrimeCheckbox=document.getElementById("checkoutPrime");
-      if(checkoutPrimeOption)checkoutPrimeOption.hidden=!!primeActive;
+      if(checkoutPrimeOption)checkoutPrimeOption.hidden=!!primeActive||!isPrimeEnabled();
       if(checkoutPrimeCheckbox)checkoutPrimeCheckbox.checked=!!checkoutPrimeSelected&&!primeActive;
       const total=Math.max(0,subtotal+shipping+primeFee-couponDiscount);
       const a=document.getElementById("checkoutSubtotal"); if(a)a.textContent=formatPrice(subtotal);
@@ -7301,6 +7316,8 @@ main#home{
       const primeDiscountValue=document.getElementById("checkoutPrimeDiscount");
       if(primeDiscountRow)primeDiscountRow.hidden=!(primeActive&&primeDiscount>0);
       if(primeDiscountValue)primeDiscountValue.textContent=formatPrice(primeDiscount);
+      const primeDiscountLabel=document.querySelector('#checkoutPrimeDiscountRow span');
+      if(primeDiscountLabel)primeDiscountLabel.textContent='وفرتِ بفضل Elory Prime ('+getPrimeDiscountPercent()+'%)';
       const b=document.getElementById("checkoutShipping"); if(b)b.textContent=(primeFreeAvailable||couponFreeShipping)?"مجاني 🎉":(!gov?"اختاري المحافظة":(Number(baseShipping)>0?formatPrice(shipping):"تعذر تحديد السعر"));
       const r=document.getElementById("checkoutPrimeRow"); if(r)r.hidden=!primeFee;
 
@@ -7328,7 +7345,7 @@ main#home{
         }else if(primeActive){
           s.textContent="أنتِ مشتركة في Elory Prime، لكن تم استهلاك الشحن المجاني المتاح. يُطبق الآن سعر الشحن المعتاد للمحافظة والمركز.";
         }else if(primeFee){
-          s.textContent="تمت إضافة Elory Prime بقيمة 300 ج.م إلى هذا الطلب.";
+          s.textContent="تمت إضافة Elory Prime بقيمة "+formatPrice(getPrimePrice())+" إلى هذا الطلب.";
         }else{
           s.textContent="اختاري المحافظة والمركز لحساب الشحن.";
         }
@@ -7424,10 +7441,10 @@ main#home{
       if(!primeFreeAvailable&&!couponFreeShipping&&!(Number(baseShipping)>0)){showToast("تعذر تحديد سعر الشحن لهذه المحافظة. حدّثي الصفحة وحاولي مرة أخرى.");return;}
       const shippingCost=couponFreeShipping?0:baseShipping;
       const primeRequested=checkoutPrimeSelected&&!primeActive;
-      const primeFee=primeRequested?ELORY_PRIME_PRICE:0;
+      const primeFee=primeRequested?getPrimePrice():0;
       const total=Math.max(0,subtotal+shippingCost+primeFee-couponDiscount);
       const user=hasSupabaseClient()?(await elorySupabase.auth.getUser()).data?.user:null;
-      const order={user_id:user?.id||null,customer_access_token:customerAccessToken,customer_name:customerName,phone,governorate,center,address,notes:primeRequested?`طلب اشتراك Elory Prime بقيمة 300 ج.م — ${notes?notes+" — ":""}التفعيل بعد تسليم الطلب.`:notes,items:cart.map(item=>({product_id:item.id,name:item.name,price:getPrimeUnitPrice(getCartItemCurrentPrice(item)),quantity:Number(item.qty||0),image:item.image||null,color:item.color||null,color_hex:item.colorHex||null,size:item.size||null,code:item.code||null})),subtotal,shipping_cost:shippingCost,total,payment_method:selectedPaymentMethod,prime:!!(primeActive||primeRequested),prime_requested:primeRequested,status:"جديد",coupon_code:appliedCoupon?.code||null,coupon_discount:couponDiscount,coupon_free_shipping:!!(appliedCoupon?.free_shipping&&!primeFreeAvailable),prime_discount:primeActive?getPrimeDiscountTotal():0,prime_free_shipping:primeFreeAvailable};
+      const order={user_id:user?.id||null,customer_access_token:customerAccessToken,customer_name:customerName,phone,governorate,center,address,notes:primeRequested?("طلب اشتراك Elory Prime بقيمة "+formatPrice(getPrimePrice())+" — "+(notes?notes+" — ":"")+"التفعيل بعد تسليم الطلب."):notes,items:cart.map(item=>({product_id:item.id,name:item.name,price:getPrimeUnitPrice(getCartItemCurrentPrice(item)),quantity:Number(item.qty||0),image:item.image||null,color:item.color||null,color_hex:item.colorHex||null,size:item.size||null,code:item.code||null})),subtotal,shipping_cost:shippingCost,total,payment_method:selectedPaymentMethod,prime:!!(primeActive||primeRequested),prime_requested:primeRequested,status:"جديد",coupon_code:appliedCoupon?.code||null,coupon_discount:couponDiscount,coupon_free_shipping:!!(appliedCoupon?.free_shipping&&!primeFreeAvailable),prime_discount:primeActive?getPrimeDiscountTotal():0,prime_free_shipping:primeFreeAvailable};
       const button=document.querySelector('#checkoutForm button[type="submit"]');
       if(button){button.disabled=true;button.dataset.oldText=button.textContent;button.textContent="جاري إرسال الطلب...";}
       try{
@@ -7539,11 +7556,19 @@ main#home{
       const pending=["pending","pending_payment","awaiting_payment","processing","قيد الدفع","بانتظار الدفع","بانتظار تأكيد الدفع"].includes(status);
       if(active){
         const date=expiry.toLocaleDateString("ar-EG",{year:"numeric",month:"long",day:"numeric"});
-        box.innerHTML='<div class="prime-modal-active"><b><i class="fa-solid fa-crown"></i> عضويتك Elory Prime نشطة</b><span>صالحة حتى '+escapeHtml(date)+'</span><p>الخصم الإضافي 10% والشحن المجاني المتاح يطبقان تلقائيًا على طلباتك المؤهلة.</p><button class="prime-status-refresh" type="button" onclick="closeModalVisual(&quot;primeModal&quot;);openAccount()">عرض حسابي</button></div>';
+        const activeBenefits=[];
+        if(getPrimeDiscountPercent()>0)activeBenefits.push('خصم إضافي '+getPrimeDiscountPercent()+'%');
+        if(Number(primeStatus?.free_shipping_limit||0)>0)activeBenefits.push('الشحن المجاني المتاح');
+        if(primeStatus?.packaging_enabled===true)activeBenefits.push('التغليف المميز');
+        if(primeStatus?.theme_enabled===true)activeBenefits.push('ثيم Prime');
+        if(Array.isArray(primeStatus?.features))primeStatus.features.filter(x=>typeof x==='string'&&x.trim()).forEach(x=>activeBenefits.push(x.trim()));
+        box.innerHTML='<div class="prime-modal-active"><b><i class="fa-solid fa-crown"></i> عضويتك Elory Prime نشطة</b><span>صالحة حتى '+escapeHtml(date)+'</span><p>تُطبق مزاياك المفعلة: '+escapeHtml(activeBenefits.join(' • ')||'لا توجد مزايا إضافية مفعلة')+'.</p><button class="prime-status-refresh" type="button" onclick="closeModalVisual(&quot;primeModal&quot;);openAccount()">عرض حسابي</button></div>';
       }else if(pending){
         box.innerHTML='<div class="prime-modal-pending"><b>اشتراكك قيد تأكيد الدفع</b><p>لن نطلب منك الدفع مرة أخرى أثناء انتظار التأكيد.</p><button class="prime-status-refresh" type="button" onclick="refreshPrimeState().then(updatePrimeModalStatus)">تحققي من حالة الدفع</button></div>';
+      }else if(!isPrimeEnabled()){
+        box.innerHTML='<div class="prime-status-message">اشتراكات Elory Prime متوقفة مؤقتًا. يمكنك الاستفادة من عضويتك الحالية حتى تاريخ انتهائها.</div>';
       }else{
-        box.innerHTML='<button class="checkout-btn prime-direct-btn" type="button" onclick="subscribePrimeDirectly()"><i class="fa-solid fa-crown"></i> اشتركي في Elory Prime</button>';
+        box.innerHTML='<button class="checkout-btn prime-direct-btn" type="button" onclick="subscribePrimeDirectly()"><i class="fa-solid fa-crown"></i> '+escapeHtml(window.ELORY_PRIME_CONFIG?.buttonText||'اشتركي في Elory Prime')+'</button>';
       }
     }
 
@@ -7570,6 +7595,7 @@ main#home{
 
     let primeCheckoutInFlight=false;
     async function subscribePrimeDirectly(){
+      if(!isPrimeEnabled()){showToast('اشتراكات Elory Prime متوقفة حاليًا');return;}
       if(primeCheckoutInFlight)return;
       primeCheckoutInFlight=true;
       const buttons=Array.from(document.querySelectorAll(".prime-direct-btn,.prime-status-cta"));
@@ -7580,6 +7606,7 @@ main#home{
     }
 
     async function startPrimeCheckout(){
+      if(!isPrimeEnabled()){showToast('اشتراكات Elory Prime متوقفة حاليًا');return;}
       if(!hasSupabaseClient()){showToast("Supabase غير متصل حالياً");return;}
 
       const {data:{user}}=await elorySupabase.auth.getUser();
@@ -7723,7 +7750,7 @@ main#home{
               type:"prime_subscription",
               prime_only:true,
               prime:true,
-              amount:300,
+              amount:getPrimePrice(),
               payment_method:"paymob",
               customer_name:
                 user.user_metadata?.full_name ||
@@ -9568,17 +9595,67 @@ main#home{
     text('#featured .section-sub',featured.subtitle);
     text('#featured .section-kicker',featured.smallTitle);
     text('#featured .view-all',featured.buttonText);
+    const primePrice=Math.max(0.01,Math.min(1000000,Number(prime.price??300)||300));
+    const primeDurationDays=Math.round(Math.max(1,Math.min(3650,Number(prime.durationDays??30)||30)));
+    const primeDiscountPercent=Math.max(0,Math.min(100,Number(prime.discountPercent??10)||0));
+    const primeFreeShippingOrdersCount=Math.round(Math.max(0,Math.min(100,Number(prime.freeShippingOrdersCount??6)||0)));
+    const primeEnabled=prime.enabled===undefined||prime.enabled===null?true:(prime.enabled===true||String(prime.enabled).toLowerCase()==='true');
+    const packagingFeature=String(prime.packagingFeature??'').trim();
+    const themeFeature=String(prime.themeFeature??'').trim();
+    const extraPrimeFeatures=Array.isArray(prime.features)?prime.features.filter(x=>typeof x==='string').map(x=>x.trim()).filter(Boolean).slice(0,12):[];
+    window.ELORY_PRIME_CONFIG={enabled:primeEnabled,price:primePrice,durationDays:primeDurationDays,discountPercent:primeDiscountPercent,freeShippingOrdersCount:primeFreeShippingOrdersCount,packagingEnabled:!!packagingFeature,themeEnabled:!!themeFeature,packagingFeature,themeFeature,buttonText:String(prime.buttonText??'اشتركي الآن'),features:extraPrimeFeatures};
     text('#prime .prime-title',prime.title||prime.name);
     text('#prime .prime-desc',prime.description);
-    const benefits=$$('#prime .prime-benefit');
-    if(benefits[0]) benefits[0].lastChild.textContent=' خصم إضافي '+txt(prime.discountPercent??10)+'%';
-    if(benefits[1]) benefits[1].lastChild.textContent=' شحن مجاني حتى '+txt(prime.freeShippingOrdersCount??6)+' طلبات';
-    if(benefits[2] && prime.packagingFeature!==undefined) benefits[2].lastChild.textContent=' '+txt(prime.packagingFeature);
-    if(benefits[3] && prime.themeFeature!==undefined) benefits[3].lastChild.textContent=' '+txt(prime.themeFeature);
+    const primeCta=$('#prime .prime-activate');
+    if(primeCta){const ctaTextNode=[...primeCta.childNodes].find(node=>node.nodeType===3);if(ctaTextNode)ctaTextNode.textContent=' '+String(prime.buttonText??'اشتركي الآن');}
+    const primeBenefitItems=[];
+    if(primeDiscountPercent>0) primeBenefitItems.push({icon:'fa-percent',label:'خصم إضافي '+primeDiscountPercent+'% فوق خصم المنتج'});
+    if(primeFreeShippingOrdersCount>0) primeBenefitItems.push({icon:'fa-truck-fast',label:'شحن مجاني حتى '+primeFreeShippingOrdersCount+' طلبات'});
+    if(packagingFeature) primeBenefitItems.push({icon:'fa-gift',label:packagingFeature});
+    if(themeFeature) primeBenefitItems.push({icon:'fa-palette',label:themeFeature});
+    extraPrimeFeatures.forEach(label=>primeBenefitItems.push({icon:'fa-star',label}));
+    const renderPrimeBenefitList=(selector,tagName,className)=>{
+      const container=$(selector);
+      if(!container)return;
+      const nodes=primeBenefitItems.map(item=>{
+        const node=document.createElement(tagName);
+        if(className)node.className=className;
+        const icon=document.createElement('i');
+        icon.className='fa-solid '+item.icon;
+        node.appendChild(icon);
+        node.appendChild(document.createTextNode(' '+item.label));
+        return node;
+      });
+      container.replaceChildren(...nodes);
+    };
+    renderPrimeBenefitList('#prime .prime-benefits','div','prime-benefit');
+    renderPrimeBenefitList('.prime-modal-list','div','');
+    renderPrimeBenefitList('#cartPrimeOption .cart-prime-benefits','span','');
+    renderPrimeBenefitList('#checkoutPrimeOption .cart-prime-benefits','span','');
+    const primeMoney=primePrice.toLocaleString('ar-EG',{maximumFractionDigits:2})+' ج.م';
+    const primePriceEl=$('.prime-price');
+    if(primePriceEl){const small=document.createElement('small');small.textContent='ج.م / '+primeDurationDays+' يوم';primePriceEl.replaceChildren(document.createTextNode(primePrice.toLocaleString('ar-EG',{maximumFractionDigits:2})+' '),small);}
+    const cartPrimeSmall=$('#cartPrimeOption .cart-prime-copy > small');
+    if(cartPrimeSmall)cartPrimeSmall.textContent=primeMoney+' / '+primeDurationDays+' يوم — اختاري Prime لتحصلي على المزايا التالية:';
+    const checkoutPrimeSmall=$('#checkoutPrimeOption .cart-prime-copy > small');
+    if(checkoutPrimeSmall)checkoutPrimeSmall.textContent=primeMoney+' / '+primeDurationDays+' يومًا — يتم التفعيل تلقائيًا بعد تسليم الأوردر';
+    const cartPrimePrice=$('#cartPrimeOption > strong');
+    if(cartPrimePrice)cartPrimePrice.textContent='+'+primeMoney;
+    const checkoutPrimePrice=$('#checkoutPrimeOption > strong');
+    if(checkoutPrimePrice)checkoutPrimePrice.textContent='+'+primeMoney;
+    const checkoutPrimeRow=$('#checkoutPrimeRow strong');
+    if(checkoutPrimeRow)checkoutPrimeRow.textContent=primeMoney;
+    const discountLabel=$('#checkoutPrimeDiscountRow span');
+    if(discountLabel)discountLabel.textContent='وفرتِ بفضل Elory Prime ('+primeDiscountPercent+'%)';
     const primeVisible=prime.isVisible!==false;
     visible('#prime',primeVisible);
     visible('#primeHeaderBtn',primeVisible);
-    $$('.footer a[href="#prime"]').forEach(el=>visible(el,primeVisible));
+    visible('#prime .prime-activate',primeEnabled);
+    visible('#cartPrimeOption',primeEnabled);
+    visible('#checkoutPrimeOption',primeEnabled);
+    $('.footer a[href="#prime"]').forEach(el=>visible(el,primeVisible));
+    if(typeof renderProducts==='function')renderProducts();
+    if(typeof updateCheckoutTotals==='function')updateCheckoutTotals();
     text('.elory-footer-brand > p',footer.aboutText);
     text('.developer-credit',footer.credits);
     text('.elory-copyright',footer.bottomText);
