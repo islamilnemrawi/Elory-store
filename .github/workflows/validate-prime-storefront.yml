@@ -7,6 +7,7 @@ on:
       - elory/prime-config-live-sync
     paths:
       - index.html
+      - supabase/migrations/*.sql
       - .github/workflows/validate-prime-storefront.yml
   pull_request:
     paths:
@@ -54,5 +55,15 @@ jobs:
               checked += 1
           if checked == 0:
               raise SystemExit("No inline JavaScript blocks were validated")
+          migrations = sorted(Path("supabase/migrations").glob("*_elory_cms_versions_and_rollback.sql"))
+          if migrations:
+              sql = migrations[0].read_text(encoding="utf-8")
+              assert "CREATE TABLE IF NOT EXISTS elory_cms_private.site_customization_versions" in sql
+              assert "public.admin_create_site_customization_snapshot" in sql
+              assert "public.admin_list_site_customization_versions" in sql
+              assert "public.admin_restore_site_customization_version" in sql
+              assert "v_current_store_open" in sql and "'{global,isStoreOpen}'" in sql
+              assert "SECURITY INVOKER" in sql
+              print(f"Validated CMS versioning migration: {migrations[0].name}")
           print(f"Validated {checked} inline JavaScript blocks.")
           PY
