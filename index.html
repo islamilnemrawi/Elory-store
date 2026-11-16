@@ -9678,10 +9678,61 @@ main#home{
       el.style.cssText='padding:clamp(24px,5vw,56px) 20px;margin:24px auto;max-width:1450px;border-radius:24px;text-align:center;overflow:hidden;';
       el.style.backgroundColor=color(item.backgroundColor)||'#fff0f7';
       const inner=document.createElement('div'); inner.style.cssText='max-width:960px;margin:0 auto;';
-      const src=imageUrl(item.imageUrl); if(src){ const img=document.createElement('img'); img.src=src; img.alt=txt(item.title); img.loading='lazy'; img.style.cssText='width:100%;max-height:420px;object-fit:cover;border-radius:18px;margin-bottom:20px;'; inner.appendChild(img); }
-      const title=document.createElement('h2'); title.textContent=txt(item.title); inner.appendChild(title);
-      const paragraph=document.createElement('p'); paragraph.textContent=txt(item.text); paragraph.style.whiteSpace='pre-line'; inner.appendChild(paragraph);
-      if(txt(item.buttonText).trim()){ const btn=document.createElement('button'); btn.type='button'; btn.textContent=txt(item.buttonText); btn.style.cssText='margin:18px;padding:12px 26px;border:0;border-radius:30px;background:#c96f92;color:#fff;font:inherit;font-weight:700;'; bindButton(btn,item.buttonUrl); inner.appendChild(btn); }
+      const kind=txt(item.sectionType||'content');
+      const src=imageUrl(item.imageUrl);
+      if(src){
+        const img=document.createElement('img'); img.src=src; img.alt=txt(item.title); img.loading='lazy';
+        img.style.cssText='width:100%;max-height:420px;object-fit:cover;border-radius:18px;margin-bottom:20px;';
+        inner.appendChild(img);
+      }
+      const sectionHeading=document.createElement('h2'); sectionHeading.textContent=txt(item.title); inner.appendChild(sectionHeading);
+      if(kind==='faq'){
+        const list=document.createElement('div');
+        list.className='elory-cms-faq-list';
+        list.style.cssText='display:grid;gap:12px;text-align:start;margin-top:18px;';
+        const entries=Array.isArray(item.faqItems)?item.faqItems:[];
+        entries.forEach(entry=>{
+          if(!entry) return;
+          const details=document.createElement('details');
+          details.style.cssText='border:1px solid rgba(185,78,117,.18);border-radius:14px;background:#fff;padding:14px 16px;';
+          const summary=document.createElement('summary');
+          summary.textContent=txt(entry.question);
+          summary.style.cssText='cursor:pointer;font-weight:800;color:#6d4555;list-style:none;';
+          const answer=document.createElement('p');
+          answer.textContent=txt(entry.answer);
+          answer.style.cssText='margin:12px 0 0;color:#745b66;line-height:1.9;white-space:pre-line;';
+          details.appendChild(summary); details.appendChild(answer); list.appendChild(details);
+        });
+        if(!entries.length && txt(item.text)){
+          const empty=document.createElement('p'); empty.textContent=txt(item.text); list.appendChild(empty);
+        }
+        inner.appendChild(list);
+      } else if(kind==='trust'){
+        const grid=document.createElement('div');
+        grid.className='elory-cms-trust-grid';
+        grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:18px;text-align:center;';
+        const entries=Array.isArray(item.trustItems)?item.trustItems:[];
+        entries.forEach(entry=>{
+          if(!entry) return;
+          const card=document.createElement('div');
+          card.style.cssText='border:1px solid rgba(185,78,117,.15);border-radius:16px;background:#fff;padding:18px 14px;min-height:120px;';
+          const icon=document.createElement('div'); icon.textContent=txt(entry.icon||'✓'); icon.style.cssText='font-size:24px;color:#c96f92;margin-bottom:8px;';
+          const heading=document.createElement('h3'); heading.textContent=txt(entry.title); heading.style.cssText='font-size:15px;font-weight:800;color:#6d4555;margin:0 0 7px;';
+          const body=document.createElement('p'); body.textContent=txt(entry.description); body.style.cssText='font-size:13px;line-height:1.8;color:#745b66;margin:0;';
+          card.appendChild(icon); card.appendChild(heading); card.appendChild(body); grid.appendChild(card);
+        });
+        if(!entries.length && txt(item.text)){
+          const empty=document.createElement('p'); empty.textContent=txt(item.text); grid.appendChild(empty);
+        }
+        inner.appendChild(grid);
+      } else {
+        const paragraph=document.createElement('p'); paragraph.textContent=txt(item.text); paragraph.style.whiteSpace='pre-line'; inner.appendChild(paragraph);
+      }
+      if(txt(item.buttonText).trim()){
+        const btn=document.createElement('button'); btn.type='button'; btn.textContent=txt(item.buttonText);
+        btn.style.cssText='margin:18px;padding:12px 26px;border:0;border-radius:30px;background:#c96f92;color:#fff;font:inherit;font-weight:700;';
+        bindButton(btn,item.buttonUrl); inner.appendChild(btn);
+      }
       el.appendChild(inner); if(home) home.appendChild(el); sectionMap.set('custom_'+txt(item.id),el);
     });
     const sectionSettings=Array.isArray(c.sections)?c.sections.slice().sort((x,y)=>(+x.sortOrder||0)-(+y.sortOrder||0)):[];
