@@ -9758,6 +9758,206 @@ main#home{
     if(c.elements && typeof c.elements==='object') Object.entries(c.elements).forEach(([selector,value])=>{ const el=$(selector); if(!el)return; if(typeof value==='string')el.textContent=value; else if(value&&value.text!==undefined)el.textContent=txt(value.text); });
     if(c.css){ let style=$('#elory-site-custom-css'); if(!style){style=document.createElement('style');style.id='elory-site-custom-css';document.head.appendChild(style);} style.textContent=txt(c.css); }
 
+
+    // Safe, data-driven marketing and visual controls. No raw HTML or custom script is accepted.
+    const safeCmsLink = raw => {
+      const value = String(raw || '').trim();
+      if (!value) return '';
+      try {
+        const parsed = new URL(value, window.location.href);
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '';
+        if (parsed.origin !== window.location.origin && parsed.protocol !== 'https:') return '';
+        return parsed.href;
+      } catch (_) { return ''; }
+    };
+
+    // Announcement: per-message timing and optional safe destination.
+    const rotationSeconds = Math.max(1, Math.min(30, Number(a.rotationSeconds || 3) || 3));
+    const announcementItems = $('.announcement-item', announcement || document);
+    announcementItems.forEach((item, index) => {
+      item.style.animationDuration = (rotationSeconds * Math.max(1, announcementItems.length)) + 's';
+      item.style.animationDelay = (rotationSeconds * index) + 's';
+    });
+    const announcementHref = safeCmsLink(a.actionUrl);
+    if (announcement) {
+      if (announcement.__eloryCmsClick) announcement.removeEventListener('click', announcement.__eloryCmsClick);
+      if (announcement.__eloryCmsKey) announcement.removeEventListener('keydown', announcement.__eloryCmsKey);
+      if (announcementHref) {
+        announcement.__eloryCmsClick = event => {
+          if (event.target && event.target.closest && event.target.closest('a,button')) return;
+          window.location.assign(announcementHref);
+        };
+        announcement.__eloryCmsKey = event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            window.location.assign(announcementHref);
+          }
+        };
+        announcement.addEventListener('click', announcement.__eloryCmsClick);
+        announcement.addEventListener('keydown', announcement.__eloryCmsKey);
+        announcement.setAttribute('role', 'link');
+        announcement.setAttribute('tabindex', '0');
+        announcement.style.cursor = 'pointer';
+      } else {
+        announcement.removeAttribute('role');
+        announcement.removeAttribute('tabindex');
+        announcement.style.cursor = '';
+      }
+    }
+
+    // Product cards: presentation-only options. Actual prices, quantities and Prime math are untouched.
+    const productCards = c.productCards || {};
+    const mobileColumns = Math.round(Math.max(1, Math.min(3, Number(productCards.mobileColumns || 2) || 2)));
+    const desktopColumns = Math.round(Math.max(2, Math.min(6, Number(productCards.desktopColumns || 4) || 4)));
+    const cmsVisualStyle = document.getElementById('elory-cms-visual-controls') || document.createElement('style');
+    cmsVisualStyle.id = 'elory-cms-visual-controls';
+    cmsVisualStyle.textContent =
+      '@media(max-width:760px){#featured #productsGrid,#productsGrid{grid-template-columns:repeat(' + mobileColumns + ',minmax(0,1fr))!important;}}' +
+      '@media(min-width:761px){#featured #productsGrid,#productsGrid{grid-template-columns:repeat(' + desktopColumns + ',minmax(0,1fr))!important;}}' +
+      '#productsGrid .product-card{border-radius:' + Math.round(Math.max(0,Math.min(36,Number(g.cardRadiusDp ?? 18)))) + 'px!important;}' +
+      '#productsGrid .product-card .add-cart{border-radius:' + Math.round(Math.max(0,Math.min(36,Number(g.buttonRadiusDp ?? 20)))) + 'px!important;}' +
+      (productCards.showDiscountBadge === false ? '#productsGrid .discount-badge{display:none!important;}' : '') +
+      (productCards.showOldPrice === false ? '#productsGrid .old-price{display:none!important;}' : '') +
+      (productCards.showPrimePrice === false ? '#productsGrid .product-prime-price{display:none!important;}' : '') +
+      'body{--elory-cms-font-scale:' + Math.max(.85,Math.min(1.2,Number(g.fontScale ?? 1))) + ';}' +
+      '#productsGrid .product-name,#productsGrid .product-category,#productsGrid .current-price{font-size:calc(1em * var(--elory-cms-font-scale))!important;}' +
+      '#categoriesSection,#featured,.elory-why-section,.elory-final-cta{margin-block:' + Math.round(Math.max(8,Math.min(64,Number(g.sectionSpacingDp ?? 24)))) + 'px!important;}';
+    if (!cmsVisualStyle.isConnected) document.head.appendChild(cmsVisualStyle);
+
+    // SEO/social metadata stays in the document head and uses validated URLs.
+    const ogImage = imageUrl(g.metaImage);
+    if (ogImage) {
+      let og = document.querySelector('meta[property="og:image"]');
+      if (!og) { og = document.createElement('meta'); og.setAttribute('property', 'og:image'); document.head.appendChild(og); }
+      og.content = ogImage;
+      let twitter = document.querySelector('meta[name="twitter:image"]');
+      if (!twitter) { twitter = document.createElement('meta'); twitter.name = 'twitter:image'; document.head.appendChild(twitter); }
+      twitter.content = ogImage;
+    }
+    const canonicalHref = safeCmsLink(g.canonicalUrl);
+    if (canonicalHref) {
+      let canonical = document.querySelector('link[rel="canonical"]');
+      if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+      canonical.href = canonicalHref;
+    }
+
+    // Optional footer links: append only validated anchors; preserve the existing legal links.
+    const footerColumn = $('.elory-footer-column');
+    const footerLinks = Array.isArray(footer.customLinks) ? footer.customLinks.slice(0, 12) : [];
+    if (footerColumn) {
+      let customFooterGroup = footerColumn.querySelector('.elory-cms-extra-footer-links');
+      if (customFooterGroup) customFooterGroup.remove();
+      const validFooterLinks = footerLinks.map(item => ({
+        label: txt(item && item.label).trim().slice(0, 80),
+        href: safeCmsLink(item && item.url)
+      })).filter(item => item.label && item.href);
+      if (validFooterLinks.length) {
+        customFooterGroup = document.createElement('div');
+        customFooterGroup.className = 'elory-cms-extra-footer-links';
+        customFooterGroup.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:6px;';
+        validFooterLinks.forEach(item => {
+          const link = document.createElement('a');
+          link.textContent = item.label;
+          link.href = item.href;
+          if (new URL(item.href).origin !== window.location.origin) {
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+          }
+          customFooterGroup.appendChild(link);
+        });
+        footerColumn.appendChild(customFooterGroup);
+      }
+    }
+
+    // Accessible promotional popup with device targeting and local frequency cap.
+    const popupConfig = c.popup || {};
+    if (window.__eloryCmsPopupTimer) {
+      window.clearTimeout(window.__eloryCmsPopupTimer);
+      window.__eloryCmsPopupTimer = null;
+    }
+    const oldPopup = document.getElementById('elory-cms-promo-popup');
+    if (oldPopup) oldPopup.remove();
+    const mobileVisitor = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+    const popupAllowedDevice = mobileVisitor ? popupConfig.showOnMobile !== false : popupConfig.showOnDesktop !== false;
+    const popupEnabled = popupConfig.enabled === true || String(popupConfig.enabled).toLowerCase() === 'true';
+    const popupTitle = txt(popupConfig.title).trim().slice(0, 140);
+    const popupMessage = txt(popupConfig.message).trim().slice(0, 1200);
+    const popupButtonText = txt(popupConfig.buttonText).trim().slice(0, 60);
+    const popupButtonHref = safeCmsLink(popupConfig.buttonUrl);
+    const popupImage = imageUrl(popupConfig.imageUrl);
+    const popupDelay = Math.round(Math.max(0, Math.min(120, Number(popupConfig.delaySeconds ?? 5) || 0)));
+    const popupCooldown = Math.round(Math.max(0, Math.min(90, Number(popupConfig.cooldownDays ?? 7) || 0)));
+    let popupCanShow = popupEnabled && popupAllowedDevice && !!(popupTitle || popupMessage || popupImage);
+    try {
+      const lastShown = Number(window.localStorage.getItem('elory_cms_popup_last_seen') || 0);
+      if (Date.now() - lastShown < popupCooldown * 86400000) popupCanShow = false;
+    } catch (_) {}
+    if (popupCanShow) {
+      window.__eloryCmsPopupTimer = window.setTimeout(() => {
+        if (document.getElementById('elory-cms-promo-popup')) return;
+        const overlay = document.createElement('div');
+        overlay.id = 'elory-cms-promo-popup';
+        overlay.setAttribute('role', 'presentation');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(32,18,26,.62);backdrop-filter:blur(4px);';
+        const dialog = document.createElement('section');
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.setAttribute('aria-label', popupTitle || 'عرض خاص من Elory');
+        dialog.tabIndex = -1;
+        dialog.style.cssText = 'position:relative;width:min(520px,100%);max-height:90vh;overflow:auto;border-radius:22px;background:#fff;padding:22px;box-shadow:0 25px 80px rgba(25,10,18,.28);text-align:center;color:#553744;';
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.textContent = '×';
+        close.setAttribute('aria-label', 'إغلاق النافذة');
+        close.style.cssText = 'position:absolute;top:8px;left:10px;width:36px;height:36px;border:0;border-radius:50%;background:#fff0f5;color:#6d4555;font-size:26px;cursor:pointer;';
+        const dismiss = () => {
+          overlay.remove();
+          document.removeEventListener('keydown', popupKeyHandler);
+        };
+        const popupKeyHandler = event => { if (event.key === 'Escape') dismiss(); };
+        close.addEventListener('click', dismiss);
+        dialog.appendChild(close);
+        if (popupImage) {
+          const img = document.createElement('img');
+          img.src = popupImage;
+          img.alt = popupTitle;
+          img.loading = 'lazy';
+          img.style.cssText = 'display:block;width:100%;max-height:260px;object-fit:cover;border-radius:16px;margin:8px 0 16px;';
+          dialog.appendChild(img);
+        }
+        if (popupTitle) {
+          const heading = document.createElement('h2');
+          heading.textContent = popupTitle;
+          heading.style.cssText = 'font-size:22px;font-weight:900;margin:8px 36px 10px;color:#6d4555;';
+          dialog.appendChild(heading);
+        }
+        if (popupMessage) {
+          const body = document.createElement('p');
+          body.textContent = popupMessage;
+          body.style.cssText = 'font-size:14px;line-height:1.9;white-space:pre-line;margin:0 0 16px;color:#745b66;';
+          dialog.appendChild(body);
+        }
+        if (popupButtonText && popupButtonHref) {
+          const button = document.createElement('a');
+          button.textContent = popupButtonText;
+          button.href = popupButtonHref;
+          button.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 24px;border-radius:28px;background:#c96f92;color:#fff;text-decoration:none;font-weight:800;';
+          if (new URL(popupButtonHref).origin !== window.location.origin) {
+            button.target = '_blank';
+            button.rel = 'noopener noreferrer';
+          }
+          button.addEventListener('click', dismiss);
+          dialog.appendChild(button);
+        }
+        overlay.appendChild(dialog);
+        overlay.addEventListener('click', event => { if (event.target === overlay) dismiss(); });
+        document.body.appendChild(overlay);
+        document.addEventListener('keydown', popupKeyHandler);
+        try { window.localStorage.setItem('elory_cms_popup_last_seen', String(Date.now())); } catch (_) {}
+        close.focus();
+      }, popupDelay * 1000);
+    }
+
     // Refresh an already-open storefront when the dashboard publishes a change.
     try{
       if(typeof db.channel==='function' && !window.__elorySiteCmsLiveChannel){
