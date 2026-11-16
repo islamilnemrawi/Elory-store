@@ -40,3 +40,6 @@ WHERE o.phone IS NOT NULL
 GROUP BY pg_catalog.btrim(o.phone);
 
 GRANT SELECT ON TABLE public.customers TO authenticated;
+
+-- Make the newly-created view available through Supabase REST/PostgREST immediately.
+NOTIFY pgrst, 'reload schema';
