@@ -1,0 +1,49 @@
+name: Validate Elory storefront scripts
+
+on:
+  push:
+    branches:
+      - elory/prime-config-live-sync
+    paths:
+      - index.html
+      - .github/workflows/validate-prime-storefront.yml
+  pull_request:
+    paths:
+      - index.html
+      - .github/workflows/validate-prime-storefront.yml
+
+jobs:
+  validate-inline-javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check inline JavaScript syntax and Prime wiring
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          html = Path("index.html").read_text(encoding="utf-8")
+          assert "window.ELORY_PRIME_CONFIG" in html, "Prime config is not published to the storefront"
+          assert "getPrimePrice()" in html, "Dynamic Prime price helper is missing"
+          assert "getPrimeDiscountPercent()" in html, "Dynamic Prime discount helper is missing"
+          assert "ELORY_PRIME_PRICE" not in html, "Hardcoded Prime price constant remains"
+          scripts = re.findall(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", html, flags=re.I)
+          checked = 0
+          for index, (attrs, code) in enumerate(scripts):
+              type_match = re.search(r"""type\s*=\s*["']([^"']+)["']""", attrs, flags=re.I)
+              script_type = type_match.group(1).lower() if type_match else ""
+              if script_type and script_type not in ("text/javascript", "application/javascript", "module"):
+                  continue
+              if not code.strip():
+                  continue
+              path = Path(f"/tmp/elory-inline-{index}.mjs")
+              path.write_text(code, encoding="utf-8")
+              subprocess.run(["node", "--check", str(path)], check=True)
+              checked += 1
+          if checked == 0:
+              raise SystemExit("No inline JavaScript blocks were validated")
+          print(f"Validated {checked} inline JavaScript blocks.")
+          PY
