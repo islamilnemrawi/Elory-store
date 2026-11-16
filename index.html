@@ -5659,6 +5659,8 @@ main#home{
       if(discountPercent>0)benefitParts.push('خصم إضافي '+discountPercent+'%');
       if(Number(primeStatus.free_shipping_limit??0)>0)benefitParts.push('الشحن المجاني وفق الحد المتاح');
       if(primeStatus.packaging_enabled===true)benefitParts.push('التغليف المميز');
+      if(primeStatus.theme_enabled===true)benefitParts.push('ثيم Prime');
+      if(Array.isArray(primeStatus.features))primeStatus.features.filter(x=>typeof x==='string'&&x.trim()).forEach(x=>benefitParts.push(x.trim()));
       const benefitText=isActive?(benefitParts.join(' • ')||'لا توجد مزايا إضافية مفعلة حالياً'):paymentPending?'تُفعّل المزايا بعد تأكيد الدفع من Paymob.':'تتضمن الباقة المزايا الموضحة في تفاصيل Prime.';
       let action="";
       if(paymentPending) action='<button class="prime-status-refresh" onclick="refreshPrimeState()" type="button">تحققي من حالة الدفع</button>';
@@ -7313,6 +7315,8 @@ main#home{
       const primeDiscountValue=document.getElementById("checkoutPrimeDiscount");
       if(primeDiscountRow)primeDiscountRow.hidden=!(primeActive&&primeDiscount>0);
       if(primeDiscountValue)primeDiscountValue.textContent=formatPrice(primeDiscount);
+      const primeDiscountLabel=document.querySelector('#checkoutPrimeDiscountRow span');
+      if(primeDiscountLabel)primeDiscountLabel.textContent='وفرتِ بفضل Elory Prime ('+getPrimeDiscountPercent()+'%)';
       const b=document.getElementById("checkoutShipping"); if(b)b.textContent=(primeFreeAvailable||couponFreeShipping)?"مجاني 🎉":(!gov?"اختاري المحافظة":(Number(baseShipping)>0?formatPrice(shipping):"تعذر تحديد السعر"));
       const r=document.getElementById("checkoutPrimeRow"); if(r)r.hidden=!primeFee;
 
@@ -7555,6 +7559,8 @@ main#home{
         if(getPrimeDiscountPercent()>0)activeBenefits.push('خصم إضافي '+getPrimeDiscountPercent()+'%');
         if(Number(primeStatus?.free_shipping_limit||0)>0)activeBenefits.push('الشحن المجاني المتاح');
         if(primeStatus?.packaging_enabled===true)activeBenefits.push('التغليف المميز');
+        if(primeStatus?.theme_enabled===true)activeBenefits.push('ثيم Prime');
+        if(Array.isArray(primeStatus?.features))primeStatus.features.filter(x=>typeof x==='string'&&x.trim()).forEach(x=>activeBenefits.push(x.trim()));
         box.innerHTML='<div class="prime-modal-active"><b><i class="fa-solid fa-crown"></i> عضويتك Elory Prime نشطة</b><span>صالحة حتى '+escapeHtml(date)+'</span><p>تُطبق مزاياك المفعلة: '+escapeHtml(activeBenefits.join(' • ')||'لا توجد مزايا إضافية مفعلة')+'.</p><button class="prime-status-refresh" type="button" onclick="closeModalVisual(&quot;primeModal&quot;);openAccount()">عرض حسابي</button></div>';
       }else if(pending){
         box.innerHTML='<div class="prime-modal-pending"><b>اشتراكك قيد تأكيد الدفع</b><p>لن نطلب منك الدفع مرة أخرى أثناء انتظار التأكيد.</p><button class="prime-status-refresh" type="button" onclick="refreshPrimeState().then(updatePrimeModalStatus)">تحققي من حالة الدفع</button></div>';
