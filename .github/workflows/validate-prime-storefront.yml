@@ -40,7 +40,7 @@ jobs:
           assert "productCards.showPrimePrice" in html, "CMS product-card visual settings are missing"
           assert "footer.customLinks" in html, "CMS footer links renderer is missing"
           assert "g.metaImage" in html and "g.canonicalUrl" in html, "CMS SEO metadata renderer is missing"
-          assert "const announcementItems = $('.announcement-item', announcement || document);" in html, "Announcement ticker must query all nodes before iteration"
+          assert "const announcementItems = $$('.announcement-item', announcement || document);" in html, "Announcement ticker must query all nodes before iteration"
           scripts = re.findall(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", html, flags=re.I)
           checked = 0
           for index, (attrs, code) in enumerate(scripts):
