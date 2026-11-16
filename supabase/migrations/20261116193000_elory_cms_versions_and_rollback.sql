@@ -13,7 +13,9 @@ CREATE TABLE IF NOT EXISTS elory_cms_private.site_customization_versions (
 ALTER TABLE elory_cms_private.site_customization_versions ENABLE ROW LEVEL SECURITY;
 
 GRANT USAGE ON SCHEMA elory_cms_private TO authenticated;
+REVOKE ALL ON TABLE elory_cms_private.site_customization_versions FROM PUBLIC, anon;
 GRANT SELECT, INSERT, DELETE ON TABLE elory_cms_private.site_customization_versions TO authenticated;
+REVOKE ALL ON SEQUENCE elory_cms_private.site_customization_versions_id_seq FROM PUBLIC, anon;
 GRANT USAGE, SELECT ON SEQUENCE elory_cms_private.site_customization_versions_id_seq TO authenticated;
 
 DROP POLICY IF EXISTS "authorized staff manage CMS versions"
@@ -68,7 +70,7 @@ BEGIN
         (label, config, store_settings, created_by)
     VALUES
         (
-            pg_catalog.left(pg_catalog.coalesce(pg_catalog.nullif(pg_catalog.btrim(p_label), ''), 'نسخة قبل النشر'), 120),
+            pg_catalog.left(COALESCE(NULLIF(pg_catalog.btrim(p_label), ''), 'نسخة قبل النشر'), 120),
             v_config,
             v_store_settings,
             auth.uid()
@@ -100,7 +102,7 @@ BEGIN
         RAISE EXCEPTION 'Not authorized to view website versions' USING ERRCODE = '42501';
     END IF;
 
-    SELECT pg_catalog.coalesce(
+    SELECT COALESCE(
         pg_catalog.jsonb_agg(
             pg_catalog.jsonb_build_object(
                 'id', versions.id,
@@ -161,7 +163,7 @@ BEGIN
     v_current_store_open := v_live_config #> '{global,isStoreOpen}';
     IF pg_catalog.jsonb_typeof(v_saved_config->'global') IS DISTINCT FROM 'object' THEN
         v_saved_config := pg_catalog.jsonb_set(
-            pg_catalog.coalesce(v_saved_config, '{}'::jsonb),
+            COALESCE(v_saved_config, '{}'::jsonb),
             '{global}',
             '{}'::jsonb,
             true
