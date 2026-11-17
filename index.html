@@ -5121,8 +5121,8 @@ main#home{
 </div>
 <div class="elory-footer-column">
 <h4>طرق الدفع</h4>
-<span>Visa / Mastercard</span>
-<span>Vodafone Cash</span>
+<span data-payment-info="card">Visa / Mastercard</span>
+<span data-payment-info="wallet">Vodafone Cash</span>
 <span>الدفع عند الاستلام</span>
 </div>
 </div>
@@ -10348,6 +10348,8 @@ main#home{
       input.disabled=!available;
       label.hidden=!available;
     });
+    document.querySelectorAll('[data-payment-info="card"]').forEach(el=>{el.hidden=!state.card_enabled;});
+    document.querySelectorAll('[data-payment-info="wallet"]').forEach(el=>{el.hidden=!state.wallet_enabled;});
     if(notice){
       notice.hidden=state.card_enabled||state.wallet_enabled;
       notice.textContent="الدفع الإلكتروني غير متاح مؤقتًا؛ يمكنك إتمام طلبك بالدفع عند الاستلام.";
