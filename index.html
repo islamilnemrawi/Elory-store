@@ -2656,43 +2656,8 @@ body.prime-mode .header-logo-row .logo{color:#7850A8 !important;}
     @media (max-width:600px){ .cart-add-notice{top:82px;right:10px;} .order-success-grid{grid-template-columns:1fr;} .order-success-card{padding:26px 14px;} }
 
 </style>
-<style id="elory-orders-prime-v4-css-duplicate">
-.header-orders-btn{position:relative}.header-orders-btn .header-count{min-width:15px;height:15px;padding:0 3px;font-size:8px}.header-orders-btn.orders-pulse{animation:eloryOrdersPulse .7s ease}@keyframes eloryOrdersPulse{0%{transform:scale(1)}35%{transform:scale(1.18) rotate(-5deg)}70%{transform:scale(.96) rotate(4deg)}100%{transform:scale(1)}}
-.customer-orders-page{padding:26px 16px 70px;min-height:70vh;background:var(--bg,#fff)}.orders-page-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:18px}.orders-page-head h1{margin:4px 0;font-size:25px}.orders-page-head p{margin:0;color:var(--muted,#777);font-size:12px}.orders-back-btn{width:42px;height:42px;border:1px solid var(--border,#eee);background:var(--surface,#fff);color:var(--pink);border-radius:14px}.customer-order-card{background:var(--surface,#fff);border:1px solid var(--border,#eee);border-radius:20px;padding:15px;margin-bottom:12px;box-shadow:0 8px 26px rgba(0,0,0,.05)}.customer-order-top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}.customer-order-number{font-weight:900}.customer-order-date{font-size:10px;color:var(--muted,#777);margin-top:3px}.customer-order-status{padding:7px 10px;border-radius:999px;background:var(--pink-soft,#fff0f7);color:var(--pink);font-size:10px;font-weight:800;white-space:nowrap}.customer-order-items{display:grid;gap:8px}.customer-order-item{display:flex;gap:9px;align-items:center;padding:8px;background:rgba(127,127,127,.05);border-radius:13px}.customer-order-item img{width:48px;height:48px;border-radius:11px;object-fit:cover;background:#eee}.customer-order-item-main{flex:1;min-width:0}.customer-order-item-main b{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.customer-order-item-main small{font-size:9px;color:var(--muted,#777)}.customer-order-item-price{font-size:10px;font-weight:800}.customer-order-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:11px;border-top:1px solid var(--border,#eee);font-size:11px}.customer-order-total{font-weight:900;color:var(--pink)}.orders-empty{padding:35px 15px;text-align:center;color:var(--muted,#777)}.prime-status-card{margin:12px 0;padding:15px;border-radius:18px;background:linear-gradient(135deg,rgba(147,112,168,.16),rgba(242,174,214,.12));border:1px solid rgba(147,112,168,.25)}.prime-status-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.prime-status-grid div{padding:10px;border-radius:13px;background:rgba(255,255,255,.55)}.prime-status-grid small{display:block;font-size:9px;opacity:.7}.prime-status-grid b{display:block;margin-top:4px;font-size:11px}.prime-discount{display:none;position:absolute;top:48px;right:8px;background:#9a6faf;color:#fff;border-radius:50%;width:38px;height:38px;align-items:center;justify-content:center;font-size:9px;font-weight:900;box-shadow:0 6px 16px rgba(120,70,145,.24);z-index:2}
 
-/* V9.1 auth providers: always visible and touch-friendly */
-#accountGuestView .auth-social-grid{
-  display:grid !important;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  margin-top:8px;
-}
-#accountGuestView .auth-social{
-  display:flex !important;
-  visibility:visible !important;
-  opacity:1 !important;
-  min-height:50px;
-  height:50px;
-  font-size:11px;
-  cursor:pointer;
-}
-#accountGuestView .auth-social i{font-size:18px;flex:0 0 auto;}
-#accountGuestView .auth-social.google i{color:#db4437;}
 
-@media (max-width:520px){
-  #accountGuestView .auth-social-grid{grid-template-columns:1fr;}
-}
-</style>
-<style id="elory-prime-compact-final-duplicate">
-.prime-box{min-height:260px !important;padding:32px 7% !important;border-radius:24px !important;}
-.prime-content{max-width:700px !important;}
-.prime-title{font-size:44px !important;margin-bottom:5px !important;}
-.prime-desc{font-size:16px !important;line-height:1.85 !important;margin-bottom:14px !important;}
-.prime-benefits{gap:7px !important;margin-bottom:16px !important;}
-.prime-benefit{padding:7px 10px !important;font-size:12px !important;border-radius:18px !important;}
-.prime-activate{padding:11px 20px !important;font-size:13px !important;}
-@media(max-width:700px){.prime-box{min-height:0!important;padding:27px 20px!important}.prime-title{font-size:38px!important}.prime-desc{font-size:14px!important}.prime-benefit{font-size:11.5px!important}.prime-activate{width:100%!important}}
-</style>
 
 <style id="elory-product-deals-final">
 .product-deal-stack{position:absolute;top:10px;right:10px;left:10px;z-index:4;display:flex;align-items:center;gap:6px;flex-wrap:wrap;pointer-events:none;}
@@ -4580,6 +4545,23 @@ main#home{
   .elory-footer-bottom .developer-credit-main b{font-size:16px;}
   .elory-copyright{align-self:center;}
 }
+
+/* Category rail: show each real category once; keep touch/trackpad scrolling. */
+#categoryWrapper{
+  justify-content:flex-start !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  touch-action:pan-x !important;
+  overscroll-behavior-inline:contain;
+  scrollbar-width:none !important;
+}
+#categoryWrapper::-webkit-scrollbar{display:none !important;}
+#categoriesSection #categories{
+  transform:none !important;
+  margin-inline:auto !important;
+}
+#categoriesSection .category-set[data-category-clone="true"]{display:none !important;}
+#categoriesSection .category-set{flex:0 0 auto;}
 </style>
 <style id="elory-account-orders-prime-fixes">
 /* Keep hidden account views hidden even where component display rules are stronger. */
@@ -5780,15 +5762,7 @@ main#home{
       firstSet.innerHTML = cardHtml;
       renderMenuCategories();
       if(document.getElementById("shopPage")?.classList.contains("show")) renderCategoryContextNav();
-      let second = track.querySelector('[data-category-clone="true"]');
-      if (!second) {
-        second = document.createElement("div");
-        second.className = "category-set";
-        second.setAttribute("aria-hidden", "true");
-        second.setAttribute("data-category-clone", "true");
-        track.appendChild(second);
-      }
-      second.innerHTML = cardHtml;
+      track.querySelectorAll('[data-category-clone="true"]').forEach(node => node.remove());
       window.dispatchEvent(new Event("resize"));
     }
 
@@ -7958,279 +7932,22 @@ main#home{
     }
 
     /* =========================================================
-       INFINITE CATEGORY TRACK
+       CATEGORY SCROLLER — single source set, no repeated clones
        ========================================================= */
 
-    (function setupInfiniteCategories() {
-
-      const wrapper =
-        document.getElementById(
-          "categoryWrapper"
-        );
-
-      const track =
-        document.getElementById(
-          "categories"
-        );
-
-      const firstSet =
-        document.getElementById(
-          "categorySet"
-        );
-
-      if (
-        !wrapper ||
-        !track ||
-        !firstSet
-      ) {
-        return;
-      }
-
-      let setWidth = 0;
-      let offset = 0;
-      let canLoopCategories = false;
-
-      const speed = .55;
-
-      let lastTime = 0;
-
-      let dragging = false;
-      let pointerId = null;
-
-      let startX = 0;
-      let startOffset = 0;
-
-      function measure() {
-
-        setWidth =
-          firstSet.getBoundingClientRect()
-            .width;
-
-        if (!setWidth) {
-          return;
-        }
-
-        const clone = track.querySelector('[data-category-clone="true"]');
-        if (clone) {
-          clone.inert = false;
-          clone.setAttribute("aria-hidden", "false");
-          while (clone.children.length > firstSet.children.length) {
-            clone.lastElementChild.remove();
-          }
-          while (clone.scrollWidth < wrapper.clientWidth + setWidth) {
-            Array.from(firstSet.children).forEach(child => {
-              clone.appendChild(child.cloneNode(true));
-            });
-          }
-        }
-
-        canLoopCategories = !!clone && clone.scrollWidth >= wrapper.clientWidth;
-        wrapper.classList.toggle("has-overflow", canLoopCategories);
-        if (clone) clone.hidden = !canLoopCategories;
-        if (!canLoopCategories) {
-          offset = 0;
-          apply();
-          return;
-        }
-
-        offset =
-          normalize(offset);
-
-        apply();
-
-      }
-
-      function normalize(value) {
-
-        if (!setWidth) {
-          return value;
-        }
-
-        while (
-          value <= -setWidth
-        ) {
-          value += setWidth;
-        }
-
-        while (
-          value > 0
-        ) {
-          value -= setWidth;
-        }
-
-        return value;
-
-      }
-
-      function apply() {
-
-        track.style.transform =
-          `translate3d(${offset}px,0,0)`;
-
-      }
-
-      function animate(time) {
-
-        if (!lastTime) {
-          lastTime = time;
-        }
-
-        const delta =
-          Math.min(
-            40,
-            time - lastTime
-          );
-
-        lastTime = time;
-
-        if (
-          !dragging &&
-          setWidth &&
-          canLoopCategories
-        ) {
-
-          offset -=
-            speed *
-            (delta / 16.6667);
-
-          offset =
-            normalize(offset);
-
-          apply();
-
-        }
-
-        requestAnimationFrame(
-          animate
-        );
-
-      }
-
-      wrapper.addEventListener(
-        "pointerdown",
-        event => {
-
-          if (!canLoopCategories) {
-            return;
-          }
-
-          if (
-            event.pointerType === "mouse" &&
-            event.button !== 0
-          ) {
-            return;
-          }
-
-          dragging = true;
-
-          pointerId =
-            event.pointerId;
-
-          startX =
-            event.clientX;
-
-          startOffset =
-            offset;
-
-          wrapper.classList.add(
-            "dragging"
-          );
-
-          try {
-
-            wrapper.setPointerCapture(
-              event.pointerId
-            );
-
-          } catch (_) {}
-
-        }
-      );
-
-      wrapper.addEventListener(
-        "pointermove",
-        event => {
-
-          if (
-            !dragging ||
-            event.pointerId !== pointerId
-          ) {
-            return;
-          }
-
-          const dx =
-            event.clientX -
-            startX;
-
-          offset =
-            normalize(
-              startOffset + dx
-            );
-
-          apply();
-
-        }
-      );
-
-      function endDrag() {
-
-        if (!dragging) {
-          return;
-        }
-
-        dragging = false;
-
-        pointerId = null;
-
-        startOffset =
-          offset;
-
-        wrapper.classList.remove(
-          "dragging"
-        );
-
-      }
-
-      wrapper.addEventListener(
-        "pointerup",
-        endDrag
-      );
-
-      wrapper.addEventListener(
-        "pointercancel",
-        endDrag
-      );
-
-      wrapper.addEventListener(
-        "lostpointercapture",
-        endDrag
-      );
-
-      wrapper.addEventListener(
-        "dragstart",
-        event =>
-          event.preventDefault()
-      );
-
-      window.addEventListener(
-        "resize",
-        measure
-      );
-
-      setTimeout(
-        measure,
-        100
-      );
-
-      setTimeout(
-        measure,
-        500
-      );
-
-      requestAnimationFrame(
-        animate
-      );
-
+    (function setupCategoryScroller() {
+      const wrapper = document.getElementById("categoryWrapper");
+      const track = document.getElementById("categories");
+      if (!wrapper || !track) return;
+
+      const sync = () => {
+        track.querySelectorAll('[data-category-clone="true"]').forEach(node => node.remove());
+        track.style.transform = "none";
+        wrapper.classList.remove("has-overflow", "dragging");
+      };
+
+      sync();
+      window.addEventListener("resize", sync, { passive: true });
     })();
 
     /* =========================================================
