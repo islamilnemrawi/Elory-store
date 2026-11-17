@@ -5121,8 +5121,8 @@ main#home{
 </div>
 <div class="elory-footer-column">
 <h4>طرق الدفع</h4>
-<span>Visa / Mastercard</span>
-<span>Vodafone Cash</span>
+<span data-payment-info="card">Visa / Mastercard</span>
+<span data-payment-info="wallet">Vodafone Cash</span>
 <span>الدفع عند الاستلام</span>
 </div>
 </div>
@@ -5297,6 +5297,7 @@ main#home{
 </div>
 <div aria-label="طرق الدفع" class="payment-methods">
 <div class="payment-title">اختاري طريقة الدفع</div>
+<p class="payment-capability-notice" id="paymentCapabilityNotice" role="status" aria-live="polite" hidden></p>
 <label class="payment-option selected">
 <input checked="" name="paymentMethod" onchange="selectPaymentMethod(this.value)" type="radio" value="cash_on_delivery"/>
 <span class="payment-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
@@ -7435,6 +7436,13 @@ main#home{
       if(button){button.disabled=true;button.dataset.oldText=button.textContent;button.textContent="جاري إرسال الطلب...";}
       try{
         if(selectedPaymentMethod!=="cash_on_delivery"){
+          const paymentCapabilities = await window.ELORY_PAYMENT_CAPABILITIES_PROMISE;
+          const paymentReady = selectedPaymentMethod === "card"
+            ? paymentCapabilities.card_enabled
+            : paymentCapabilities.wallet_enabled;
+          if (!paymentReady) {
+            throw new Error("وسيلة الدفع الإلكتروني غير متاحة حاليًا. اختاري الدفع عند الاستلام.");
+          }
           const endpoint=window.ELORY_PAYMENT_CONFIG?.createPaymentUrl||"";
           if(!endpoint){showToast("بوابة Paymob تحتاج رابط الـBackend أولاً");return;}
           const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json",...(await getEloryAuthHeaders())},body:JSON.stringify({type:"order_payment",...order})});
@@ -7723,6 +7731,11 @@ main#home{
               e
             );
           }
+        }
+
+        const paymentCapabilities = await window.ELORY_PAYMENT_CAPABILITIES_PROMISE;
+        if (!paymentCapabilities.card_enabled) {
+          throw new Error("اشتراك Elory Prime غير متاح للدفع الإلكتروني حاليًا.");
         }
 
         const response =
@@ -10315,5 +10328,71 @@ main#home{
 })();
 </script>
 
+<style id="elory-payment-capability-guard-style">
+.payment-option[hidden]{display:none!important}
+.elory-footer-column span[hidden]{display:none!important}
+.payment-capability-notice{margin:10px 0;padding:10px 12px;border-radius:12px;background:#fff5e9;color:#77511d;font-size:13px;line-height:1.6}
+</style>
+<script id="elory-payment-capability-guard">
+(function(){
+  const state = {ready:false,mode:"unknown",card_enabled:false,wallet_enabled:false};
+  window.ELORY_PAYMENT_CAPABILITIES = state;
+  const options = Array.from(document.querySelectorAll('input[name="paymentMethod"]'));
+  const notice = document.getElementById("paymentCapabilityNotice");
+  function apply(){
+    options.forEach(input=>{
+      const label=input.closest(".payment-option");
+      if(!label) return;
+      const available=input.value==="cash_on_delivery" ||
+        (input.value==="card" && state.card_enabled) ||
+        (input.value==="vodafone_cash" && state.wallet_enabled);
+      input.disabled=!available;
+      label.hidden=!available;
+    });
+    document.querySelectorAll('[data-payment-info="card"]').forEach(el=>{el.hidden=!state.card_enabled;});
+    document.querySelectorAll('[data-payment-info="wallet"]').forEach(el=>{el.hidden=!state.wallet_enabled;});
+    if(notice){
+      notice.hidden=state.card_enabled||state.wallet_enabled;
+      notice.textContent="الدفع الإلكتروني غير متاح مؤقتًا؛ يمكنك إتمام طلبك بالدفع عند الاستلام.";
+    }
+    const selected=document.querySelector('input[name="paymentMethod"]:checked');
+    if(selected && selected.disabled){
+      const cod=document.querySelector('input[name="paymentMethod"][value="cash_on_delivery"]');
+      if(cod){cod.checked=true;window.selectPaymentMethod?.("cash_on_delivery");}
+    }
+  }
+  options.forEach(input=>{
+    if(input.value!=="cash_on_delivery"){
+      input.disabled=true;
+      const label=input.closest(".payment-option");
+      if(label) label.hidden=true;
+    }
+  });
+  window.ELORY_PAYMENT_CAPABILITIES_PROMISE=(async()=>{
+    try{
+      const endpoint=window.ELORY_PAYMENT_CONFIG?.createPaymentUrl;
+      if(!endpoint) throw new Error("Paymob endpoint is not configured");
+      const response=await fetch(endpoint,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({action:"payment_capabilities"})
+      });
+      const result=await response.json();
+      if(!response.ok||result?.ok!==true) throw new Error("Payment capability check failed");
+      state.mode=String(result.mode||"unknown");
+      state.card_enabled=result.card_enabled===true;
+      state.wallet_enabled=result.wallet_enabled===true;
+      state.ready=true;
+    }catch(error){
+      console.warn("Elory payment capabilities unavailable; online methods remain disabled.",error);
+      state.ready=false;
+      state.card_enabled=false;
+      state.wallet_enabled=false;
+    }
+    apply();
+    return state;
+  })();
+})();
+</script>
 </body>
 </html>
