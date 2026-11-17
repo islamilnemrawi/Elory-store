@@ -3066,7 +3066,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
 .hero-dot.active{width:28px;height:10px;border-radius:10px;background:var(--pink,#d96b91);opacity:1;box-shadow:0 2px 8px rgba(166,47,94,.24)}
 #heroSlider>.hero-slide.elory-hero-fullbleed{background:#111 !important;isolation:isolate !important;}
 /* Avoid showing the baked-in starter hero while the published CMS campaign is still loading. */
-#heroSlider:not([data-hero-cms-ready="true"]){visibility:hidden !important;}
+#heroSlider:not([data-hero-cms-ready="true"]){opacity:0 !important;pointer-events:none !important;}
+#heroSlider[data-hero-cms-ready="true"]{opacity:1 !important;pointer-events:auto !important;}
 #heroSlider .elory-hero-fullbleed-picture,#heroSlider .elory-hero-fullbleed-video{position:absolute !important;inset:0 !important;display:block !important;width:100% !important;height:100% !important;z-index:6 !important;overflow:hidden !important;}
 #heroSlider .elory-hero-fullbleed-picture img,#heroSlider .elory-hero-fullbleed-video{display:block !important;width:100% !important;height:100% !important;max-width:none !important;max-height:none !important;object-fit:contain !important;object-position:center center !important;border:0 !important;border-radius:0 !important;}
 #heroSlider .elory-hero-fullbleed-picture img{background:#fff !important;}
@@ -4850,7 +4851,7 @@ main#home{
 <main id="home">
 <!-- HERO -->
 <section class="hero">
-<div class="hero-slider elory-code-hero" id="heroSlider" style="visibility:hidden">
+<div class="hero-slider elory-code-hero" id="heroSlider" style="opacity:0;pointer-events:none">
 <div class="hero-slide active elory-code-slide">
 <div class="hero-wave-top"></div>
 <div class="hero-decor hero-decor-left"></div>
@@ -9392,7 +9393,7 @@ main#home{
           const dot=document.createElement('button'); dot.type='button'; dot.className='hero-dot'+(i===0?' active':'');
           dot.dataset.label=txt(item.buttonText||item.title||('الشريحة '+(i+1))); dot.setAttribute('aria-label',dot.dataset.label); dots.appendChild(dot);
         });
-        slider.appendChild(dots); slider.dataset.heroCmsReady='true'; slider.style.visibility='visible'; old.replaceWith(slider); window.heroIndex=0;
+        slider.appendChild(dots); slider.dataset.heroCmsReady='true'; slider.style.visibility='visible'; slider.style.opacity='1'; slider.style.pointerEvents='auto'; old.replaceWith(slider); window.heroIndex=0;
         if(typeof window.startHero==='function') window.startHero();
         else if(slides.length){
           let active=0;
@@ -10180,7 +10181,7 @@ main#home{
     if (!hero || !slider || !template) throw new Error('Hero container or slide template not found');
 
     /* If the primary CMS renderer already built campaign slides, leave it untouched. */
-    if (slider.querySelector(':scope > .hero-slide.elory-hero-fullbleed .elory-hero-fullbleed-picture img')) { slider.dataset.heroCmsReady = 'true'; slider.style.visibility = 'visible'; return; }
+    if (slider.querySelector(':scope > .hero-slide.elory-hero-fullbleed .elory-hero-fullbleed-picture img')) { slider.dataset.heroCmsReady = 'true'; slider.style.visibility = 'visible'; slider.style.opacity = '1'; slider.style.pointerEvents = 'auto'; return; }
 
     const cards = campaigns.map((entry, index) => {
       const item = entry.item;
@@ -10290,6 +10291,8 @@ main#home{
     slider.dataset.heroReady = 'true';
     slider.dataset.heroCmsReady = 'true';
     slider.style.visibility = 'visible';
+    slider.style.opacity = '1';
+    slider.style.pointerEvents = 'auto';
     slider.__eloryRestartHero = () => show(current);
     hero.classList.add('elory-hero-campaign-fullbleed');
     hero.hidden = false;
