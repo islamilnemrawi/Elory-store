@@ -36,7 +36,7 @@ SELECT
 FROM public.orders AS o
 WHERE o.phone IS NOT NULL
   AND pg_catalog.btrim(o.phone) <> ''
-  AND pg_catalog.lower(pg_catalog.trim(COALESCE(o.status, ''))) NOT IN (
+  AND pg_catalog.lower(pg_catalog.btrim(COALESCE(o.status, ''))) NOT IN (
       'جاري الدفع',
       'فشل الدفع',
       'فشل إنشاء الدفع',
