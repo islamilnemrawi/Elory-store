@@ -7,6 +7,7 @@ on:
       - elory/prime-config-live-sync
     paths:
       - index.html
+      - supabase/migrations/*.sql
       - .github/workflows/validate-prime-storefront.yml
   pull_request:
     paths:
@@ -31,6 +32,15 @@ jobs:
           assert "getPrimePrice()" in html, "Dynamic Prime price helper is missing"
           assert "getPrimeDiscountPercent()" in html, "Dynamic Prime discount helper is missing"
           assert "ELORY_PRIME_PRICE" not in html, "Hardcoded Prime price constant remains"
+          assert "if (c.global && c.global.isStoreOpen === false)" in html, "The existing store availability guard must remain intact"
+          cms_start = html.index('if (c.global && c.global.isStoreOpen === false)')
+          cms_helpers = html.index('    const $$ =', cms_start)
+          assert cms_helpers > cms_start, "The store availability guard must stay at the start of the CMS bootstrap"
+          assert "const popupConfig = c.popup || {};" in html, "CMS promotional popup renderer is missing"
+          assert "productCards.showPrimePrice" in html, "CMS product-card visual settings are missing"
+          assert "footer.customLinks" in html, "CMS footer links renderer is missing"
+          assert "g.metaImage" in html and "g.canonicalUrl" in html, "CMS SEO metadata renderer is missing"
+          assert "const announcementItems = $$('.announcement-item', announcement || document);" in html, "Announcement ticker must query all nodes before iteration"
           scripts = re.findall(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", html, flags=re.I)
           checked = 0
           for index, (attrs, code) in enumerate(scripts):
@@ -46,5 +56,21 @@ jobs:
               checked += 1
           if checked == 0:
               raise SystemExit("No inline JavaScript blocks were validated")
+          migrations = sorted(Path("supabase/migrations").glob("*_elory_cms_versions_and_rollback.sql"))
+          if migrations:
+              sql = migrations[0].read_text(encoding="utf-8")
+              assert "CREATE TABLE IF NOT EXISTS elory_cms_private.site_customization_versions" in sql
+              assert "public.admin_create_site_customization_snapshot" in sql
+              assert "public.admin_list_site_customization_versions" in sql
+              assert "public.admin_restore_site_customization_version" in sql
+              assert "v_current_store_open" in sql and "'{global,isStoreOpen}'" in sql
+              assert "SECURITY INVOKER" in sql
+              print(f"Validated CMS versioning migration: {migrations[0].name}")
+          atomic_restore = Path("supabase/migrations/20261117093000_elory_cms_restore_atomic_draft_clear.sql")
+          if atomic_restore.exists():
+              atomic_sql = atomic_restore.read_text(encoding="utf-8")
+              restore_body = atomic_sql[atomic_sql.index("CREATE OR REPLACE FUNCTION public.admin_restore_site_customization_version"):]
+              assert "PERFORM public.admin_clear_site_customization_draft();" in restore_body, "Version restore must clear the draft in the same transaction"
+              print(f"Validated atomic CMS restore migration: {atomic_restore.name}")
           print(f"Validated {checked} inline JavaScript blocks.")
           PY
