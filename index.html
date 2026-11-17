@@ -1832,9 +1832,13 @@ body.prime-mode .section-title{color:var(--pink);}
 .cart-prime-benefits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 9px;width:100%;min-width:0}
 .cart-prime-benefits>span{display:flex;align-items:flex-start;gap:5px;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.55;font-size:10px}
 .cart-prime-benefits>span i{flex:0 0 auto;margin-top:2px}
+.cart-prime-benefits>span i{color:#8b63a3;margin-left:3px}
 .cart-prime-option>strong{grid-area:price;justify-self:start;align-self:start;color:#76518f;font-size:12px;white-space:normal;overflow-wrap:anywhere}
 .cart-item-color-dot{display:inline-block;width:17px;height:17px;flex:0 0 17px;border:1px solid rgba(60,40,48,.24);border-radius:50%;vertical-align:middle;box-shadow:0 0 0 2px #fff}
 .cart-item-option{display:flex;align-items:center;gap:7px;min-height:20px}
+.prime-summary{font-weight:800!important}
+#checkoutPrimeRow[hidden]{display:none!important}
+#checkoutPrimeRow:not([hidden]){display:flex!important}
 @media(max-width:430px){.cart-prime-option{grid-template-columns:minmax(0,1fr) 36px 20px;gap:7px;padding:11px}.cart-prime-icon{width:36px;height:36px;flex-basis:36px}.cart-prime-copy b{font-size:11px}.cart-prime-copy small{font-size:9px}.cart-prime-benefits{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.cart-prime-benefits>span{font-size:9px}.cart-prime-option>strong{font-size:10px}}
 @media(max-width:350px){.cart-prime-benefits{grid-template-columns:minmax(0,1fr)}}
 .cart-summary .summary-row.prime-summary{color:#6f4b86}
@@ -1926,15 +1930,7 @@ body.prime-mode .footer-brand-name,body.prime-mode .footer-brand-lotus{color:var
 .prime-activate{padding:11px 20px !important;font-size:13px !important;}
 @media(max-width:700px){.prime-box{min-height:0!important;padding:27px 20px!important}.prime-title{font-size:38px!important}.prime-desc{font-size:14px!important}.prime-benefit{font-size:11.5px!important}.prime-activate{width:100%!important}}
 </style>
-<style id="elory-cart-prime-final">
-.cart-prime-option{border:1px solid #d2b8df !important;background:linear-gradient(135deg,#fffaff,#f2e8f8) !important;border-radius:16px !important;box-shadow:0 8px 24px rgba(100,70,120,.08) !important;}
-.cart-prime-option>strong{font-size:12px !important;}
-.cart-prime-copy b{font-size:12px !important;}
-.cart-prime-copy small{font-size:12px !important;}
-.prime-summary{font-weight:800 !important;}
-#checkoutPrimeRow[hidden]{display:none !important;}
-#checkoutPrimeRow:not([hidden]){display:flex !important;}
-</style>
+
 <style id="elory-final-user-fixes">
 /* ===== FINAL USER FIXES ===== */
 
@@ -1995,64 +1991,6 @@ body.prime-mode .footer-brand-name,body.prime-mode .footer-brand-lotus{color:var
 }
 .hero-dot .dot-label{
   display:none !important;
-}
-
-/* Cart Prime: smaller purple crown + benefits under the description. */
-.cart-prime-option{
-  align-items:flex-start !important;
-}
-.cart-prime-icon{
-  width:34px !important;
-  height:34px !important;
-  flex:0 0 34px !important;
-  border-radius:11px !important;
-  font-size:15px !important;
-  margin-top:2px !important;
-}
-.cart-prime-copy{
-  gap:3px !important;
-}
-.cart-prime-copy b{
-  font-size:11px !important;
-  color:#69447f !important;
-}
-.cart-prime-copy small{
-  font-size:10.5px !important;
-  line-height:1.65 !important;
-  color:#77657f !important;
-}
-.cart-prime-benefits{
-  display:grid !important;
-  grid-template-columns:1fr 1fr !important;
-  gap:4px 8px !important;
-  margin-top:3px !important;
-  width:100% !important;
-}
-.cart-prime-benefits span{
-  display:block !important;
-  color:#76518f !important;
-  font-size:11px !important;
-  line-height:1.55 !important;
-  white-space:nowrap !important;
-}
-.cart-prime-benefits i{
-  color:#8b63a3 !important;
-  margin-left:3px !important;
-}
-.cart-prime-option>strong{
-  font-size:10px !important;
-  padding-top:5px !important;
-}
-
-@media(max-width:430px){
-  .hero-slide .hero-btn{margin-top:4px !important;}
-  .cart-prime-option{gap:7px !important;padding:10px !important;}
-  .cart-prime-icon{width:30px !important;height:30px !important;flex-basis:30px !important;font-size:13px !important;}
-  .cart-prime-copy b{font-size:10px !important;}
-  .cart-prime-copy small{font-size:11px !important;}
-  .cart-prime-benefits{gap:3px 5px !important;}
-  .cart-prime-benefits span{font-size:10px !important;}
-  .cart-prime-option>strong{font-size:9px !important;}
 }
 
     /* ================= COUPON DISCOUNT ================= */
@@ -2755,15 +2693,7 @@ body.prime-mode .header-logo-row .logo{color:#7850A8 !important;}
 .prime-activate{padding:11px 20px !important;font-size:13px !important;}
 @media(max-width:700px){.prime-box{min-height:0!important;padding:27px 20px!important}.prime-title{font-size:38px!important}.prime-desc{font-size:14px!important}.prime-benefit{font-size:11.5px!important}.prime-activate{width:100%!important}}
 </style>
-<style id="elory-cart-prime-final-duplicate">
-.cart-prime-option{border:1px solid #d2b8df !important;background:linear-gradient(135deg,#fffaff,#f2e8f8) !important;border-radius:16px !important;box-shadow:0 8px 24px rgba(100,70,120,.08) !important;}
-.cart-prime-option>strong{font-size:12px !important;}
-.cart-prime-copy b{font-size:12px !important;}
-.cart-prime-copy small{font-size:12px !important;}
-.prime-summary{font-weight:800 !important;}
-#checkoutPrimeRow[hidden]{display:none !important;}
-#checkoutPrimeRow:not([hidden]){display:flex !important;}
-</style>
+
 <style id="elory-product-deals-final">
 .product-deal-stack{position:absolute;top:10px;right:10px;left:10px;z-index:4;display:flex;align-items:center;gap:6px;flex-wrap:wrap;pointer-events:none;}
 .deal-chip{display:inline-flex;align-items:center;gap:4px;min-height:26px;padding:5px 8px;border-radius:999px;font-size:8.5px;font-weight:900;line-height:1.15;box-shadow:0 6px 15px rgba(89,45,66,.10);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
