@@ -9605,10 +9605,10 @@ main#home{
     if(packagingFeature) primeBenefitItems.push({icon:'fa-gift',label:packagingFeature});
     if(themeFeature) primeBenefitItems.push({icon:'fa-palette',label:themeFeature});
     extraPrimeFeatures.forEach(label=>primeBenefitItems.push({icon:'fa-star',label}));
-    const renderPrimeBenefitList=(selector,tagName,className)=>{
+    const renderPrimeBenefitList=(selector,tagName,className,limit=Infinity)=>{
       const container=$(selector);
       if(!container)return;
-      const nodes=primeBenefitItems.map(item=>{
+      const nodes=primeBenefitItems.slice(0,limit).map(item=>{
         const node=document.createElement(tagName);
         if(className)node.className=className;
         const icon=document.createElement('i');
@@ -9621,7 +9621,7 @@ main#home{
     };
     renderPrimeBenefitList('#prime .prime-benefits','div','prime-benefit');
     renderPrimeBenefitList('.prime-modal-list','div','');
-    renderPrimeBenefitList('#cartPrimeOption .cart-prime-benefits','span','');
+    renderPrimeBenefitList('#cartPrimeOption .cart-prime-benefits','span','',2);
     renderPrimeBenefitList('#checkoutPrimeOption .cart-prime-benefits','span','');
     const primeMoney=primePrice.toLocaleString('ar-EG',{maximumFractionDigits:2})+' ج.م';
     const primePriceEl=$('.prime-price');
