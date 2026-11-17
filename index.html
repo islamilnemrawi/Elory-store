@@ -1822,15 +1822,15 @@ body.prime-mode .section-title{color:var(--pink);}
 <style id="elory-current-request-fixes">
 /* Current Elory request fixes */
 .cart-prime-option[hidden]{display:none!important}
-.cart-prime-option{display:grid;grid-template-columns:minmax(0,1fr) 40px 22px;grid-template-areas:"copy icon checkbox" "price icon checkbox";align-items:start;gap:7px 10px;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:14px 0 10px;padding:14px 15px;border:1.5px solid #b89aca;border-radius:18px;background:linear-gradient(135deg,#fbf7fd,#f0e4f6);cursor:pointer;box-shadow:0 9px 24px rgba(101,65,128,.10);transition:box-shadow .2s}
+.cart-prime-option{display:grid;grid-template-columns:minmax(0,1fr) 34px 20px;grid-template-areas:"copy icon checkbox" "price icon checkbox";align-items:center;gap:5px 8px;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:12px 0 8px;padding:10px 12px;border:1.5px solid #b89aca;border-radius:16px;background:linear-gradient(135deg,#fbf7fd,#f0e4f6);cursor:pointer;box-shadow:0 9px 24px rgba(101,65,128,.10);transition:box-shadow .2s;overflow:hidden}
 .cart-prime-option:hover{box-shadow:0 12px 28px rgba(101,65,128,.14)}
 .cart-prime-option input{grid-area:checkbox;width:20px;height:20px;accent-color:#76518f;justify-self:end;align-self:start;margin:2px 0 0}
 .cart-prime-icon{grid-area:icon;width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,#4b315c,#8d65a5);color:#ead7a0;display:flex;align-items:center;justify-content:center;flex:0 0 40px;font-size:17px}
 .cart-prime-copy{grid-area:copy;display:flex;flex-direction:column;gap:3px;min-width:0;width:100%;overflow-wrap:anywhere}
 .cart-prime-copy b{color:#69447f;font-size:12px;line-height:1.55;white-space:normal;overflow-wrap:anywhere}
 .cart-prime-copy small{color:#77657f;font-size:10px;line-height:1.65;white-space:normal;overflow-wrap:anywhere}
-.cart-prime-benefits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 7px;width:100%;min-width:0}
-.cart-prime-benefits>span{display:flex;align-items:flex-start;gap:5px;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.55;font-size:10px}
+.cart-prime-benefits{display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;width:100%;min-width:0}
+.cart-prime-benefits>span{display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:normal;line-height:1.35;font-size:9px}
 .cart-prime-benefits>span i{flex:0 0 auto;margin-top:2px}
 .cart-prime-benefits>span i{color:#8b63a3;margin-left:3px}
 .cart-prime-option>strong{grid-area:price;justify-self:start;align-self:start;color:#76518f;font-size:12px;white-space:normal;overflow-wrap:anywhere}
@@ -1839,8 +1839,8 @@ body.prime-mode .section-title{color:var(--pink);}
 .prime-summary{font-weight:800!important}
 #checkoutPrimeRow[hidden]{display:none!important}
 #checkoutPrimeRow:not([hidden]){display:flex!important}
-@media(max-width:430px){.cart-prime-option{grid-template-columns:minmax(0,1fr) 32px 18px;gap:6px;padding:9px 10px}.cart-prime-icon{width:32px;height:32px;flex-basis:32px;font-size:14px}.cart-prime-copy b{font-size:10px;line-height:1.35}.cart-prime-copy small{font-size:8px;line-height:1.35}.cart-prime-benefits{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 5px}.cart-prime-benefits>span{font-size:8px;line-height:1.3;gap:3px}.cart-prime-option>strong{font-size:9px}}
-@media(max-width:350px){.cart-prime-benefits{grid-template-columns:repeat(2,minmax(0,1fr))}.cart-prime-benefits>span{font-size:7.5px}.cart-prime-option{gap:5px;padding:8px}}
+@media(max-width:430px){.cart-prime-option{grid-template-columns:minmax(0,1fr) 30px 18px;grid-template-areas:"copy icon checkbox" "price icon checkbox";gap:4px 6px;padding:9px 10px}.cart-prime-icon{width:30px;height:30px;flex-basis:30px;font-size:13px}.cart-prime-copy{gap:2px}.cart-prime-copy b{font-size:10px;line-height:1.3}.cart-prime-copy small{font-size:8px;line-height:1.3}.cart-prime-benefits{display:flex;flex-wrap:wrap;gap:2px 7px}.cart-prime-benefits>span{font-size:8px;line-height:1.25;gap:3px}.cart-prime-option>strong{font-size:9px;line-height:1.2}}
+@media(max-width:350px){.cart-prime-option{grid-template-columns:minmax(0,1fr) 28px 18px;gap:3px 5px;padding:8px}.cart-prime-icon{width:28px;height:28px;flex-basis:28px}.cart-prime-copy b{font-size:9px}.cart-prime-copy small{font-size:7.5px}.cart-prime-benefits>span{font-size:7.5px}}
 .cart-summary .summary-row.prime-summary{color:#6f4b86}
 .prime-modal{background:linear-gradient(145deg,#fffaff 0%,#f7effb 52%,#eee1f5 100%)!important;border:1px solid #c9addb!important;box-shadow:0 28px 70px rgba(73,43,91,.24)!important}
 .prime-modal .modal-title,.prime-modal .modal-subtitle,.prime-modal .prime-price,.prime-modal .prime-price small,.prime-modal .prime-modal-list div{color:#69447f!important}
@@ -1852,7 +1852,7 @@ body.prime-mode .section-title{color:var(--pink);}
 .prime-direct-btn:hover{background:linear-gradient(135deg,#4f315f,#79518f)!important}
 .developer-credit{font-size:18px!important;font-weight:800!important;line-height:1.7!important;color:#f1e5eb!important;margin-top:12px!important;letter-spacing:.1px}
 .developer-credit b{font-size:21px!important;color:var(--gold-light)!important}
-@media(max-width:430px){.cart-prime-option{padding:11px;gap:8px}.cart-prime-icon{width:36px;height:36px;flex-basis:36px}.cart-prime-copy b{font-size:10.5px}.cart-prime-copy small{font-size:8.5px}.cart-prime-option>strong{font-size:10px}.developer-credit{font-size:15px!important}.developer-credit b{font-size:17px!important}.prime-modal .modal-title{font-size:28px!important}}
+@media(max-width:430px){.cart-prime-option{padding:9px 10px;gap:4px 6px}.cart-prime-icon{width:30px;height:30px;flex-basis:30px}.cart-prime-copy b{font-size:10px}.cart-prime-copy small{font-size:8px}.cart-prime-option>strong{font-size:9px}.developer-credit{font-size:15px!important}.developer-credit b{font-size:17px!important}.prime-modal .modal-title{font-size:28px!important}}
 </style>
 <style id="elory-final-polish">
 /* FINAL ELORY POLISH */
@@ -5160,12 +5160,7 @@ main#home{
 <span class="cart-prime-copy">
 <b>اشتركي في Prime</b>
 <small>اشتراك 30 يومًا</small>
-<span class="cart-prime-benefits">
-<span><i class="fa-solid fa-percent"></i> خصم 10%</span>
-<span><i class="fa-solid fa-truck-fast"></i> شحن 6 طلبات مجانًا</span>
-<span><i class="fa-solid fa-gift"></i> تغليف مميز</span>
-<span><i class="fa-solid fa-palette"></i> مزايا Prime</span>
-</span>
+<span class="cart-prime-benefits"><span><i class="fa-solid fa-percent"></i> خصم 10%</span><span><i class="fa-solid fa-truck-fast"></i> شحن مجاني حتى 6 طلبات</span></span>
 </span>
 <strong>+300 ج.م</strong>
 </label>
@@ -6321,7 +6316,7 @@ main#home{
       const attributes=[
         product.category?`<div><span>القسم</span><strong>${escapeHtml(product.category)}</strong></div>`:"",
         product.code?`<div><span>الكود الداخلي</span><strong>${escapeHtml(product.code)}</strong></div>`:"",
-        productDetailColors(product).length?`<div><span>الألوان المتاحة</span><strong>${productDetailColors(product).map(color=>escapeHtml(color.name)).join("، ")}</strong></div>`:"",
+        
         productDetailSizes(product).length?`<div><span>المقاسات المتاحة</span><strong>${productDetailSizes(product).map(escapeHtml).join("، ")}</strong></div>`:""
       ].filter(Boolean);
       if(description) sections.push({title:"الوصف",content:`<p>${escapeHtml(description)}</p>`});
