@@ -4546,22 +4546,47 @@ main#home{
   .elory-copyright{align-self:center;}
 }
 
-/* Category rail: show each real category once; keep touch/trackpad scrolling. */
+/* Elory infinite category rail — one original set + measured visual repeats. */
 #categoryWrapper{
+  display:flex !important;
   justify-content:flex-start !important;
-  overflow-x:auto !important;
-  overflow-y:hidden !important;
-  touch-action:pan-x !important;
-  overscroll-behavior-inline:contain;
-  scrollbar-width:none !important;
+  align-items:flex-start !important;
+  width:100% !important;
+  overflow:hidden !important;
+  touch-action:pan-y !important;
+  overscroll-behavior:contain;
+  cursor:grab;
 }
-#categoryWrapper::-webkit-scrollbar{display:none !important;}
+#categoryWrapper.dragging{cursor:grabbing;}
 #categoriesSection #categories{
-  transform:none !important;
-  margin-inline:auto !important;
+  display:flex !important;
+  flex:0 0 auto !important;
+  width:max-content !important;
+  max-width:none !important;
+  margin:0 !important;
+  gap:0 !important;
+  direction:ltr !important;
+  transform:translate3d(0,0,0);
+  will-change:transform;
+  animation:eloryCategoryInfinite var(--elory-category-duration,32s) linear infinite;
 }
-#categoriesSection .category-set[data-category-clone="true"]{display:none !important;}
-#categoriesSection .category-set{flex:0 0 auto;}
+#categoriesSection .category-set{
+  display:flex !important;
+  flex:0 0 auto !important;
+  width:max-content !important;
+  direction:rtl !important;
+}
+#categoriesSection .category-set[data-category-clone="true"]{display:flex !important;pointer-events:auto !important;}
+#categoriesSection .category-set[data-category-clone="true"] .category-card{tab-index:-1;}
+#categoryWrapper:hover #categories,
+#categoryWrapper:focus-within #categories{animation-play-state:paused;}
+@keyframes eloryCategoryInfinite{
+  from{transform:translate3d(0,0,0);}
+  to{transform:translate3d(calc(-1 * var(--elory-category-distance,0px)),0,0);}
+}
+@media(prefers-reduced-motion:reduce){
+  #categoriesSection #categories{animation-duration:90s;}
+}
 </style>
 <style id="elory-account-orders-prime-fixes">
 /* Keep hidden account views hidden even where component display rules are stronger. */
@@ -7932,22 +7957,120 @@ main#home{
     }
 
     /* =========================================================
-       CATEGORY SCROLLER — single source set, no repeated clones
+       CATEGORY SCROLLER — seamless infinite loop with touch-drag
        ========================================================= */
 
     (function setupCategoryScroller() {
       const wrapper = document.getElementById("categoryWrapper");
       const track = document.getElementById("categories");
-      if (!wrapper || !track) return;
+      if (!wrapper || !track || wrapper.dataset.infiniteReady === "true") return;
+      wrapper.dataset.infiniteReady = "true";
 
-      const sync = () => {
+      let resizeFrame = 0;
+      let dragState = null;
+      let suppressClickUntil = 0;
+      const originalSet = () => track.querySelector("#categorySet") || track.querySelector(".category-set:not([data-category-clone='true'])");
+
+      function rebuild() {
+        const first = originalSet();
+        if (!first) return;
         track.querySelectorAll('[data-category-clone="true"]').forEach(node => node.remove());
-        track.style.transform = "none";
-        wrapper.classList.remove("has-overflow", "dragging");
-      };
+        track.style.animation = "none";
+        track.style.removeProperty("--elory-category-distance");
+        track.style.removeProperty("--elory-category-duration");
+        track.style.transform = "translate3d(0,0,0)";
 
-      sync();
-      window.addEventListener("resize", sync, { passive: true });
+        const items = first.querySelectorAll(".category-card");
+        if (!items.length) {
+          wrapper.classList.remove("has-overflow", "dragging");
+          return;
+        }
+
+        const setWidth = first.getBoundingClientRect().width;
+        const viewportWidth = wrapper.getBoundingClientRect().width;
+        if (!setWidth || !viewportWidth) return;
+
+        // Keep enough identical sets ahead of the viewport so the reset is never visible,
+        // even when the store has only one or two categories.
+        const cloneCount = Math.max(2, Math.ceil(viewportWidth / setWidth) + 1);
+        for (let i = 0; i < cloneCount; i++) {
+          const clone = first.cloneNode(true);
+          clone.removeAttribute("id");
+          clone.dataset.categoryClone = "true";
+          clone.setAttribute("aria-hidden", "true");
+          clone.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
+          clone.querySelectorAll("button,a,input,[tabindex]").forEach(el => el.setAttribute("tabindex", "-1"));
+          track.appendChild(clone);
+        }
+
+        track.style.setProperty("--elory-category-distance", setWidth + "px");
+        // Consistent, calm speed across mobile and desktop; never accelerate on wide screens.
+        const duration = Math.max(18, setWidth / 34);
+        track.style.setProperty("--elory-category-duration", duration + "s");
+        track.style.animation = "";
+        // Restart only after a real data/size rebuild, not on every frame.
+        track.style.animation = "eloryCategoryInfinite var(--elory-category-duration) linear infinite";
+        wrapper.classList.toggle("has-overflow", track.scrollWidth > viewportWidth);
+      }
+
+      function scheduleRebuild() {
+        if (resizeFrame) cancelAnimationFrame(resizeFrame);
+        resizeFrame = requestAnimationFrame(() => {
+          resizeFrame = 0;
+          rebuild();
+        });
+      }
+
+      wrapper.addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        const animation = track.getAnimations().find(item => item.animationName === "eloryCategoryInfinite") || track.getAnimations()[0];
+        if (!animation) return;
+        animation.pause();
+        dragState = { id:event.pointerId, x:event.clientX, lastX:event.clientX, animation, moved:false, time:Number(animation.currentTime)||0 };
+        wrapper.classList.add("dragging");
+        try { wrapper.setPointerCapture(event.pointerId); } catch (_) {}
+      }, {passive:true});
+
+      wrapper.addEventListener("pointermove", event => {
+        if (!dragState || dragState.id !== event.pointerId) return;
+        const dx = event.clientX - dragState.lastX;
+        if (Math.abs(event.clientX - dragState.x) > 5) dragState.moved = true;
+        if (dragState.moved) {
+          const duration = Math.max(1, Number(dragState.animation.effect?.getTiming?.().duration) || 32000);
+          const distance = Math.max(1, Number.parseFloat(getComputedStyle(track).getPropertyValue("--elory-category-distance")) || 1);
+          dragState.animation.currentTime = (Number(dragState.animation.currentTime)||0) - (dx / distance) * duration;
+          dragState.lastX = event.clientX;
+        }
+      }, {passive:true});
+
+      function finishDrag(event) {
+        if (!dragState || (event && dragState.id !== event.pointerId)) return;
+        if (dragState.moved) suppressClickUntil = Date.now() + 280;
+        const animation = dragState.animation;
+        dragState = null;
+        wrapper.classList.remove("dragging");
+        // Preserve the exact visual position and continue the same infinite cycle.
+        if (animation && animation.playState !== "finished") animation.play();
+      }
+      wrapper.addEventListener("pointerup", finishDrag, {passive:true});
+      wrapper.addEventListener("pointercancel", finishDrag, {passive:true});
+      wrapper.addEventListener("lostpointercapture", finishDrag, {passive:true});
+      wrapper.addEventListener("click", event => {
+        if (Date.now() < suppressClickUntil) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      }, true);
+
+      if ("ResizeObserver" in window) {
+        const observer = new ResizeObserver(scheduleRebuild);
+        observer.observe(wrapper);
+      }
+      window.addEventListener("resize", scheduleRebuild, {passive:true});
+      window.addEventListener("load", scheduleRebuild, {once:true});
+      // renderCategories() dispatches resize after Supabase updates the original set.
+      rebuild();
+      requestAnimationFrame(rebuild);
     })();
 
     /* =========================================================
