@@ -5468,6 +5468,7 @@ main#home{
 
     let products = [];
     let filteredProducts = [];
+    let productsLoadState = "loading";
     let storeCategories = [];
     let cart = [];
 
@@ -5967,6 +5968,7 @@ main#home{
         if (publicError) throw publicError;
 
         products = rows.map(normalizeProduct);
+        productsLoadState = "loaded";
         const searchValue=document.getElementById("searchInput")?.value||"";
         filteredProducts=products.filter(product=>productMatchesSearch(product,String(searchValue).trim().toLocaleLowerCase("ar")));
         updateProductSearchSuggestions(searchValue);
@@ -5982,8 +5984,8 @@ main#home{
 
       } catch (error) {
         if(!silent)console.warn("Elory Store product query failed:", error);
-        if(products.length)renderProducts();
-        else showProductLoadIssue();
+        if(products.length){productsLoadState="loaded";renderProducts();}
+        else {productsLoadState="error";showProductLoadIssue();}
       }
     }
 
@@ -6073,13 +6075,17 @@ main#home{
     function renderProducts(){
       const grid=document.getElementById("productsGrid");
       if(!grid)return;
+      if(productsLoadState==="loading"){
+        grid.innerHTML='<div class="loading"><div class="spinner"></div> جاري تحميل المنتجات...</div>';
+        syncFavoriteButtons(); return;
+      }
       if(!filteredProducts.length){
         const query=String(document.getElementById("searchInput")?.value||"").trim();
-        const catalogIsEmpty=products.length===0;
-        const title=catalogIsEmpty?"المنتجات غير متاحة مؤقتًا":(query?"لا توجد منتجات مطابقة للبحث":"لا توجد منتجات متاحة حاليًا");
-        const message=catalogIsEmpty?"تعذر تحميل المنتجات من المتجر. تحققي من الاتصال ثم أعيدي المحاولة.":(query?"جرّبي اسمًا أو تصنيفًا آخر.":"سنحاول عرض المنتجات عند توفرها.");
-        const action=catalogIsEmpty?'<button type="button" onclick="loadProducts()">إعادة تحميل المنتجات</button>':(query?'<button type="button" onclick="clearProductSearch()">مسح البحث</button>':'');
-        grid.innerHTML=`<div class="search-empty-state"><i class="fa-solid ${catalogIsEmpty?'fa-cloud-arrow-down':'fa-magnifying-glass'}" aria-hidden="true"></i><strong>${title}</strong><span>${message}</span>${action}</div>`;
+        const catalogUnavailable=productsLoadState==="error";
+        const title=catalogUnavailable?"المنتجات غير متاحة مؤقتًا":(query?"لا توجد منتجات مطابقة للبحث":"لا توجد منتجات متاحة حاليًا");
+        const message=catalogUnavailable?"تعذر تحميل المنتجات من المتجر. تحققي من الاتصال ثم أعيدي المحاولة.":(query?"جرّبي اسمًا أو تصنيفًا آخر.":"سنحاول عرض المنتجات عند توفرها.");
+        const action=catalogUnavailable?'<button type="button" onclick="loadProducts()">إعادة تحميل المنتجات</button>':(query?'<button type="button" onclick="clearProductSearch()">مسح البحث</button>':'');
+        grid.innerHTML=`<div class="search-empty-state"><i class="fa-solid ${catalogUnavailable?'fa-cloud-arrow-down':'fa-magnifying-glass'}" aria-hidden="true"></i><strong>${title}</strong><span>${message}</span>${action}</div>`;
         syncFavoriteButtons(); return;
       }
       grid.innerHTML=filteredProducts.slice(0,8).map(product=>productCardHtml(product)).join("");
@@ -7997,7 +8003,8 @@ main#home{
         const viewportWidth = wrapper.getBoundingClientRect().width;
         if (!setWidth || !viewportWidth) return;
 
-        const signature = [setWidth.toFixed(2), viewportWidth.toFixed(2), items.length].join("|");
+        const contentSignature = Array.from(items).map(item => [item.dataset.category || item.textContent.trim(), item.querySelector("img")?.getAttribute("src") || ""].join("::")).join("||");
+        const signature = [setWidth.toFixed(2), viewportWidth.toFixed(2), contentSignature].join("|");
         const existingClones = track.querySelectorAll('[data-category-clone="true"]').length;
         if (signature === lastRebuildSignature && existingClones) return;
 
