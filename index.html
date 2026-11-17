@@ -4582,8 +4582,9 @@ main#home{
 }
 #categoriesSection .category-set[data-category-clone="true"]{display:flex !important;pointer-events:auto !important;}
 #categoriesSection .category-set[data-category-clone="true"] .category-card{tab-index:-1;}
-#categoryWrapper:hover #categories,
-#categoryWrapper:focus-within #categories{animation-play-state:paused;}
+@media (hover:hover) and (pointer:fine){
+  #categoryWrapper:hover #categories{animation-play-state:paused;}
+}
 @keyframes eloryCategoryInfinite{
   from{transform:translate3d(0,0,0);}
   to{transform:translate3d(calc(-1 * var(--elory-category-distance,0px)),0,0);}
@@ -4849,7 +4850,7 @@ main#home{
 <main id="home">
 <!-- HERO -->
 <section class="hero">
-<div class="hero-slider elory-code-hero" id="heroSlider">
+<div class="hero-slider elory-code-hero" id="heroSlider" style="visibility:hidden">
 <div class="hero-slide active elory-code-slide">
 <div class="hero-wave-top"></div>
 <div class="hero-decor hero-decor-left"></div>
@@ -7972,19 +7973,21 @@ main#home{
       let resizeFrame = 0;
       let dragState = null;
       let suppressClickUntil = 0;
+      let lastRebuildSignature = "";
       const originalSet = () => track.querySelector("#categorySet") || track.querySelector(".category-set:not([data-category-clone='true'])");
 
       function rebuild() {
         const first = originalSet();
         if (!first) return;
-        track.querySelectorAll('[data-category-clone="true"]').forEach(node => node.remove());
-        track.style.animation = "none";
-        track.style.removeProperty("--elory-category-distance");
-        track.style.removeProperty("--elory-category-duration");
-        track.style.transform = "translate3d(0,0,0)";
 
         const items = first.querySelectorAll(".category-card");
         if (!items.length) {
+          track.querySelectorAll('[data-category-clone="true"]').forEach(node => node.remove());
+          track.style.animation = "none";
+          track.style.removeProperty("--elory-category-distance");
+          track.style.removeProperty("--elory-category-duration");
+          track.style.transform = "translate3d(0,0,0)";
+          lastRebuildSignature = "";
           wrapper.classList.remove("has-overflow", "dragging");
           return;
         }
@@ -7992,6 +7995,24 @@ main#home{
         const setWidth = first.getBoundingClientRect().width;
         const viewportWidth = wrapper.getBoundingClientRect().width;
         if (!setWidth || !viewportWidth) return;
+
+        const signature = [setWidth.toFixed(2), viewportWidth.toFixed(2), items.length].join("|");
+        const existingClones = track.querySelectorAll('[data-category-clone="true"]').length;
+        if (signature === lastRebuildSignature && existingClones) return;
+
+        // Keep the same animation phase when a real resize or category-data change requires rebuilding.
+        const previousAnimation = track.getAnimations().find(item => item.animationName === "eloryCategoryInfinite");
+        const previousDuration = Number(previousAnimation?.effect?.getTiming?.().duration) || 0;
+        const previousTime = Number(previousAnimation?.currentTime) || 0;
+        const previousPhase = previousDuration > 0
+          ? ((previousTime % previousDuration) + previousDuration) % previousDuration / previousDuration
+          : 0;
+
+        track.querySelectorAll('[data-category-clone="true"]').forEach(node => node.remove());
+        track.style.animation = "none";
+        track.style.removeProperty("--elory-category-distance");
+        track.style.removeProperty("--elory-category-duration");
+        track.style.transform = "translate3d(0,0,0)";
 
         // Keep enough identical sets ahead of the viewport so the reset is never visible,
         // even when the store has only one or two categories.
@@ -8011,9 +8032,10 @@ main#home{
         const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
         const duration = reduceMotion ? 90 : Math.max(18, setWidth / 34);
         track.style.setProperty("--elory-category-duration", duration + "s");
-        track.style.animation = "";
-        // Restart only after a real data/size rebuild, not on every frame.
         track.style.animation = "eloryCategoryInfinite var(--elory-category-duration) linear infinite";
+        const nextAnimation = track.getAnimations().find(item => item.animationName === "eloryCategoryInfinite");
+        if (nextAnimation && previousPhase > 0) nextAnimation.currentTime = previousPhase * duration * 1000;
+        lastRebuildSignature = signature;
         wrapper.classList.toggle("has-overflow", track.scrollWidth > viewportWidth);
       }
 
@@ -9370,7 +9392,7 @@ main#home{
           const dot=document.createElement('button'); dot.type='button'; dot.className='hero-dot'+(i===0?' active':'');
           dot.dataset.label=txt(item.buttonText||item.title||('الشريحة '+(i+1))); dot.setAttribute('aria-label',dot.dataset.label); dots.appendChild(dot);
         });
-        slider.appendChild(dots); slider.dataset.heroCmsReady='true'; old.replaceWith(slider); window.heroIndex=0;
+        slider.appendChild(dots); slider.dataset.heroCmsReady='true'; slider.style.visibility='visible'; old.replaceWith(slider); window.heroIndex=0;
         if(typeof window.startHero==='function') window.startHero();
         else if(slides.length){
           let active=0;
@@ -10158,7 +10180,7 @@ main#home{
     if (!hero || !slider || !template) throw new Error('Hero container or slide template not found');
 
     /* If the primary CMS renderer already built campaign slides, leave it untouched. */
-    if (slider.querySelector(':scope > .hero-slide.elory-hero-fullbleed .elory-hero-fullbleed-picture img')) return;
+    if (slider.querySelector(':scope > .hero-slide.elory-hero-fullbleed .elory-hero-fullbleed-picture img')) { slider.dataset.heroCmsReady = 'true'; slider.style.visibility = 'visible'; return; }
 
     const cards = campaigns.map((entry, index) => {
       const item = entry.item;
@@ -10267,6 +10289,7 @@ main#home{
     slider.replaceChildren(...cards, dots);
     slider.dataset.heroReady = 'true';
     slider.dataset.heroCmsReady = 'true';
+    slider.style.visibility = 'visible';
     slider.__eloryRestartHero = () => show(current);
     hero.classList.add('elory-hero-campaign-fullbleed');
     hero.hidden = false;
