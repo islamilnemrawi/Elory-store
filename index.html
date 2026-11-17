@@ -5854,34 +5854,36 @@ main#home{
 
     async function loadCategories(silent=false) {
       const client = ensureSupabaseClient();
-      if (!client) {
-        if (!silent) {
-          storeCategories = [];
-          renderCategories();
-        }
-        return;
-      }
 
       try {
-        let result = await client
-          .from("categories")
-          .select("id,name,slug,image,sort_order,active,created_at")
-          .eq("active", true)
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: true });
+        let rows = null;
+        if (client) {
+          const result = await client
+            .from("categories")
+            .select("id,name,slug,image,sort_order,active,created_at")
+            .eq("active", true)
+            .order("sort_order", { ascending: true })
+            .order("created_at", { ascending: true });
 
-        if (result.error) {
-          console.warn("Elory categories JS query failed; trying REST fallback:", result.error);
-          const rows = await eloryFetchRows(
+          if (!result.error && Array.isArray(result.data)) {
+            rows = result.data;
+          } else {
+            console.warn("Elory categories JS query failed; trying public REST:", result.error);
+          }
+        }
+
+        // The public catalog must remain available even when the optional
+        // Supabase JS CDN has not loaded. The publishable key and project URL
+        // are initialized by the inline fallback above.
+        if (!rows) {
+          rows = await eloryFetchRows(
             "categories",
             "select=id,name,slug,image,sort_order,active,created_at&active=eq.true&order=sort_order.asc,created_at.asc"
           );
-          result = { data: rows, error: null };
         }
 
-        if (result.error) throw result.error;
-        storeCategories = Array.isArray(result.data)
-          ? result.data.filter(x => x && String(x.name || "").trim())
+        storeCategories = Array.isArray(rows)
+          ? rows.filter(x => x && String(x.name || "").trim())
           : [];
         renderCategories();
       } catch (error) {
@@ -5926,17 +5928,10 @@ main#home{
       return productsLoadPromise;
     }
     async function loadProductsInternal(silent=false) {
-      const client = ensureSupabaseClient();
-      if (!client) {
-        products = [];
-        filteredProducts = [];
-        showProductLoadIssue();
-        return;
-      }
-
-      // The storefront catalog is public. Read it through PostgREST with the
-      // publishable key only, so a customer's authenticated session cannot
-      // accidentally activate staff-only restrictive RLS policies.
+      // Read the public catalog directly through PostgREST. This path does
+      // not depend on the optional Supabase JS CDN and never forwards a
+      // customer's Auth session, so staff-only restrictive policies cannot
+      // accidentally hide public active products.
       const publicQuery =
         "select=id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at&active=eq.true&order=created_at.desc";
 
