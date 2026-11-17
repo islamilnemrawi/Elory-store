@@ -2077,7 +2077,7 @@ body.prime-mode .footer-brand-name,body.prime-mode .footer-brand-lotus{color:var
     }
 </style>
 <style id="elory-product-options-customer">
-.product-option-swatches{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:10px 0}.product-option-swatches .color-swatch{width:34px;height:34px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #d8c7d8;cursor:pointer;transition:.18s;position:relative}.product-option-swatches .color-swatch.selected{box-shadow:0 0 0 2px #a84f91,0 4px 12px rgba(168,79,145,.22);transform:scale(1.08)}.product-option-swatches .color-swatch[title]{outline:none}.product-option-sizes{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.product-option-sizes .size-pill{border:1px solid #e2cfe0;background:#fff;border-radius:12px;padding:8px 13px;cursor:pointer;font-weight:700;color:#6e5369}.product-option-sizes .size-pill.selected{background:#a84f91;color:#fff;border-color:#a84f91}.product-option-label{font-size:12px;font-weight:800;color:#7b416f;margin-top:10px}.product-options-modal .modal-content{max-width:460px}.product-options-summary{font-size:11px;color:#7b7180;margin-top:8px}.cart-item-option{font-size:10px;color:#80657a;margin-top:4px}
+.product-option-swatches{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:10px 0}.product-option-swatches .color-swatch{width:40px;height:40px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #d8c7d8,0 2px 6px rgba(45,25,40,.08);cursor:pointer;transition:transform .18s ease,box-shadow .18s ease;position:relative;flex:0 0 auto}.product-option-swatches .color-swatch:hover{transform:translateY(-2px)}.product-option-swatches .color-swatch.selected{box-shadow:0 0 0 2px #a84f91,0 0 0 5px rgba(168,79,145,.16);transform:scale(1.07)}.product-option-swatches .color-swatch:focus-visible{outline:3px solid #7b416f;outline-offset:4px}.product-option-swatches .color-swatch[title]{outline:none}.product-option-swatches .color-swatch[title]:focus-visible{outline:3px solid #7b416f;outline-offset:4px}.product-option-sizes{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.product-option-sizes .size-pill{border:1px solid #e2cfe0;background:#fff;border-radius:12px;padding:8px 13px;cursor:pointer;font-weight:700;color:#6e5369}.product-option-sizes .size-pill.selected{background:#a84f91;color:#fff;border-color:#a84f91}.product-option-label{font-size:12px;font-weight:800;color:#7b416f;margin-top:10px}.product-options-modal .modal-content{max-width:460px}.product-options-summary{font-size:11px;color:#7b7180;margin-top:8px}.cart-item-option{font-size:10px;color:#80657a;margin-top:4px}
 
     /* Elory V7 header correction: brand is large and centered above the icon row. */
     .header-main {
@@ -3673,7 +3673,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
   .product-details-option-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:44px;min-height:42px;padding:7px 13px;border:1px solid var(--border,#eadfe4);border-radius:14px;background:#fff;color:var(--text,#292126);font:700 12px Cairo,Arial,sans-serif;cursor:pointer;transition:border-color .2s ease,background .2s ease,transform .2s ease}
   .product-details-option-button:hover{transform:translateY(-1px);border-color:#d887a4}
   .product-details-option-button.selected{border-color:var(--pink,#d96b91);background:var(--pink-soft,#fff0f5);color:var(--pink-dark,#b94e75);box-shadow:0 4px 12px rgba(185,78,117,.1)}
-  .product-details-color-dot{width:17px;height:17px;border:1px solid rgba(60,40,48,.18);border-radius:50%;background:var(--option-color)}
+  .product-details-color-swatches{gap:12px;align-items:center}.product-details-option-button.product-details-color{width:52px;min-width:52px;height:52px;min-height:52px;padding:4px;border:1px solid var(--border,#eadfe4);border-radius:50%;background:var(--surface,#fff);box-shadow:0 2px 8px rgba(60,40,48,.06)}.product-details-option-button.product-details-color:hover{transform:translateY(-2px);border-color:var(--pink,#d96b91)}.product-details-option-button.product-details-color.selected{border:2px solid var(--pink,#d96b91);background:var(--surface,#fff);box-shadow:0 0 0 3px var(--pink-light,#f8dce6),0 5px 14px rgba(185,78,117,.16)}.product-details-option-button.product-details-color:focus-visible{outline:3px solid var(--pink-dark,#b94e75);outline-offset:3px}.product-details-color-dot{display:block;width:40px;height:40px;border:1px solid rgba(60,40,48,.22);border-radius:50%;background:var(--option-color)}.product-details-selected-color{margin:8px 2px 0;color:var(--muted,#81747a);font-size:12px;font-weight:700}
   .product-details-quantity{display:inline-flex;align-items:center;gap:0;min-height:44px;overflow:hidden;border:1px solid var(--border,#eadfe4);border-radius:14px;background:#fff}
   .product-details-quantity button{width:44px;height:44px;border:0;background:#fff4f8;color:var(--pink-dark,#b94e75);font-size:21px;cursor:pointer}
   .product-details-quantity button:disabled{color:#c9b9c0;cursor:not-allowed}
@@ -6242,6 +6242,38 @@ main#home{
       return null;
     }
 
+    function legacyColorHex(name){
+      const key=String(name||"").trim().toLocaleLowerCase("ar")
+        .replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/\\s+/g,"");
+      const colors={
+        "احمر":"#DC2626","red":"#DC2626",
+        "عنابي":"#7F1D3A","نبيتي":"#7F1D3A","burgundy":"#7F1D3A","maroon":"#7F1D3A",
+        "وردي":"#EC4899","pink":"#EC4899",
+        "روز":"#D87591","rose":"#D87591",
+        "موف":"#8B5CF6","mauve":"#8B5CF6",
+        "لافندر":"#B49AE8","lavender":"#B49AE8",
+        "بنفسجي":"#6D4CBB","purple":"#6D4CBB","violet":"#6D4CBB",
+        "ازرق":"#2563EB","blue":"#2563EB",
+        "كحلي":"#1E3A8A","navy":"#1E3A8A",
+        "سماوي":"#38BDF8","cyan":"#38BDF8","skyblue":"#38BDF8",
+        "تركواز":"#0F9D9A","turquoise":"#0F9D9A","teal":"#0F9D9A",
+        "اخضر":"#16A34A","green":"#16A34A",
+        "زيتي":"#65743A","olive":"#65743A",
+        "نعناعي":"#A7DCC3","mint":"#A7DCC3",
+        "اصفر":"#EAB308","yellow":"#EAB308",
+        "ذهبي":"#C7A04A","gold":"#C7A04A",
+        "برتقالي":"#F97316","orange":"#F97316",
+        "بني":"#8B5E3C","brown":"#8B5E3C",
+        "بيج":"#D6C2A1","beige":"#D6C2A1",
+        "جملي":"#B98B62","camel":"#B98B62",
+        "ابيض":"#F8FAFC","white":"#F8FAFC","اوفوايت":"#F8FAFC","offwhite":"#F8FAFC",
+        "عاجي":"#F2E8D5","ivory":"#F2E8D5",
+        "رمادي":"#9CA3AF","gray":"#9CA3AF","grey":"#9CA3AF","فضي":"#9CA3AF","silver":"#9CA3AF",
+        "اسود":"#171717","black":"#171717"
+      };
+      return colors[key]||"#8E7A85";
+    }
+
     function productDetailColors(product){
       let source=Array.isArray(product.colorOptions)&&product.colorOptions.length?product.colorOptions:product.colors;
       if(!Array.isArray(source)||!source.length){
@@ -6258,7 +6290,7 @@ main#home{
         const object=item&&typeof item==="object"?item:{name:String(item??"")};
         const name=String(object.name??object.label??object.color??object.value??object.hex??"").trim();
         const rawHex=String(object.hex??object.color_hex??object.colorHex??"").trim();
-        const hex=/^#[\da-f]{3,8}$/i.test(rawHex)?rawHex:"";
+        const hex=/^#[\da-f]{3,8}$/i.test(rawHex)?rawHex:legacyColorHex(name);
         const image=String(object.image??object.image_url??object.imageUrl??"").trim();
         return {name,hex,image};
       }).filter(color=>color.name);
@@ -6466,7 +6498,7 @@ main#home{
         '<div><i class="fa-solid fa-gift"></i><span>تغليف مميز</span></div>'
       ];
       const gallery=images.length>1?`<div class="product-details-thumbnails" aria-label="صور المنتج">${images.map((image,index)=>`<button type="button" class="product-details-thumbnail${image===mainImage?" selected":""}" aria-label="عرض الصورة ${index+1}" aria-pressed="${image===mainImage}" onclick="selectProductDetailImage(${index})"><img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)} - ${index+1}" loading="lazy"></button>`).join("")}</div>`:"";
-      const colorOptions=colors.length?`<div class="product-details-option"><h2>اللون</h2><div class="product-details-options">${colors.map((item,index)=>`<button type="button" class="product-details-option-button product-details-color${state.colorIndex===index?" selected":""}" aria-pressed="${state.colorIndex===index}" onclick="selectProductDetailColor(${index})">${item.hex?`<span class="product-details-color-dot" style="--option-color:${escapeHtml(item.hex)}"></span>`:""}<span>${escapeHtml(item.name)}</span></button>`).join("")}</div></div>`:"";
+      const colorOptions=colors.length?`<div class="product-details-option"><h2>اللون</h2><div class="product-details-options product-details-color-swatches">${colors.map((item,index)=>`<button type="button" class="product-details-option-button product-details-color${state.colorIndex===index?" selected":""}" title="${escapeHtml(item.name)}" aria-label="اختيار اللون ${escapeHtml(item.name)}" aria-pressed="${state.colorIndex===index}" onclick="selectProductDetailColor(${index})"><span class="product-details-color-dot" style="--option-color:${escapeHtml(item.hex||legacyColorHex(item.name))}"></span></button>`).join("")}</div><p class="product-details-selected-color" aria-live="polite">${color?"اللون المختار: "+escapeHtml(color.name):"اختاري اللون المناسب"}</p></div>`:"";
       const sizeOptions=sizes.length?`<div class="product-details-option"><h2>المقاس</h2><div class="product-details-options">${sizes.map((item,index)=>`<button type="button" class="product-details-option-button product-details-size${state.size===item?" selected":""}" aria-pressed="${state.size===item}" onclick="selectProductDetailSize(${index})">${escapeHtml(item)}</button>`).join("")}</div></div>`:"";
       const detailsSections=getProductDetailsSections(product);
       const discountBadge=discount>0?`<span class="product-details-image-badge">-${discount}%</span>`:"";
@@ -6836,7 +6868,7 @@ main#home{
     let pendingProductOptions = null;
     let pendingProductOptionSizes = [];
     function getProductColors(product){
-      return productDetailColors(product).map(color=>({name:color.name,hex:color.hex||"#D946EF"}));
+      return productDetailColors(product).map(color=>({name:color.name,hex:color.hex||legacyColorHex(color.name)}));
     }
     function openProductOptions(product){
       pendingProductOptions=product; const wrap=document.getElementById('poOptions'); if(!wrap)return;
