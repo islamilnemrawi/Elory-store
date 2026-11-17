@@ -1821,14 +1821,22 @@ body.prime-mode .section-title{color:var(--pink);}
 </style>
 <style id="elory-current-request-fixes">
 /* Current Elory request fixes */
-.cart-prime-option{display:flex;align-items:center;gap:12px;margin:14px 0 10px;padding:14px 15px;border:1.5px solid #b89aca;border-radius:18px;background:linear-gradient(135deg,#fbf7fd,#f0e4f6);cursor:pointer;box-shadow:0 9px 24px rgba(101,65,128,.10);transition:.2s}
-.cart-prime-option:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(101,65,128,.14)}
-.cart-prime-option input{width:20px;height:20px;accent-color:#76518f;flex:0 0 auto}
-.cart-prime-icon{width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,#4b315c,#8d65a5);color:#ead7a0;display:flex;align-items:center;justify-content:center;flex:0 0 40px;font-size:17px}
-.cart-prime-copy{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
-.cart-prime-copy b{color:#69447f;font-size:12px}
-.cart-prime-copy small{color:#77657f;font-size:9.5px;line-height:1.7}
-.cart-prime-option>strong{color:#76518f;font-size:12px;white-space:nowrap}
+.cart-prime-option[hidden]{display:none!important}
+.cart-prime-option{display:grid;grid-template-columns:minmax(0,1fr) 40px 22px;grid-template-areas:"copy icon checkbox" "price icon checkbox";align-items:start;gap:7px 10px;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:14px 0 10px;padding:14px 15px;border:1.5px solid #b89aca;border-radius:18px;background:linear-gradient(135deg,#fbf7fd,#f0e4f6);cursor:pointer;box-shadow:0 9px 24px rgba(101,65,128,.10);transition:box-shadow .2s}
+.cart-prime-option:hover{box-shadow:0 12px 28px rgba(101,65,128,.14)}
+.cart-prime-option input{grid-area:checkbox;width:20px;height:20px;accent-color:#76518f;justify-self:end;align-self:start;margin:2px 0 0}
+.cart-prime-icon{grid-area:icon;width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,#4b315c,#8d65a5);color:#ead7a0;display:flex;align-items:center;justify-content:center;flex:0 0 40px;font-size:17px}
+.cart-prime-copy{grid-area:copy;display:flex;flex-direction:column;gap:5px;min-width:0;width:100%;overflow-wrap:anywhere}
+.cart-prime-copy b{color:#69447f;font-size:12px;line-height:1.55;white-space:normal;overflow-wrap:anywhere}
+.cart-prime-copy small{color:#77657f;font-size:10px;line-height:1.65;white-space:normal;overflow-wrap:anywhere}
+.cart-prime-benefits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 9px;width:100%;min-width:0}
+.cart-prime-benefits>span{display:flex;align-items:flex-start;gap:5px;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.55;font-size:10px}
+.cart-prime-benefits>span i{flex:0 0 auto;margin-top:2px}
+.cart-prime-option>strong{grid-area:price;justify-self:start;align-self:start;color:#76518f;font-size:12px;white-space:normal;overflow-wrap:anywhere}
+.cart-item-color-dot{display:inline-block;width:17px;height:17px;flex:0 0 17px;border:1px solid rgba(60,40,48,.24);border-radius:50%;vertical-align:middle;box-shadow:0 0 0 2px #fff}
+.cart-item-option{display:flex;align-items:center;gap:7px;min-height:20px}
+@media(max-width:430px){.cart-prime-option{grid-template-columns:minmax(0,1fr) 36px 20px;gap:7px;padding:11px}.cart-prime-icon{width:36px;height:36px;flex-basis:36px}.cart-prime-copy b{font-size:11px}.cart-prime-copy small{font-size:9px}.cart-prime-benefits{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.cart-prime-benefits>span{font-size:9px}.cart-prime-option>strong{font-size:10px}}
+@media(max-width:350px){.cart-prime-benefits{grid-template-columns:minmax(0,1fr)}}
 .cart-summary .summary-row.prime-summary{color:#6f4b86}
 .prime-modal{background:linear-gradient(145deg,#fffaff 0%,#f7effb 52%,#eee1f5 100%)!important;border:1px solid #c9addb!important;box-shadow:0 28px 70px rgba(73,43,91,.24)!important}
 .prime-modal .modal-title,.prime-modal .modal-subtitle,.prime-modal .prime-price,.prime-modal .prime-price small,.prime-modal .prime-modal-list div{color:#69447f!important}
@@ -5671,6 +5679,18 @@ main#home{
       const wasActive=primeActive;
       primeActive=!!active;
       document.body.classList.toggle("prime-mode",primeActive&&primeStatus?.theme_enabled!==false);
+      if(primeActive){
+        const cartOffer=document.getElementById("cartPrimeOption");
+        const checkoutOffer=document.getElementById("checkoutPrimeOption");
+        if(cartOffer)cartOffer.hidden=true;
+        if(checkoutOffer)checkoutOffer.hidden=true;
+        cartPrimeSelected=false;
+        checkoutPrimeSelected=false;
+        const cartCheckbox=document.getElementById("cartPrime");
+        const checkoutCheckbox=document.getElementById("checkoutPrime");
+        if(cartCheckbox)cartCheckbox.checked=false;
+        if(checkoutCheckbox)checkoutCheckbox.checked=false;
+      }
       updateCheckoutTotals();
       renderProducts();
       renderCart();
@@ -6288,12 +6308,13 @@ main#home{
       if(!Array.isArray(source)) return [];
       const colors=source.map(item=>{
         const object=item&&typeof item==="object"?item:{name:String(item??"")};
-        const name=String(object.name??object.label??object.color??object.value??object.hex??"").trim();
         const rawHex=String(object.hex??object.color_hex??object.colorHex??"").trim();
-        const hex=/^#[\da-f]{3,8}$/i.test(rawHex)?rawHex:legacyColorHex(name);
+        const initialName=String(object.name??object.label??object.color??object.value??"").trim();
+        const hex=/^#[\da-f]{3,8}$/i.test(rawHex)?rawHex:legacyColorHex(initialName);
+        const name=initialName||hex;
         const image=String(object.image??object.image_url??object.imageUrl??"").trim();
         return {name,hex,image};
-      }).filter(color=>color.name);
+      }).filter(color=>/^#[\da-f]{3,8}$/i.test(color.hex));
       return [...new Map(colors.map(color=>[color.name,color])).values()];
     }
 
@@ -6498,7 +6519,7 @@ main#home{
         '<div><i class="fa-solid fa-gift"></i><span>تغليف مميز</span></div>'
       ];
       const gallery=images.length>1?`<div class="product-details-thumbnails" aria-label="صور المنتج">${images.map((image,index)=>`<button type="button" class="product-details-thumbnail${image===mainImage?" selected":""}" aria-label="عرض الصورة ${index+1}" aria-pressed="${image===mainImage}" onclick="selectProductDetailImage(${index})"><img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)} - ${index+1}" loading="lazy"></button>`).join("")}</div>`:"";
-      const colorOptions=colors.length?`<div class="product-details-option"><h2>اللون</h2><div class="product-details-options product-details-color-swatches">${colors.map((item,index)=>`<button type="button" class="product-details-option-button product-details-color${state.colorIndex===index?" selected":""}" title="${escapeHtml(item.name)}" aria-label="اختيار اللون ${escapeHtml(item.name)}" aria-pressed="${state.colorIndex===index}" onclick="selectProductDetailColor(${index})"><span class="product-details-color-dot" style="--option-color:${escapeHtml(item.hex||legacyColorHex(item.name))}"></span></button>`).join("")}</div><p class="product-details-selected-color" aria-live="polite">${color?"اللون المختار: "+escapeHtml(color.name):"اختاري اللون المناسب"}</p></div>`:"";
+      const colorOptions=colors.length?`<div class="product-details-option"><h2>اللون</h2><div class="product-details-options product-details-color-swatches">${colors.map((item,index)=>`<button type="button" class="product-details-option-button product-details-color${state.colorIndex===index?" selected":""}" aria-label="اختيار اللون ${escapeHtml(item.hex)}" aria-pressed="${state.colorIndex===index}" onclick="selectProductDetailColor(${index})"><span class="product-details-color-dot" style="--option-color:${escapeHtml(item.hex||legacyColorHex(item.name))}"></span></button>`).join("")}</div></div>`:"";
       const sizeOptions=sizes.length?`<div class="product-details-option"><h2>المقاس</h2><div class="product-details-options">${sizes.map((item,index)=>`<button type="button" class="product-details-option-button product-details-size${state.size===item?" selected":""}" aria-pressed="${state.size===item}" onclick="selectProductDetailSize(${index})">${escapeHtml(item)}</button>`).join("")}</div></div>`:"";
       const detailsSections=getProductDetailsSections(product);
       const discountBadge=discount>0?`<span class="product-details-image-badge">-${discount}%</span>`:"";
@@ -6875,7 +6896,7 @@ main#home{
       const colors=getProductColors(product), sizes=productDetailSizes(product);
       pendingProductOptionSizes=sizes;
       let html='';
-      if(colors.length){html+='<div class="product-option-label">اللون</div><div class="product-option-swatches">'+colors.map((c,i)=>`<button type="button" class="color-swatch${i===0?' selected':''}" data-color-index="${i}" title="${escapeHtml(c.name||c.hex)}" aria-label="${escapeHtml(c.name||c.hex)}" style="background:${escapeHtml(c.hex)}" onclick="selectProductColor(this)"></button>`).join('')+'</div>';}
+      if(colors.length){html+='<div class="product-option-label">اللون</div><div class="product-option-swatches">'+colors.map((c,i)=>`<button type="button" class="color-swatch${i===0?' selected':''}" data-color-index="${i}" title="${escapeHtml(c.hex)}" aria-label="اختيار اللون ${escapeHtml(c.hex)}" style="background:${escapeHtml(c.hex)}" onclick="selectProductColor(this)"></button>`).join('')+'</div>';}
       if(sizes.length){html+='<div class="product-option-label">المقاس</div><div class="product-option-sizes">'+sizes.map((x,i)=>`<button type="button" class="size-pill${i===0?' selected':''}" data-size-index="${i}" onclick="selectProductSize(this)">${escapeHtml(x)}</button>`).join('')+'</div>';}
       wrap.innerHTML=html;document.getElementById('poTitle').textContent=product.name||'اختاري خيارات المنتج';document.getElementById('poSummary').textContent=colors.length||sizes.length?'اختاري اللون والمقاس المناسبين ثم أضيفي المنتج للسلة.':'';openModal('productOptionsModal');
     }
@@ -7075,7 +7096,7 @@ main#home{
               <div class="cart-item-name">
                 ${escapeHtml(item.name)}
               </div>
-              ${(item.color||item.size)?`<div class="cart-item-option">${item.color?`اللون: ${escapeHtml(item.color)}`:""}${item.color&&item.size?" • ":""}${item.size?`المقاس: ${escapeHtml(item.size)}`:""}</div>`:""}
+              ${(item.color||item.size)?`<div class="cart-item-option">${item.color?`<span class="cart-item-color-dot" style="background:${escapeHtml(item.colorHex||legacyColorHex(item.color))}" aria-label="لون المنتج"></span>`:""}${item.size?`<span>${escapeHtml(item.size)}</span>`:""}</div>`:""}
 
               <div class="cart-item-price">
                 ${oldPrice>price?`<del>${formatPrice(oldPrice)}</del> `:""}${formatPrice(getPrimeUnitPrice(price))}
