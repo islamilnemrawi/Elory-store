@@ -3065,6 +3065,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
 .hero-dot{width:10px;height:10px;min-width:10px;padding:0;border:1px solid #c96a8a;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(96,40,61,.12);opacity:.82;transition:width .2s ease,background .2s ease}
 .hero-dot.active{width:28px;height:10px;border-radius:10px;background:var(--pink,#d96b91);opacity:1;box-shadow:0 2px 8px rgba(166,47,94,.24)}
 #heroSlider>.hero-slide.elory-hero-fullbleed{background:#111 !important;isolation:isolate !important;}
+/* Avoid showing the baked-in starter hero while the published CMS campaign is still loading. */
+#heroSlider:not([data-hero-cms-ready="true"]){visibility:hidden !important;}
 #heroSlider .elory-hero-fullbleed-picture,#heroSlider .elory-hero-fullbleed-video{position:absolute !important;inset:0 !important;display:block !important;width:100% !important;height:100% !important;z-index:6 !important;overflow:hidden !important;}
 #heroSlider .elory-hero-fullbleed-picture img,#heroSlider .elory-hero-fullbleed-video{display:block !important;width:100% !important;height:100% !important;max-width:none !important;max-height:none !important;object-fit:contain !important;object-position:center center !important;border:0 !important;border-radius:0 !important;}
 #heroSlider .elory-hero-fullbleed-picture img{background:#fff !important;}
@@ -3092,6 +3094,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
 #categoriesSection .category-card{display:flex;flex:0 0 98px;flex-direction:column;align-items:center;width:98px;min-width:98px;padding:0;border:0;background:transparent;color:var(--text,#292126);text-align:center}
 #categoriesSection .category-image{display:flex;align-items:center;justify-content:center;width:84px;height:84px;margin:0 auto;overflow:hidden;border:2px solid var(--pink-light,#edbfd0);border-radius:50%;background:var(--surface,#fff);box-shadow:0 5px 13px rgba(139,57,88,.12)}
 #categoriesSection .category-image img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
+#categoriesSection .category-image.category-placeholder{border-style:solid;background:radial-gradient(circle at 35% 28%,#fff 0,#fff6fa 48%,#f8dce7 100%);color:#bd668b;font-size:30px;font-weight:700;}
+#categoriesSection .category-image.category-placeholder span{display:block;line-height:1;filter:drop-shadow(0 2px 3px rgba(139,57,88,.12));}
 #categoriesSection .category-name{display:block;max-width:100%;margin:7px 0 0;overflow-wrap:anywhere;color:var(--text,#553744);font-size:15px!important;font-weight:700;line-height:1.35;text-align:center}
 #categoriesSection .category-count{margin-top:2px;color:var(--muted,#81747a);font-size:13px;line-height:1.2}
 
@@ -5776,12 +5780,15 @@ main#home{
       const cardHtml = active.map(c => {
         const image = String(c.image || '').trim();
         const text = String(c.description || '').trim();
-        const logoFallback = String(document.querySelector('.hg-center-v19 .logo img')?.currentSrc || document.querySelector('.hg-center-v19 .logo img')?.src || '').trim();
-        const isLogoFallback = !image && !!logoFallback;
-        const categoryImage = image || logoFallback;
-        const imageHtml = categoryImage ? `<div class="category-image${isLogoFallback ? ' logo-fallback' : ''}"><img src="${escapeHtml(categoryImage)}" alt="${escapeHtml(c.name)}" loading="lazy" data-category-image="true" ${isLogoFallback ? 'data-logo-fallback="true"' : ''} onerror="this.onerror=null;this.src=${JSON.stringify(logoFallback)};this.closest('.category-image')?.classList.add('logo-fallback');this.setAttribute('data-logo-fallback','true')"></div>` : '';
-        const textHtml = text ? `<div class="category-count">${escapeHtml(text)}</div>` : '';
         const safeCategory = String(c.name || "").trim();
+        const categoryIcon = /شنط|حقيبة/i.test(safeCategory) ? '👜' :
+          /تجميل|مكياج|عناية/i.test(safeCategory) ? '💄' :
+          /ساعات/i.test(safeCategory) ? '⌚' :
+          /اكسسوار|إكسسوار|اكسسوارات|إكسسوارات/i.test(safeCategory) ? '💎' : '✦';
+        const imageHtml = image
+          ? `<div class="category-image"><img src="${escapeHtml(image)}" alt="${escapeHtml(safeCategory)}" loading="lazy" data-category-image="true" onerror="this.onerror=null;this.remove();this.parentElement.classList.add('category-placeholder');this.parentElement.textContent='${categoryIcon}'"></div>`
+          : `<div class="category-image category-placeholder" aria-hidden="true"><span>${categoryIcon}</span></div>`;
+        const textHtml = text ? `<div class="category-count">${escapeHtml(text)}</div>` : '';
         const categoryArg = escapeHtml(JSON.stringify(safeCategory));
         return `<button type="button" class="category-card" data-category="${escapeHtml(safeCategory)}" aria-label="فتح قسم ${escapeHtml(safeCategory)}">${imageHtml}<div class="category-name">${escapeHtml(safeCategory)}</div>${textHtml}</button>`;
       }).join("");
@@ -9798,8 +9805,7 @@ main#home{
 </script>
 <script id="elory-v12-live-category-images">
 // Category fallback is handled directly by renderCategories().
-// Intentionally no product-image fallback: when a category has no image,
-// the complete Elory logo is used as the visual fallback.
+// Missing category images use a neutral category-specific symbol, never the old store logo.
 </script>
 
 <script id="elory-v3-interactions">
