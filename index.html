@@ -1826,10 +1826,10 @@ body.prime-mode .section-title{color:var(--pink);}
 .cart-prime-option:hover{box-shadow:0 12px 28px rgba(101,65,128,.14)}
 .cart-prime-option input{grid-area:checkbox;width:20px;height:20px;accent-color:#76518f;justify-self:end;align-self:start;margin:2px 0 0}
 .cart-prime-icon{grid-area:icon;width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,#4b315c,#8d65a5);color:#ead7a0;display:flex;align-items:center;justify-content:center;flex:0 0 40px;font-size:17px}
-.cart-prime-copy{grid-area:copy;display:flex;flex-direction:column;gap:5px;min-width:0;width:100%;overflow-wrap:anywhere}
+.cart-prime-copy{grid-area:copy;display:flex;flex-direction:column;gap:3px;min-width:0;width:100%;overflow-wrap:anywhere}
 .cart-prime-copy b{color:#69447f;font-size:12px;line-height:1.55;white-space:normal;overflow-wrap:anywhere}
 .cart-prime-copy small{color:#77657f;font-size:10px;line-height:1.65;white-space:normal;overflow-wrap:anywhere}
-.cart-prime-benefits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 9px;width:100%;min-width:0}
+.cart-prime-benefits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 7px;width:100%;min-width:0}
 .cart-prime-benefits>span{display:flex;align-items:flex-start;gap:5px;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.55;font-size:10px}
 .cart-prime-benefits>span i{flex:0 0 auto;margin-top:2px}
 .cart-prime-benefits>span i{color:#8b63a3;margin-left:3px}
@@ -1839,8 +1839,8 @@ body.prime-mode .section-title{color:var(--pink);}
 .prime-summary{font-weight:800!important}
 #checkoutPrimeRow[hidden]{display:none!important}
 #checkoutPrimeRow:not([hidden]){display:flex!important}
-@media(max-width:430px){.cart-prime-option{grid-template-columns:minmax(0,1fr) 36px 20px;gap:7px;padding:11px}.cart-prime-icon{width:36px;height:36px;flex-basis:36px}.cart-prime-copy b{font-size:11px}.cart-prime-copy small{font-size:9px}.cart-prime-benefits{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.cart-prime-benefits>span{font-size:9px}.cart-prime-option>strong{font-size:10px}}
-@media(max-width:350px){.cart-prime-benefits{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:430px){.cart-prime-option{grid-template-columns:minmax(0,1fr) 32px 18px;gap:6px;padding:9px 10px}.cart-prime-icon{width:32px;height:32px;flex-basis:32px;font-size:14px}.cart-prime-copy b{font-size:10px;line-height:1.35}.cart-prime-copy small{font-size:8px;line-height:1.35}.cart-prime-benefits{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 5px}.cart-prime-benefits>span{font-size:8px;line-height:1.3;gap:3px}.cart-prime-option>strong{font-size:9px}}
+@media(max-width:350px){.cart-prime-benefits{grid-template-columns:repeat(2,minmax(0,1fr))}.cart-prime-benefits>span{font-size:7.5px}.cart-prime-option{gap:5px;padding:8px}}
 .cart-summary .summary-row.prime-summary{color:#6f4b86}
 .prime-modal{background:linear-gradient(145deg,#fffaff 0%,#f7effb 52%,#eee1f5 100%)!important;border:1px solid #c9addb!important;box-shadow:0 28px 70px rgba(73,43,91,.24)!important}
 .prime-modal .modal-title,.prime-modal .modal-subtitle,.prime-modal .prime-price,.prime-modal .prime-price small,.prime-modal .prime-modal-list div{color:#69447f!important}
@@ -5158,13 +5158,13 @@ main#home{
 <input id="cartPrime" onchange="toggleCartPrime(this.checked)" type="checkbox"/>
 <span class="cart-prime-icon"><i class="fa-solid fa-crown"></i></span>
 <span class="cart-prime-copy">
-<b>اشتركي في Elory Prime</b>
-<small>300 ج.م / شهر — اختاري Prime لتحصلي على المزايا التالية:</small>
+<b>اشتركي في Prime</b>
+<small>اشتراك 30 يومًا</small>
 <span class="cart-prime-benefits">
-<span><i class="fa-solid fa-percent"></i> خصم إضافي 10%</span>
-<span><i class="fa-solid fa-truck-fast"></i> شحن مجاني حتى 6 طلبات</span>
-<span><i class="fa-solid fa-gift"></i> تغليف خاص ومميز</span>
-<span><i class="fa-solid fa-palette"></i> مميزات وثيم Prime خاص</span>
+<span><i class="fa-solid fa-percent"></i> خصم 10%</span>
+<span><i class="fa-solid fa-truck-fast"></i> شحن 6 طلبات مجانًا</span>
+<span><i class="fa-solid fa-gift"></i> تغليف مميز</span>
+<span><i class="fa-solid fa-palette"></i> مزايا Prime</span>
 </span>
 </span>
 <strong>+300 ج.م</strong>
@@ -5285,8 +5285,8 @@ main#home{
 <input id="checkoutPrime" onchange="toggleCheckoutPrime(this.checked)" type="checkbox"/>
 <span class="cart-prime-icon"><i class="fa-solid fa-crown"></i></span>
 <span class="cart-prime-copy">
-<b>إضافة Elory Prime إلى هذا الأوردر</b>
-<small>300 ج.م / 30 يومًا — يتم التفعيل تلقائيًا بعد تسليم الأوردر</small>
+<b>إضافة Prime للطلب</b>
+<small>30 يومًا • يتفعل بعد التسليم</small>
 <span class="cart-prime-benefits">
 <span><i class="fa-solid fa-percent"></i> خصم إضافي 10%</span>
 <span><i class="fa-solid fa-truck-fast"></i> 6 شحنات مجانية</span>
@@ -6453,7 +6453,7 @@ main#home{
         '<div><i class="fa-solid fa-gift"></i><span>تغليف مميز</span></div>'
       ];
       const gallery=images.length>1?`<div class="product-details-thumbnails" aria-label="صور المنتج">${images.map((image,index)=>`<button type="button" class="product-details-thumbnail${image===mainImage?" selected":""}" aria-label="عرض الصورة ${index+1}" aria-pressed="${image===mainImage}" onclick="selectProductDetailImage(${index})"><img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)} - ${index+1}" loading="lazy"></button>`).join("")}</div>`:"";
-      const colorOptions=colors.length?`<div class="product-details-option"><h2>اللون</h2><div class="product-details-options product-details-color-swatches">${colors.map((item,index)=>`<button type="button" class="product-details-option-button product-details-color${state.colorIndex===index?" selected":""}" aria-label="اختيار اللون ${escapeHtml(item.hex)}" aria-pressed="${state.colorIndex===index}" onclick="selectProductDetailColor(${index})"><span class="product-details-color-dot" style="--option-color:${escapeHtml(item.hex||legacyColorHex(item.name))}"></span></button>`).join("")}</div></div>`:"";
+      const colorOptions=colors.length?`<div class="product-details-option"><h2>اللون</h2><div class="product-details-options product-details-color-swatches">${colors.map((item,index)=>`<button type="button" class="product-details-option-button product-details-color${state.colorIndex===index?" selected":""}" aria-label="اختيار لون المنتج" aria-pressed="${state.colorIndex===index}" onclick="selectProductDetailColor(${index})"><span class="product-details-color-dot" style="--option-color:${escapeHtml(item.hex||legacyColorHex(item.name))}"></span></button>`).join("")}</div></div>`:"";
       const sizeOptions=sizes.length?`<div class="product-details-option"><h2>المقاس</h2><div class="product-details-options">${sizes.map((item,index)=>`<button type="button" class="product-details-option-button product-details-size${state.size===item?" selected":""}" aria-pressed="${state.size===item}" onclick="selectProductDetailSize(${index})">${escapeHtml(item)}</button>`).join("")}</div></div>`:"";
       const detailsSections=getProductDetailsSections(product);
       const discountBadge=discount>0?`<span class="product-details-image-badge">-${discount}%</span>`:"";
@@ -6830,7 +6830,7 @@ main#home{
       const colors=getProductColors(product), sizes=productDetailSizes(product);
       pendingProductOptionSizes=sizes;
       let html='';
-      if(colors.length){html+='<div class="product-option-label">اللون</div><div class="product-option-swatches">'+colors.map((c,i)=>`<button type="button" class="color-swatch${i===0?' selected':''}" data-color-index="${i}" title="${escapeHtml(c.hex)}" aria-label="اختيار اللون ${escapeHtml(c.hex)}" style="background:${escapeHtml(c.hex)}" onclick="selectProductColor(this)"></button>`).join('')+'</div>';}
+      if(colors.length){html+='<div class="product-option-label">اللون</div><div class="product-option-swatches">'+colors.map((c,i)=>`<button type="button" class="color-swatch${i===0?' selected':''}" data-color-index="${i}" aria-label="اختيار لون المنتج" style="background:${escapeHtml(c.hex)}" onclick="selectProductColor(this)"></button>`).join('')+'</div>';}
       if(sizes.length){html+='<div class="product-option-label">المقاس</div><div class="product-option-sizes">'+sizes.map((x,i)=>`<button type="button" class="size-pill${i===0?' selected':''}" data-size-index="${i}" onclick="selectProductSize(this)">${escapeHtml(x)}</button>`).join('')+'</div>';}
       wrap.innerHTML=html;document.getElementById('poTitle').textContent=product.name||'اختاري خيارات المنتج';document.getElementById('poSummary').textContent=colors.length||sizes.length?'اختاري اللون والمقاس المناسبين ثم أضيفي المنتج للسلة.':'';openModal('productOptionsModal');
     }
@@ -9632,9 +9632,9 @@ main#home{
     const primePriceEl=$('.prime-price');
     if(primePriceEl){const small=document.createElement('small');small.textContent='ج.م / '+primeDurationDays+' يوم';primePriceEl.replaceChildren(document.createTextNode(primePrice.toLocaleString('ar-EG',{maximumFractionDigits:2})+' '),small);}
     const cartPrimeSmall=$('#cartPrimeOption .cart-prime-copy > small');
-    if(cartPrimeSmall)cartPrimeSmall.textContent=primeMoney+' / '+primeDurationDays+' يوم — اختاري Prime لتحصلي على المزايا التالية:';
+    if(cartPrimeSmall)cartPrimeSmall.textContent='اشتراك '+primeDurationDays+' يومًا';
     const checkoutPrimeSmall=$('#checkoutPrimeOption .cart-prime-copy > small');
-    if(checkoutPrimeSmall)checkoutPrimeSmall.textContent=primeMoney+' / '+primeDurationDays+' يومًا — يتم التفعيل تلقائيًا بعد تسليم الأوردر';
+    if(checkoutPrimeSmall)checkoutPrimeSmall.textContent=primeDurationDays+' يومًا • يتفعل بعد التسليم';
     const cartPrimePrice=$('#cartPrimeOption > strong');
     if(cartPrimePrice)cartPrimePrice.textContent='+'+primeMoney;
     const checkoutPrimePrice=$('#checkoutPrimeOption > strong');
