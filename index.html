@@ -6264,12 +6264,16 @@ main#home{
     function selectedProductDetailVariant(){
       const state=productDetailState;
       if(!state||!Array.isArray(state.product.variants)) return null;
-      const color=selectedProductDetailColor()?.name||"";
+      const selectedColor=selectedProductDetailColor();
+      const color=selectedColor?.name||"";
+      const colorHex=String(selectedColor?.hex||"").toUpperCase();
       const size=state.size||"";
       return state.product.variants.find(variant=>{
         const variantColor=String(variant.color_name??variant.color?.name??variant.color??"");
+        const variantColorHex=String(variant.color_hex??variant.colorHex??variant.color?.hex??"").toUpperCase();
+        const colorMatches=!variantColor||variantColor===color||(colorHex&&variantColorHex===colorHex);
         const variantSize=String(variant.size??variant.size_name??"");
-        return (!variantColor||variantColor===color)&&(!variantSize||variantSize===size);
+        return colorMatches&&(!variantSize||variantSize===size);
       })||null;
     }
 
@@ -6832,15 +6836,24 @@ main#home{
     }
     function selectProductColor(btn){document.querySelectorAll('#poOptions .color-swatch').forEach(x=>x.classList.remove('selected'));btn.classList.add('selected');}
     function selectProductSize(btn){document.querySelectorAll('#poOptions .size-pill').forEach(x=>x.classList.remove('selected'));btn.classList.add('selected');}
-    function findVariant(product,color,size){return Array.isArray(product.variants)?product.variants.find(variant=>{const variantColor=String(variant.color_name??variant.color?.name??variant.color??"");const variantSize=String(variant.size??variant.size_name??"");return (!variantColor||variantColor===color)&&(!variantSize||variantSize===size);}):null;}
-    function confirmProductOptions(){if(!pendingProductOptions)return;const p=pendingProductOptions;const colors=getProductColors(p);const cb=document.querySelector('#poOptions .color-swatch.selected');const sb=document.querySelector('#poOptions .size-pill.selected');const color=cb?colors[Number(cb.dataset.colorIndex)]:null;const size=sb?String(pendingProductOptionSizes[Number(sb.dataset.sizeIndex)]):null;const variant=findVariant(p,color?.name,size);addToCart(p.id,{product:p,color:color?.name||'',colorHex:color?.hex||'',size:size||'',variant});closeModal('productOptionsModal');pendingProductOptions=null;pendingProductOptionSizes=[];}
+    function findVariant(product,color,size,colorHex=""){
+      const selectedHex=String(colorHex||"").toUpperCase();
+      return Array.isArray(product.variants)?product.variants.find(variant=>{
+        const variantColor=String(variant.color_name??variant.color?.name??variant.color??"");
+        const variantColorHex=String(variant.color_hex??variant.colorHex??variant.color?.hex??"").toUpperCase();
+        const colorMatches=!variantColor||variantColor===color||(selectedHex&&variantColorHex===selectedHex);
+        const variantSize=String(variant.size??variant.size_name??"");
+        return colorMatches&&(!variantSize||variantSize===size);
+      }):null;
+    }
+    function confirmProductOptions(){if(!pendingProductOptions)return;const p=pendingProductOptions;const colors=getProductColors(p);const cb=document.querySelector('#poOptions .color-swatch.selected');const sb=document.querySelector('#poOptions .size-pill.selected');const color=cb?colors[Number(cb.dataset.colorIndex)]:null;const size=sb?String(pendingProductOptionSizes[Number(sb.dataset.sizeIndex)]):null;const variant=findVariant(p,color?.name,size,color?.hex);addToCart(p.id,{product:p,color:color?.name||'',colorHex:color?.hex||'',size:size||'',variant});closeModal('productOptionsModal');pendingProductOptions=null;pendingProductOptionSizes=[];}
 
     function addToCart(productId, options={}) {
       const product=options.product||products.find(p=>String(p.id)===String(productId));
       if(!product){showToast("لم يتم العثور على المنتج");return false;}
       const colors=getProductColors(product), sizes=Array.isArray(product.sizes)?product.sizes:[];
       if(!options.color && !options.size && (colors.length||sizes.length)){openProductOptions(product);return false;}
-      const variant=options.variant||findVariant(product,options.color||'',options.size||'');
+      const variant=options.variant||findVariant(product,options.color||'',options.size||'',options.colorHex||'');
       const finalPrice=Number(variant?.price ?? product.price ?? 0);
       const key=[product.id,options.color||'',options.size||''].join('::');
       const existing=cart.find(item=>item.key===key);
