@@ -5832,6 +5832,23 @@ main#home{
       }
     }
 
+    // PostgREST has a configurable maximum row count. Fetch the public catalog
+    // in bounded pages so stores with 5k–10k products are not silently truncated.
+    async function eloryFetchAllRows(table, query, pageSize = 1000) {
+      const allRows = [];
+      for (let offset = 0; ; offset += pageSize) {
+        if (offset >= 50000) throw new Error(`${table}: catalog exceeds the safe 50,000-row client limit`);
+        const separator = query ? "&" : "";
+        const page = await eloryFetchRows(
+          table,
+          `${query}${separator}limit=${pageSize}&offset=${offset}`
+        );
+        allRows.push(...page);
+        if (page.length < pageSize) break;
+      }
+      return allRows;
+    }
+
     /* =========================================================
        SUPABASE LIVE CONNECTION — restored from the earlier working store build
        ========================================================= */
@@ -5951,7 +5968,7 @@ main#home{
         let publicError = null;
 
         try {
-          rows = await eloryFetchRows("products", publicQuery);
+          rows = await eloryFetchAllRows("products", publicQuery);
         } catch (error) {
           publicError = error;
           console.warn("Elory public products REST query failed; trying catalog_products:", error);
@@ -5959,7 +5976,7 @@ main#home{
 
         if (publicError) {
           try {
-            rows = await eloryFetchRows("catalog_products", publicQuery);
+            rows = await eloryFetchAllRows("catalog_products", publicQuery);
             publicError = null;
           } catch (error) {
             publicError = error;
@@ -6106,7 +6123,7 @@ main#home{
           <div class="product-image">
             ${discount>0?`<span class="discount-badge">خصم ${discount}%</span>`:""}
             <button class="favorite-btn" data-product-id="${String(product.id).replace(/"/g,'&quot;')}" onclick="toggleFavorite(this)" aria-label="المفضلة"><i class="fa-regular fa-heart"></i></button>
-            <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=700&q=85'">
+            <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.style.visibility='hidden';this.parentElement.style.background='linear-gradient(135deg,#f8edf2,#f1e4ea)';">
           </div>
           <div class="product-info">
             <div class="product-category">${escapeHtml(product.category)}</div>
@@ -8421,6 +8438,9 @@ main#home{
       box.innerHTML=unique.map(c=>{const active=(c==="كل المنتجات"&&!currentShopCategory)||c===currentShopCategory; const value=String(c).replace(/'/g,"\\'"); return `<button class="${active?'active':''}" onclick="showShopPage('${c==='كل المنتجات'?'':value}','${value}')">${escapeHtml(c)}</button>`}).join("");
     }
 
+    const SHOP_PRODUCTS_PAGE_SIZE = 24;
+    let shopVisibleCount = SHOP_PRODUCTS_PAGE_SIZE;
+
     function renderShopProducts(){
       const grid=document.getElementById("shopProductsGrid"); if(!grid) return;
       if(!shopProducts.length){
@@ -8428,7 +8448,16 @@ main#home{
         grid.innerHTML=`<div class="search-empty-state"><i class="fa-solid fa-magnifying-glass"></i><strong>${hasFilters?"لا توجد منتجات مطابقة":"لا توجد منتجات في هذا القسم حالياً"}</strong><span>${hasFilters?"جرّبي تعديل البحث أو نطاق السعر.":"ستظهر المنتجات عند توفرها في المتجر."}</span>${hasFilters?'<button type="button" onclick="clearShopFilters()">مسح البحث والتصفية</button>':""}</div>`;
         return;
       }
-      grid.innerHTML=shopProducts.map(p=>productCardHtml(p)).join(""); syncFavoriteButtons();
+      const visible=shopProducts.slice(0,shopVisibleCount);
+      const remaining=shopProducts.length-visible.length;
+      grid.innerHTML=visible.map(p=>productCardHtml(p)).join("")+
+        (remaining>0?`<div class="shop-load-more-wrap"><button type="button" class="shop-load-more-btn" onclick="loadMoreShopProducts()">عرض المزيد (${remaining})</button></div>`:"");
+      syncFavoriteButtons();
+    }
+
+    function loadMoreShopProducts(){
+      shopVisibleCount=Math.min(shopVisibleCount+SHOP_PRODUCTS_PAGE_SIZE,shopProducts.length);
+      renderShopProducts();
     }
 
     function sortShopProducts(value){
@@ -8455,6 +8484,7 @@ main#home{
         if(Number.isFinite(aDate)&&Number.isFinite(bDate)&&aDate!==bDate) return bDate-aDate;
         return Number(a.sortIndex||0)-Number(b.sortIndex||0);
       });
+      shopVisibleCount=SHOP_PRODUCTS_PAGE_SIZE;
       shopProducts=results;
       renderShopProducts();
     }
