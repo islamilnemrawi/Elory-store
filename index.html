@@ -9434,14 +9434,14 @@ main#home{
     const a=c.announcement||{}, h=c.header||{}, g=c.global||{};
     const announcement=$('.announcement');
     if(announcement){
-      if(color(a.backgroundColor)) announcement.style.backgroundColor=color(a.backgroundColor);
+      if(color(a.backgroundColor)) announcement.style.setProperty('background',color(a.backgroundColor),'important');
       if(color(a.textColor)) announcement.style.color=color(a.textColor);
       const msgs=[a.message1,a.message2,a.message3];
       $$('.announcement-item span',announcement).forEach((el,i)=>{ if(msgs[i%3]!==undefined) el.textContent=txt(msgs[i%3]); });
       visible(announcement,a.isVisible!==false);
     }
     if(color(h.backgroundColor) && $('.header')) $('.header').style.backgroundColor=color(h.backgroundColor);
-    if(color(h.iconsColor)) $$('.hg-icon-v19').forEach(el=>el.style.color=color(h.iconsColor));
+    if(color(h.iconsColor)) $('.hg-icon-v19').forEach(el=>el.style.setProperty('color',color(h.iconsColor),'important'));
     visible('.header-menu-btn',h.showMenuBtn);
     visible('.header-account-btn',h.showAccountBtn);
     visible('.header-cart-btn',h.showCartBtn);
