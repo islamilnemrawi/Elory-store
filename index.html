@@ -5470,6 +5470,12 @@ main#home{
     let products = [];
     let filteredProducts = [];
     let productsLoadState = "loading";
+    const PRODUCTS_PAGE_SIZE = 1000;
+    const PRODUCTS_PUBLIC_QUERY = "select=id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at&active=eq.true&order=created_at.desc,id.asc";
+    let productsNextOffset = 0;
+    let productsHasMore = false;
+    let productsSourceTable = "products";
+    let productsPageLoading = false;
     let storeCategories = [];
     let cart = [];
 
@@ -5832,23 +5838,6 @@ main#home{
       }
     }
 
-    // PostgREST has a configurable maximum row count. Fetch the public catalog
-    // in bounded pages so stores with 5k–10k products are not silently truncated.
-    async function eloryFetchAllRows(table, query, pageSize = 1000) {
-      const allRows = [];
-      for (let offset = 0; ; offset += pageSize) {
-        if (offset >= 50000) throw new Error(`${table}: catalog exceeds the safe 50,000-row client limit`);
-        const separator = query ? "&" : "";
-        const page = await eloryFetchRows(
-          table,
-          `${query}${separator}limit=${pageSize}&offset=${offset}`
-        );
-        allRows.push(...page);
-        if (page.length < pageSize) break;
-      }
-      return allRows;
-    }
-
     /* =========================================================
        SUPABASE LIVE CONNECTION — restored from the earlier working store build
        ========================================================= */
@@ -5960,15 +5949,15 @@ main#home{
       // not depend on the optional Supabase JS CDN and never forwards a
       // customer's Auth session, so staff-only restrictive policies cannot
       // accidentally hide public active products.
-      const publicQuery =
-        "select=id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at&active=eq.true&order=created_at.desc,id.asc";
+      const publicQuery = `${PRODUCTS_PUBLIC_QUERY}&limit=${PRODUCTS_PAGE_SIZE}&offset=0`;
 
       try {
         let rows = [];
         let publicError = null;
 
         try {
-          rows = await eloryFetchAllRows("products", publicQuery);
+          rows = await eloryFetchRows("products", publicQuery);
+          productsSourceTable = "products";
         } catch (error) {
           publicError = error;
           console.warn("Elory public products REST query failed; trying catalog_products:", error);
@@ -5976,7 +5965,8 @@ main#home{
 
         if (publicError) {
           try {
-            rows = await eloryFetchAllRows("catalog_products", publicQuery);
+            rows = await eloryFetchRows("catalog_products", publicQuery);
+            productsSourceTable = "catalog_products";
             publicError = null;
           } catch (error) {
             publicError = error;
@@ -5986,6 +5976,8 @@ main#home{
         if (publicError) throw publicError;
 
         products = rows.map(normalizeProduct);
+        productsNextOffset = rows.length;
+        productsHasMore = rows.length === PRODUCTS_PAGE_SIZE;
         productsLoadState = "loaded";
         const searchValue=document.getElementById("searchInput")?.value||"";
         filteredProducts=products.filter(product=>productMatchesSearch(product,String(searchValue).trim().toLocaleLowerCase("ar")));
@@ -6004,6 +5996,38 @@ main#home{
         if(!silent)console.warn("Elory Store product query failed:", error);
         if(products.length){productsLoadState="loaded";renderProducts();}
         else {productsLoadState="error";showProductLoadIssue();}
+      }
+    }
+
+    async function loadMoreProducts(){
+      if(!productsHasMore||productsPageLoading)return;
+      productsPageLoading=true;
+      try{
+        const query=`${PRODUCTS_PUBLIC_QUERY}&limit=${PRODUCTS_PAGE_SIZE}&offset=${productsNextOffset}`;
+        const rows=await eloryFetchRows(productsSourceTable,query);
+        const known=new Set(products.map(product=>String(product.id)));
+        const added=rows.filter(row=>!known.has(String(row.id))).map((row,index)=>normalizeProduct(row,products.length+index));
+        products=products.concat(added);
+        productsNextOffset+=rows.length;
+        productsHasMore=rows.length===PRODUCTS_PAGE_SIZE;
+        const searchValue=document.getElementById("searchInput")?.value||"";
+        filteredProducts=products.filter(product=>productMatchesSearch(product,String(searchValue).trim().toLocaleLowerCase("ar")));
+        updateProductSearchSuggestions(searchValue);
+        refreshCartFromProducts();
+        const shopPage=document.getElementById("shopPage");
+        if(shopPage?.classList.contains("show")){
+          shopBaseProducts=currentShopCategory
+            ?products.filter(product=>String(product.category||"").toLowerCase().includes(String(currentShopCategory).toLowerCase()))
+            :[...products];
+          applyShopFilters(true);
+        }else renderProducts();
+        if(productDetailState)renderProductDetails();
+      }catch(error){
+        console.warn("Elory next catalog page failed:",error);
+        if(typeof showToast==="function")showToast("تعذر تحميل المزيد من المنتجات. حاولي مرة أخرى.");
+      }finally{
+        productsPageLoading=false;
+        if(document.getElementById("shopPage")?.classList.contains("show"))renderShopProducts();
       }
     }
 
@@ -8445,13 +8469,13 @@ main#home{
       const grid=document.getElementById("shopProductsGrid"); if(!grid) return;
       if(!shopProducts.length){
         const hasFilters=!!shopSearchQuery||document.getElementById("shopPriceMin")?.value!==""||document.getElementById("shopPriceMax")?.value!=="";
-        grid.innerHTML=`<div class="search-empty-state"><i class="fa-solid fa-magnifying-glass"></i><strong>${hasFilters?"لا توجد منتجات مطابقة":"لا توجد منتجات في هذا القسم حالياً"}</strong><span>${hasFilters?"جرّبي تعديل البحث أو نطاق السعر.":"ستظهر المنتجات عند توفرها في المتجر."}</span>${hasFilters?'<button type="button" onclick="clearShopFilters()">مسح البحث والتصفية</button>':""}</div>`;
+        grid.innerHTML=`<div class="search-empty-state"><i class="fa-solid fa-magnifying-glass"></i><strong>${hasFilters?"لا توجد منتجات مطابقة":"لا توجد منتجات في هذا القسم حالياً"}</strong><span>${hasFilters?"جرّبي تعديل البحث أو نطاق السعر.":"ستظهر المنتجات عند توفرها في المتجر."}</span>${hasFilters?'<button type="button" onclick="clearShopFilters()">مسح البحث والتصفية</button>':""}${productsHasMore?'<button type="button" onclick="loadMoreProducts()">تحميل المزيد من المنتجات</button>':""}</div>`;
         return;
       }
       const visible=shopProducts.slice(0,shopVisibleCount);
       const remaining=shopProducts.length-visible.length;
       grid.innerHTML=visible.map(p=>productCardHtml(p)).join("")+
-        (remaining>0?`<div class="shop-load-more-wrap" style="grid-column:1/-1;display:flex;justify-content:center;padding:18px 0"><button type="button" class="shop-load-more-btn" style="min-height:44px;padding:10px 24px;border:1px solid var(--border,#eadde3);border-radius:14px;background:var(--surface,#fff);color:var(--pink,#c52b69);font-weight:800" onclick="loadMoreShopProducts()">عرض المزيد (${remaining})</button></div>`:"");
+        (remaining>0?`<div class="shop-load-more-wrap" style="grid-column:1/-1;display:flex;justify-content:center;padding:18px 0"><button type="button" class="shop-load-more-btn" style="min-height:44px;padding:10px 24px;border:1px solid var(--border,#eadde3);border-radius:14px;background:var(--surface,#fff);color:var(--pink,#c52b69);font-weight:800" onclick="loadMoreShopProducts()">عرض المزيد (${remaining})</button></div>`:(productsHasMore?`<div class="shop-load-more-wrap" style="grid-column:1/-1;display:flex;justify-content:center;padding:18px 0"><button type="button" class="shop-load-more-btn" style="min-height:44px;padding:10px 24px;border:1px solid var(--border,#eadde3);border-radius:14px;background:var(--surface,#fff);color:var(--pink,#c52b69);font-weight:800" ${productsPageLoading?"disabled":""} onclick="loadMoreProducts()">${productsPageLoading?"جاري التحميل...":"تحميل المزيد من المنتجات"}</button></div>`:""));
       syncFavoriteButtons();
     }
 
@@ -8465,7 +8489,7 @@ main#home{
       applyShopFilters();
     }
 
-    function applyShopFilters(){
+    function applyShopFilters(preserveVisible=false){
       const minInput=document.getElementById("shopPriceMin");
       const maxInput=document.getElementById("shopPriceMax");
       const min=minInput?.value!==""&&minInput?.value!=null?Number(minInput.value):null;
@@ -8484,7 +8508,7 @@ main#home{
         if(Number.isFinite(aDate)&&Number.isFinite(bDate)&&aDate!==bDate) return bDate-aDate;
         return Number(a.sortIndex||0)-Number(b.sortIndex||0);
       });
-      shopVisibleCount=SHOP_PRODUCTS_PAGE_SIZE;
+      if(!preserveVisible)shopVisibleCount=SHOP_PRODUCTS_PAGE_SIZE;
       shopProducts=results;
       renderShopProducts();
     }
