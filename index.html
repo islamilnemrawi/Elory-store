@@ -9441,7 +9441,7 @@ main#home{
       visible(announcement,a.isVisible!==false);
     }
     if(color(h.backgroundColor) && $('.header')) $('.header').style.backgroundColor=color(h.backgroundColor);
-    if(color(h.iconsColor)) $('.hg-icon-v19').forEach(el=>el.style.setProperty('color',color(h.iconsColor),'important'));
+    if(color(h.iconsColor)) document.querySelectorAll('.hg-icon-v19').forEach(el=>el.style.setProperty('color',color(h.iconsColor),'important'));
     visible('.header-menu-btn',h.showMenuBtn);
     visible('.header-account-btn',h.showAccountBtn);
     visible('.header-cart-btn',h.showCartBtn);
