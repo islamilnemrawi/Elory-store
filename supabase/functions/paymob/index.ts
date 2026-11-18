@@ -1297,7 +1297,7 @@ async function handlePaymobCallback(
   const updated =
     await updateOrderPaymentStatus(
       order.id,
-      "طلب جديد",
+      "جاري التحضير",
     );
 
   await redeemCouponForOrder(order);
