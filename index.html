@@ -5961,7 +5961,7 @@ main#home{
       // customer's Auth session, so staff-only restrictive policies cannot
       // accidentally hide public active products.
       const publicQuery =
-        "select=id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at&active=eq.true&order=created_at.desc";
+        "select=id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at&active=eq.true&order=created_at.desc,id.asc";
 
       try {
         let rows = [];
@@ -8451,7 +8451,7 @@ main#home{
       const visible=shopProducts.slice(0,shopVisibleCount);
       const remaining=shopProducts.length-visible.length;
       grid.innerHTML=visible.map(p=>productCardHtml(p)).join("")+
-        (remaining>0?`<div class="shop-load-more-wrap"><button type="button" class="shop-load-more-btn" onclick="loadMoreShopProducts()">عرض المزيد (${remaining})</button></div>`:"");
+        (remaining>0?`<div class="shop-load-more-wrap" style="grid-column:1/-1;display:flex;justify-content:center;padding:18px 0"><button type="button" class="shop-load-more-btn" style="min-height:44px;padding:10px 24px;border:1px solid var(--border,#eadde3);border-radius:14px;background:var(--surface,#fff);color:var(--pink,#c52b69);font-weight:800" onclick="loadMoreShopProducts()">عرض المزيد (${remaining})</button></div>`:"");
       syncFavoriteButtons();
     }
 
