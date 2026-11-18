@@ -2166,7 +2166,7 @@ async function verifyAndFinalizePayment(params: {
     };
   }
 
-  const updated = await updateOrderPaymentStatus(order.id, "طلب جديد");
+  const updated = await updateOrderPaymentStatus(order.id, "جاري التحضير");
   await redeemCouponForOrder(order);
   return {
     ok: true,
