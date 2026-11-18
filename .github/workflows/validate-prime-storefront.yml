@@ -47,7 +47,8 @@ jobs:
           assert "capabilities.cod_enabled!==false" in html, "Storefront must honor the COD availability flag"
           assert 'label:"جاري التأكيد",values:[' in html, "COD customer timeline must include a separate confirmation stage"
           assert '...(isCod?[' in html, "Customer timeline must include confirmation only for COD"
-          assert 'label:isCod?"جاري التجهيز":"جاري التحضير"' in html, "Customer timeline must show COD preparation separately from online preparation"
+          assert 'label:"جاري التحضير",values:["طلب جديد","تم التأكيد","جاري التجهيز","قيد التجهيز","جاري التحضير","NEW","CONFIRMED","PREPARING"]' in html, "COD and online timelines must use the requested جاري التحضير label"
+          assert 'تم إلغاء الطلب</div>' in html and 'if(["ملغي","ملغى","CANCELLED","CANCELED"].includes(normalized))' in html, "Cancellation must remain a separate terminal state, outside the progress steps"
           assert 'label:"جاري الشحن",values:["جاري الشحن","SHIPPING"]' in html, "Customer order timeline must include shipping in progress"
           assert 'label:"تم الشحن",values:["تم الشحن","SHIPPED"]' in html, "Customer order timeline must include a separate shipped stage"
           assert 'label:"تم التسليم",values:[' in html, "Customer order timeline must finish at delivery"
@@ -66,6 +67,8 @@ jobs:
           order_flow_migration = Path("supabase/migrations/20261118130000_elory_order_status_and_delete_repair.sql").read_text(encoding="utf-8")
           assert "UPDATE public.coupons c" in order_flow_migration and "WHERE c.id IS NOT NULL" in order_flow_migration, "Order deletion coupon reconciliation must satisfy the database safe-update guard"
           assert "'prime'" in order_flow_migration and "v_scope NOT IN" in order_flow_migration, "Owner cleanup must preserve Prime subscriber deletion"
+          push_migration = Path("supabase/migrations/20261118131532_elory_cod_insert_push_idempotency.sql").read_text(encoding="utf-8")
+          assert "AND TG_OP = 'INSERT'" in push_migration and "'type', TG_OP" in push_migration, "COD new-order push must fire once on insert, not on repeated status edits"
           customer_rpc_migration = Path("supabase/migrations/20261118131000_customer_order_payment_method.sql").read_text(encoding="utf-8")
           assert "get_customer_orders_v2" in customer_rpc_migration and "payment_method text" in customer_rpc_migration, "Customer order RPC must return payment method for COD timeline"
           owner_migration = Path("supabase/migrations/20261118121000_elory_product_delete_and_order_workflow.sql").read_text(encoding="utf-8")
