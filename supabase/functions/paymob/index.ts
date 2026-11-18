@@ -1406,7 +1406,7 @@ async function createPrimeIntention(
     // server-verified, so it does not trust the browser redirect.
     payment_methods: [
       CARD_INTEGRATION_ID,
-      ...(WALLET_INTEGRATION_ID > 0
+      ...(WALLET_INTEGRATION_ID > 0 && body?.allow_wallet_payment !== false
         ? [WALLET_INTEGRATION_ID]
         : []),
     ],
@@ -2315,6 +2315,7 @@ serve(async (request: Request) => {
       if (!methodAvailability.card || Number(CARD_INTEGRATION_ID) <= 0) {
         return json({ ok: false, error: "الدفع بالبطاقة واشتراك Prime غير متاحين حاليًا." }, 403);
       }
+      body.allow_wallet_payment = methodAvailability.wallet;
 
       const result =
         await createPrimeIntention(
