@@ -48,7 +48,7 @@ jobs:
           assert '{label:"جاري التحضير"' in html, "Customer order timeline must start at جاري التحضير"
           assert '{label:"جاري الشحن"' in html, "Customer order timeline must include جاري الشحن"
           assert '{label:"تم التسليم"' in html, "Customer order timeline must finish at تم التسليم"
-          assert 'const stages=[\\n        {label:"جاري التحضير"' in html, "Customer timeline must contain only the three fulfillment stages"
+          assert 'const stages=[\n        {label:"جاري التحضير"' in html, "Customer timeline must contain only the three fulfillment stages"
           scripts = re.findall(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", html, flags=re.I)
           checked = 0
           for index, (attrs, code) in enumerate(scripts):
