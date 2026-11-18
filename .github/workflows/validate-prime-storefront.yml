@@ -56,6 +56,10 @@ jobs:
           owner_migration = Path("supabase/migrations/20261118121000_elory_product_delete_and_order_workflow.sql").read_text(encoding="utf-8")
           assert "'products'::text" in owner_migration, "Owner-only cleanup must support products"
           assert "'جاري التحضير'" in owner_migration and "'جاري الشحن'" in owner_migration, "Database must accept the three fulfillment stages"
+          staff_reset = Path("supabase/functions/admin-reset-staff-password/index.ts").read_text(encoding="utf-8")
+          assert "owner_data_reset_settings" in staff_reset and "callerId !== primaryOwnerId" in staff_reset, "Staff password reset must be restricted to the primary owner"
+          assert "/auth/v1/admin/users/" in staff_reset, "Staff password reset must update the Supabase Auth user"
+          assert "String(target.role || \"\").toLowerCase() === \"owner\"" in staff_reset, "Staff password reset must not target owner accounts"
           scripts = re.findall(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", html, flags=re.I)
           checked = 0
           for index, (attrs, code) in enumerate(scripts):
