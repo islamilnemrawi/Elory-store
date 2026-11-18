@@ -53,6 +53,10 @@ jobs:
           assert 'label:"تم التسليم",values:[' in html, "Customer order timeline must finish at delivery"
           assert 'status:selectedPaymentMethod==="cash_on_delivery"?"جاري التأكيد":"جاري الدفع"' in html, "COD orders must start confirmation while online attempts remain pending"
           assert 'get_customer_orders_v2' in html, "Customer order cards must load payment method for payment-aware timelines"
+          assert 'function paymentMethodLabel(paymentMethod)' in html, "Customer orders must show readable Cash/Online payment labels"
+          assert 'أونلاين - فيزا' in html and 'أونلاين - فودافون كاش' in html and 'كاش - الدفع عند الاستلام' in html, "Payment labels must distinguish online card, Vodafone Cash, and COD"
+          assert 'payment_failed' in html and 'فشل الدفع — لم يتم تأكيد استلام المبلغ' in html, "Customers must see explicit failed payment status"
+          assert 'openOrdersPage();' in html, "A final Paymob failure must refresh and show the customer's failed order"
           paymob = Path("supabase/functions/paymob/index.ts").read_text(encoding="utf-8")
           assert paymob.count("notification_url: CALLBACK_URL") >= 2, "Card and wallet intentions must both register Paymob transaction callbacks"
           assert "function isOrderPaymentConfirmed(status: unknown)" in paymob, "Paymob callback idempotency guard is missing"
