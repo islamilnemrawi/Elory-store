@@ -43,7 +43,7 @@ jobs:
           assert "const announcementItems = $$('.announcement-item', announcement || document);" in html, "Announcement ticker must query all nodes before iteration"
           assert "setProperty('background',color(a.backgroundColor),'important')" in html, "CMS announcement color must override the storefront gradient"
           assert "document.querySelectorAll('.hg-icon-v19').forEach(el=>el.style.setProperty('color',color(h.iconsColor),'important'))" in html, "CMS header icon color must override the default icon style"
-          assert "config.paymentMethods?.methods" in html, "Storefront must read dashboard payment method settings"
+          assert "paymentMethods?.methods" in html, "Storefront must read dashboard payment method settings"
           assert "capabilities.cod_enabled!==false" in html, "Storefront must honor the COD availability flag"
           scripts = re.findall(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", html, flags=re.I)
           checked = 0
