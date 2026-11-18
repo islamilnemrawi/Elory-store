@@ -8482,7 +8482,7 @@ main#home{
     function orderStatusLabel(status,paymentMethod){
       const raw=String(status||"").trim();
       if(["فشل الدفع","فشل إنشاء الدفع","payment failed","failed payment","failed to create payment"].includes(raw.toLowerCase())) return "فشل الدفع";
-      if(["cash_on_delivery","cash","cod","الدفع عند الاستلام"].includes(String(paymentMethod||"").trim().toLowerCase()) && ["جاري التحضير","PREPARING","طلب جديد"].includes(raw)) return "جاري التجهيز";
+      if(["cash_on_delivery","cash","cod","الدفع عند الاستلام"].includes(String(paymentMethod||"").trim().toLowerCase()) && ["جاري التحضير","PREPARING","طلب جديد","جاري التجهيز","قيد التجهيز"].includes(raw)) return "جاري التحضير";
       return ORDER_STATUS_LABELS[raw]||raw||"الحالة غير محددة";
     }
     function orderStatusTimelineHtml(status,paymentMethod){
@@ -8493,7 +8493,7 @@ main#home{
       const isCod=["cash_on_delivery","cash","cod","الدفع عند الاستلام"].includes(String(paymentMethod||"").trim().toLowerCase());
       const stages=[
         ...(isCod?[{label:"جاري التأكيد",values:["جديد","جاري التأكيد","NEW","CONFIRMING"]}]:[]),
-        {label:isCod?"جاري التجهيز":"جاري التحضير",values:["طلب جديد","تم التأكيد","جاري التجهيز","قيد التجهيز","جاري التحضير","NEW","CONFIRMED","PREPARING"]},
+        {label:"جاري التحضير",values:["طلب جديد","تم التأكيد","جاري التجهيز","قيد التجهيز","جاري التحضير","NEW","CONFIRMED","PREPARING"]},
         {label:"جاري الشحن",values:["جاري الشحن","SHIPPING"]},
         {label:"تم الشحن",values:["تم الشحن","SHIPPED"]},
         {label:"تم التسليم",values:["تم التسليم","DELIVERED"]}
