@@ -49,6 +49,13 @@ jobs:
           assert '{label:"جاري الشحن"' in html, "Customer order timeline must include جاري الشحن"
           assert '{label:"تم التسليم"' in html, "Customer order timeline must finish at تم التسليم"
           assert 'const stages=[\n        {label:"جاري التحضير"' in html, "Customer timeline must contain only the three fulfillment stages"
+          paymob = Path("supabase/functions/paymob/index.ts").read_text(encoding="utf-8")
+          assert paymob.count("notification_url: CALLBACK_URL") >= 2, "Card and wallet intentions must both register Paymob transaction callbacks"
+          assert "function isOrderPaymentConfirmed(status: unknown)" in paymob, "Paymob callback idempotency guard is missing"
+          assert paymob.count("isOrderPaymentConfirmed(order.status)") >= 2, "Callback and redirect verification must not regress a progressed order"
+          owner_migration = Path("supabase/migrations/20261118121000_elory_product_delete_and_order_workflow.sql").read_text(encoding="utf-8")
+          assert "'products'::text" in owner_migration, "Owner-only cleanup must support products"
+          assert "'جاري التحضير'" in owner_migration and "'جاري الشحن'" in owner_migration, "Database must accept the three fulfillment stages"
           scripts = re.findall(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", html, flags=re.I)
           checked = 0
           for index, (attrs, code) in enumerate(scripts):
