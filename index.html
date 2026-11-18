@@ -6136,7 +6136,7 @@ main#home{
         const catalogUnavailable=productsLoadState==="error";
         const title=catalogUnavailable?"المنتجات غير متاحة مؤقتًا":(query?"لا توجد منتجات مطابقة للبحث":"لا توجد منتجات متاحة حاليًا");
         const message=catalogUnavailable?"تعذر تحميل المنتجات من المتجر. تحققي من الاتصال ثم أعيدي المحاولة.":(query?"جرّبي اسمًا أو تصنيفًا آخر.":"سنحاول عرض المنتجات عند توفرها.");
-        const action=catalogUnavailable?'<button type="button" onclick="loadProducts()">إعادة تحميل المنتجات</button>':(query?'<button type="button" onclick="clearProductSearch()">مسح البحث</button>':'');
+        const action=catalogUnavailable?'<button type="button" onclick="loadProducts()">إعادة تحميل المنتجات</button>':(query?'<button type="button" onclick="clearProductSearch()">مسح البحث</button>'+(productsHasMore?'<button type="button" onclick="loadMoreProducts()">البحث في باقي المنتجات</button>':''):'');
         grid.innerHTML=`<div class="search-empty-state"><i class="fa-solid ${catalogUnavailable?'fa-cloud-arrow-down':'fa-magnifying-glass'}" aria-hidden="true"></i><strong>${title}</strong><span>${message}</span>${action}</div>`;
         syncFavoriteButtons(); return;
       }
