@@ -5975,12 +5975,13 @@ main#home{
 
         if (publicError) throw publicError;
 
+        const previouslyLoadedOffset=productsNextOffset;
         const firstPage = rows.map(normalizeProduct);
         if(silent && products.length > firstPage.length){
           const firstPageIds=new Set(firstPage.map(product=>String(product.id)));
           const previouslyLoadedBeyondFirst=products.filter(product=>!firstPageIds.has(String(product.id)));
           products=firstPage.concat(previouslyLoadedBeyondFirst);
-          productsNextOffset=Math.max(rows.length,products.length);
+          productsNextOffset=Math.max(rows.length,previouslyLoadedOffset);
           productsHasMore=rows.length===PRODUCTS_PAGE_SIZE||previouslyLoadedBeyondFirst.length>0;
         }else{
           products=firstPage;
