@@ -45,6 +45,10 @@ jobs:
           assert "document.querySelectorAll('.hg-icon-v19').forEach(el=>el.style.setProperty('color',color(h.iconsColor),'important'))" in html, "CMS header icon color must override the default icon style"
           assert "paymentMethods?.methods" in html, "Storefront must read dashboard payment method settings"
           assert "capabilities.cod_enabled!==false" in html, "Storefront must honor the COD availability flag"
+          assert '{label:"جاري التحضير"' in html, "Customer order timeline must start at جاري التحضير"
+          assert '{label:"جاري الشحن"' in html, "Customer order timeline must include جاري الشحن"
+          assert '{label:"تم التسليم"' in html, "Customer order timeline must finish at تم التسليم"
+          assert 'const stages=[\\n        {label:"جاري التحضير"' in html, "Customer timeline must contain only the three fulfillment stages"
           scripts = re.findall(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", html, flags=re.I)
           checked = 0
           for index, (attrs, code) in enumerate(scripts):
