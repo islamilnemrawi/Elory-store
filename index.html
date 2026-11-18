@@ -7500,7 +7500,7 @@ main#home{
       if(statusBox) statusBox.innerHTML=`<span>${escapeHtml(orderStatus)}</span><small>رمز طلبك: ${escapeHtml(String(customerCode||"سيظهر في طلباتي"))}</small>`;
       const ordersPage=document.getElementById("customerOrdersPage"); if(ordersPage){ordersPage.hidden=true;ordersPage.style.display="none";}
       const details=document.getElementById('orderSuccessDetails');
-      const paymentLabel=order.payment_method==='cash_on_delivery'?'الدفع عند الاستلام':(order.payment_method||'');
+      const paymentLabel=paymentMethodLabel(order.payment_method);
       if(details)details.innerHTML=[
         ['رمز الطلب',customerCode||'سيظهر في طلباتي'],['الحالة',orderStatusLabel(order.status||'NEW',order.payment_method)],['المحافظة',order.governorate],['المركز / المنطقة',order.center],['العنوان',order.address],['طريقة الدفع',paymentLabel]
       ].map(([k,v])=>`<div class="success-detail"><small>${escapeHtml(k)}</small><strong>${escapeHtml(String(v||'—'))}</strong></div>`).join('');
@@ -8472,14 +8472,23 @@ main#home{
        CUSTOMER ORDERS / ORDER HISTORY
        ========================================================= */
     const ORDER_STATUS_LABELS={"طلب جديد":"جاري التحضير","NEW":"جاري التأكيد","جديد":"جاري التأكيد","جاري التأكيد":"جاري التأكيد","CONFIRMING":"جاري التأكيد","تم التأكيد":"جاري التحضير","CONFIRMED":"جاري التحضير","جاري التجهيز":"جاري التجهيز","قيد التجهيز":"جاري التجهيز","جاري التحضير":"جاري التحضير","PREPARING":"جاري التحضير","جاري الشحن":"جاري الشحن","SHIPPING":"جاري الشحن","تم الشحن":"تم الشحن","SHIPPED":"تم الشحن","تم التسليم":"تم التسليم","DELIVERED":"تم التسليم","ملغي":"تم إلغاء الطلب","ملغى":"تم إلغاء الطلب","CANCELLED":"تم إلغاء الطلب","CANCELED":"تم إلغاء الطلب"};
+    function paymentMethodLabel(paymentMethod){
+      const method=String(paymentMethod||"").trim().toLowerCase();
+      if(["cash_on_delivery","cash","cod","الدفع عند الاستلام"].includes(method)) return "كاش - الدفع عند الاستلام";
+      if(["card","visa","paymob","mastercard","credit_card","online_card"].includes(method)) return "أونلاين - فيزا";
+      if(["vodafone_cash","vodafone cash","vodafone"].includes(method)) return "أونلاين - فودافون كاش";
+      return method||"غير محدد";
+    }
     function orderStatusLabel(status,paymentMethod){
-      const raw=String(status||"");
+      const raw=String(status||"").trim();
+      if(["فشل الدفع","فشل إنشاء الدفع","payment failed","failed payment","failed to create payment"].includes(raw.toLowerCase())) return "فشل الدفع";
       if(["cash_on_delivery","cash","cod","الدفع عند الاستلام"].includes(String(paymentMethod||"").trim().toLowerCase()) && ["جاري التحضير","PREPARING","طلب جديد"].includes(raw)) return "جاري التجهيز";
       return ORDER_STATUS_LABELS[raw]||raw||"الحالة غير محددة";
     }
     function orderStatusTimelineHtml(status,paymentMethod){
       const raw=String(status||"").trim();
       const normalized=raw.toLocaleUpperCase("ar");
+      if(["فشل الدفع","فشل إنشاء الدفع","PAYMENT FAILED","FAILED PAYMENT","FAILED TO CREATE PAYMENT"].includes(normalized)) return '<div class="order-cancelled-status"><i class="fa-solid fa-circle-xmark"></i> فشل الدفع — لم يتم تأكيد استلام المبلغ</div>';
       if(["ملغي","ملغى","CANCELLED","CANCELED"].includes(normalized)) return '<div class="order-cancelled-status"><i class="fa-solid fa-circle-xmark"></i> تم إلغاء الطلب</div>';
       const isCod=["cash_on_delivery","cash","cod","الدفع عند الاستلام"].includes(String(paymentMethod||"").trim().toLowerCase());
       const stages=[
@@ -8496,7 +8505,7 @@ main#home{
     function renderCustomerOrderCard(order){
       const items=Array.isArray(order.items)?order.items:[];
       const details=[
-        ["طريقة الدفع",order.payment_method==="cash_on_delivery"?"الدفع عند الاستلام":order.payment_method],
+        ["طريقة الدفع",paymentMethodLabel(order.payment_method)],
         ["المحافظة",order.governorate],
         ["المركز / المنطقة",order.center],
         ["العنوان",order.address]
@@ -9105,12 +9114,19 @@ main#home{
       }else{
         const paymentStatus=String(result?.status||"").toLowerCase();
         const pending=["pending","processing","under_review","قيد التحقق","قيد الدفع","بانتظار الدفع"].includes(paymentStatus);
-        const finalFailure=["failed","declined","cancelled","canceled","rejected","invalid"].includes(paymentStatus);
+        const finalFailure=["failed","declined","cancelled","canceled","rejected","invalid","payment_failed"].includes(paymentStatus);
         if(pending){
           showToast("الدفع ما زال قيد التحقق من Paymob");
         }else if(finalFailure){
           try{sessionStorage.removeItem("elory_pending_payment");}catch(e){}
-          showToast("أكد Paymob أن عملية الدفع لم تكتمل.");
+          if(payment.type!=="prime"){
+            await refreshOrdersCount();
+            openOrdersPage();
+          }else{
+            await refreshPrimeState();
+            openPrime();
+          }
+          showToast("فشل الدفع — لم يتم تسجيل الطلب كمدفوع.");
         }else{
           showToast("تعذر التحقق من الدفع حالياً. لم يُسجل الدفع كناجح، ويمكن إعادة التحقق لاحقاً.");
         }
