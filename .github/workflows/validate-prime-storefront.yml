@@ -57,7 +57,8 @@ jobs:
           assert paymob.count("notification_url: CALLBACK_URL") >= 2, "Card and wallet intentions must both register Paymob transaction callbacks"
           assert "function isOrderPaymentConfirmed(status: unknown)" in paymob, "Paymob callback idempotency guard is missing"
           assert paymob.count("isOrderPaymentConfirmed(order.status)") >= 2, "Callback and redirect verification must not regress a progressed order"
-          assert paymob.count('updateOrderPaymentStatus(order.id, "جاري التحضير")') >= 2, "Both HMAC callback and redirect verification must enter preparation only after confirmation"
+          assert 'order.id,\n      "جاري التحضير",' in paymob, "HMAC-verified callback must enter preparation only after confirmation"
+          assert 'updateOrderPaymentStatus(order.id, "جاري التحضير")' in paymob, "Redirect verification must enter preparation only after confirmation"
           order_flow_migration = Path("supabase/migrations/20261118130000_elory_order_status_and_delete_repair.sql").read_text(encoding="utf-8")
           assert "UPDATE public.coupons c" in order_flow_migration and "WHERE c.id IS NOT NULL" in order_flow_migration, "Order deletion coupon reconciliation must satisfy the database safe-update guard"
           assert "'prime'" in order_flow_migration and "v_scope NOT IN" in order_flow_migration, "Owner cleanup must preserve Prime subscriber deletion"
