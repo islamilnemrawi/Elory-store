@@ -374,6 +374,34 @@ function boundedNumber(value: unknown, fallback: number, min: number, max: numbe
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
 }
 
+type PaymentMethodAvailability = {
+  card: boolean;
+  wallet: boolean;
+  cod: boolean;
+};
+
+async function getPaymentMethodAvailability(): Promise<PaymentMethodAvailability> {
+  const rows = await supabaseRequest(
+    "site_customizations?id=eq.1&select=config&limit=1",
+    { method: "GET" },
+  ) as any[];
+  const methods = Array.isArray(rows?.[0]?.config?.paymentMethods?.methods)
+    ? rows[0].config.paymentMethods.methods
+    : [];
+  const isEnabled = (...keys: string[]) => {
+    const item = methods.find((entry: any) =>
+      keys.includes(String(entry?.key || "").trim().toLowerCase())
+    );
+    // Keep existing checkout behavior for older configs that predate dashboard switches.
+    return item ? item.isEnabled !== false : true;
+  };
+  return {
+    card: isEnabled("credit_card", "card"),
+    wallet: isEnabled("vodafone_cash"),
+    cod: isEnabled("cod", "cash_on_delivery"),
+  };
+}
+
 async function getPrimeConfig(): Promise<EloryPrimeConfig> {
   const rows = await supabaseRequest(
     "site_customizations?id=eq.1&select=config&limit=1",
@@ -2199,12 +2227,16 @@ serve(async (request: Request) => {
     // --------------------------------------------------------
 
     if (body?.action === "payment_capabilities") {
+      const methodAvailability = await getPaymentMethodAvailability();
+      const cardEnabled = Number(CARD_INTEGRATION_ID) > 0 && methodAvailability.card;
+      const walletEnabled = Number(WALLET_INTEGRATION_ID) > 0 && methodAvailability.wallet;
       return json({
         ok: true,
         mode: PAYMOB_MODE,
-        card_enabled: Number(CARD_INTEGRATION_ID) > 0,
-        wallet_enabled: Number(WALLET_INTEGRATION_ID) > 0,
-        prime_enabled: Number(CARD_INTEGRATION_ID) > 0,
+        card_enabled: cardEnabled,
+        wallet_enabled: walletEnabled,
+        cod_enabled: methodAvailability.cod,
+        prime_enabled: cardEnabled,
       }, 200);
     }
 
@@ -2279,6 +2311,11 @@ serve(async (request: Request) => {
       }
       body.user_id = authUserId;
 
+      const methodAvailability = await getPaymentMethodAvailability();
+      if (!methodAvailability.card || Number(CARD_INTEGRATION_ID) <= 0) {
+        return json({ ok: false, error: "الدفع بالبطاقة واشتراك Prime غير متاحين حاليًا." }, 403);
+      }
+
       const result =
         await createPrimeIntention(
           body,
@@ -2311,6 +2348,14 @@ serve(async (request: Request) => {
         return json({ ok: false, error: "حساب المستخدم لا يطابق جلسة تسجيل الدخول." }, 403);
       }
       body.user_id = authUserId;
+
+      const methodAvailability = await getPaymentMethodAvailability();
+      if (paymentMethod === "card" && !methodAvailability.card) {
+        return json({ ok: false, error: "الدفع بالبطاقة غير متاح حاليًا." }, 403);
+      }
+      if (paymentMethod === "vodafone_cash" && !methodAvailability.wallet) {
+        return json({ ok: false, error: "الدفع بالمحافظ الإلكترونية غير متاح حاليًا." }, 403);
+      }
 
       const result =
         await createNormalOrderIntention(
