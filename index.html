@@ -7465,7 +7465,7 @@ main#home{
         if(error)throw error;
         let createdOrderSnapshot=null;
         try{
-          const history=await elorySupabase.rpc("get_customer_orders",{p_access_token:customerAccessToken,p_phone:null});
+          const history=await elorySupabase.rpc("get_customer_orders_v2",{p_access_token:customerAccessToken,p_phone:null});
           if(!history.error&&Array.isArray(history.data)){
             createdOrderSnapshot=history.data[0]||null;
           }
@@ -8527,7 +8527,7 @@ main#home{
       list.innerHTML="";
       if(!hasSupabaseClient()){state.textContent="تعذر الاتصال بقاعدة البيانات.";return;}
       try{
-        const result=await elorySupabase.rpc("get_customer_orders",{p_access_token:customerAccessToken,p_phone:null});
+        const result=await elorySupabase.rpc("get_customer_orders_v2",{p_access_token:customerAccessToken,p_phone:null});
         if(result.error) throw result.error;
         const rows=Array.isArray(result.data)?result.data:[];
         const customerOrders=rows;
@@ -8575,7 +8575,7 @@ main#home{
     async function refreshOrdersCount(){
       if(!hasSupabase()) return;
       try{
-        const r=await elorySupabase.rpc("get_customer_orders",{p_access_token:customerAccessToken,p_phone:null});
+        const r=await elorySupabase.rpc("get_customer_orders_v2",{p_access_token:customerAccessToken,p_phone:null});
         if(!r.error) updateOrderNotificationState(Array.isArray(r.data)?r.data:[]);
       }catch(e){}
     }
