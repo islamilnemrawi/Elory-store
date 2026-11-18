@@ -8471,17 +8471,15 @@ main#home{
     /* =========================================================
        CUSTOMER ORDERS / ORDER HISTORY
        ========================================================= */
-    const ORDER_STATUS_LABELS={"طلب جديد":"تم استلام طلبك","NEW":"تم استلام طلبك","جاري التأكيد":"جاري تأكيد طلبك","CONFIRMING":"جاري تأكيد طلبك","تم التأكيد":"تم تأكيد طلبك","CONFIRMED":"تم تأكيد طلبك","جاري التجهيز":"جاري تجهيز طلبك","PREPARING":"جاري تجهيز طلبك","تم الشحن":"تم شحن طلبك","SHIPPED":"تم شحن طلبك","تم التسليم":"تم توصيل طلبك بنجاح","DELIVERED":"تم توصيل طلبك بنجاح","ملغي":"تم إلغاء الطلب","CANCELLED":"تم إلغاء الطلب","CANCELED":"تم إلغاء الطلب"};
+    const ORDER_STATUS_LABELS={"طلب جديد":"جاري التحضير","NEW":"جاري التحضير","جديد":"جاري التحضير","جاري التأكيد":"جاري التحضير","CONFIRMING":"جاري التحضير","تم التأكيد":"جاري التحضير","CONFIRMED":"جاري التحضير","جاري التجهيز":"جاري التحضير","جاري التحضير":"جاري التحضير","PREPARING":"جاري التحضير","تم الشحن":"جاري الشحن","جاري الشحن":"جاري الشحن","SHIPPED":"جاري الشحن","تم التسليم":"تم التسليم","DELIVERED":"تم التسليم","ملغي":"تم إلغاء الطلب","CANCELLED":"تم إلغاء الطلب","CANCELED":"تم إلغاء الطلب"};
     function orderStatusLabel(status){return ORDER_STATUS_LABELS[String(status||"")]||String(status||"الحالة غير محددة");}
     function orderStatusTimelineHtml(status){
       const raw=String(status||"").trim();
       const normalized=raw.toLocaleUpperCase("ar");
       if(["ملغي","CANCELLED","CANCELED"].includes(normalized)) return '<div class="order-cancelled-status"><i class="fa-solid fa-circle-xmark"></i> تم إلغاء الطلب</div>';
       const stages=[
-        {label:"جديد",values:["طلب جديد","NEW","جديد"]},
-        {label:"تأكيد الطلب",values:["جاري التأكيد","CONFIRMING","تم التأكيد","CONFIRMED"]},
-        {label:"جاري التجهيز",values:["جاري التجهيز","PREPARING"]},
-        {label:"تم الشحن",values:["تم الشحن","SHIPPED"]},
+        {label:"جاري التحضير",values:["طلب جديد","جديد","جاري التأكيد","تم التأكيد","جاري التجهيز","جاري التحضير","NEW","CONFIRMING","CONFIRMED","PREPARING"]},
+        {label:"جاري الشحن",values:["جاري الشحن","تم الشحن","SHIPPED"]},
         {label:"تم التسليم",values:["تم التسليم","DELIVERED"]}
       ];
       const index=stages.findIndex(stage=>stage.values.some(value=>value.toLocaleUpperCase("ar")===normalized));
@@ -8935,28 +8933,86 @@ main#home{
         const label=input.closest(".payment-option");
         input.disabled=!enabled;
         if(label)label.hidden=!enabled;
-        if(!enabled&&input.checked){
-          const cod=document.querySelector('input[name="paymentMethod"][value="cash_on_delivery"]');
-          if(cod)cod.checked=true;
-          selectPaymentMethod("cash_on_delivery");
-        }
       };
+      const updateMethodText=(method,entry)=>{
+        if(!entry)return;
+        const input=document.querySelector(`input[name="paymentMethod"][value="${method}"]`);
+        const text=input?.closest(".payment-option")?.querySelector("span:last-child");
+        if(!text)return;
+        const title=text.querySelector("b");
+        const detail=text.querySelector("small");
+        const name=String(entry.name||"").trim();
+        const description=String(entry.description||"").trim();
+        const fee=String(entry.feeOrDiscountText||"").trim();
+        if(title&&name)title.textContent=name;
+        if(detail&&(description||fee))detail.textContent=[description,fee].filter(Boolean).join(" • ");
+      };
+
+      // The dashboard stores payment settings in the existing site_customizations JSON.
+      // Missing entries retain the storefront's previous default behavior.
+      let savedMethods=[];
+      let methodAvailability={card:true,wallet:true,cod:true};
+      try{
+        if(window.elorySupabase){
+          const {data,error}=await window.elorySupabase
+            .from("site_customizations").select("config").eq("id",1).maybeSingle();
+          if(error)throw error;
+          savedMethods=Array.isArray(data?.config?.paymentMethods?.methods)
+            ? data.config.paymentMethods.methods : [];
+          const findMethod=(...keys)=>savedMethods.find(item=>keys.includes(String(item?.key||"").trim().toLowerCase()));
+          const enabled=(...keys)=>{
+            const item=findMethod(...keys);
+            return item ? item.isEnabled!==false : true;
+          };
+          methodAvailability={
+            card:enabled("credit_card","card"),
+            wallet:enabled("vodafone_cash"),
+            cod:enabled("cod","cash_on_delivery")
+          };
+          updateMethodText("card",findMethod("credit_card","card"));
+          updateMethodText("vodafone_cash",findMethod("vodafone_cash"));
+          updateMethodText("cash_on_delivery",findMethod("cod","cash_on_delivery"));
+        }
+      }catch(error){
+        console.warn("Saved Elory payment settings could not be loaded; existing checkout defaults are retained:",error);
+      }
+
+      setOption("cash_on_delivery",methodAvailability.cod);
       setOption("card",false);
       setOption("vodafone_cash",false);
-      if(!endpoint)return;
-      try{
-        const response=await fetch(endpoint,{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({action:"payment_capabilities"})
-        });
-        const capabilities=await response.json().catch(()=>({}));
-        if(!response.ok||capabilities?.ok!==true)throw new Error("Payment capabilities unavailable");
-        setOption("card",capabilities.card_enabled===true);
-        setOption("vodafone_cash",capabilities.wallet_enabled===true);
-      }catch(error){
-        console.warn("Elory payment methods are temporarily unavailable:",error);
+      if(endpoint){
+        try{
+          const response=await fetch(endpoint,{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({action:"payment_capabilities"})
+          });
+          const capabilities=await response.json().catch(()=>({}));
+          if(!response.ok||capabilities?.ok!==true)throw new Error("Payment capabilities unavailable");
+          setOption("card",methodAvailability.card&&capabilities.card_enabled===true);
+          setOption("vodafone_cash",methodAvailability.wallet&&capabilities.wallet_enabled===true);
+          setOption("cash_on_delivery",methodAvailability.cod&&capabilities.cod_enabled!==false);
+        }catch(error){
+          console.warn("Elory online payment methods are temporarily unavailable:",error);
+        }
       }
+
+      const selected=document.querySelector('input[name="paymentMethod"]:checked');
+      if(!selected||selected.disabled){
+        const fallback=document.querySelector('input[name="paymentMethod"]:not(:disabled)');
+        if(fallback){
+          fallback.checked=true;
+          selectPaymentMethod(fallback.value);
+        }
+      }
+      const notice=document.getElementById("paymentCapabilityNotice");
+      const hasEnabledMethod=!!document.querySelector('input[name="paymentMethod"]:not(:disabled)');
+      if(notice){
+        notice.hidden=hasEnabledMethod;
+        if(!hasEnabledMethod)notice.textContent="لا توجد وسيلة دفع مفعّلة حاليًا. تواصلي مع خدمة العملاء.";
+      }
+      const submit=document.querySelector('#checkoutForm button[type="submit"]');
+      if(submit)submit.disabled=!hasEnabledMethod;
     }
 
     window.addEventListener("load",()=>{void loadPaymentCapabilities();},{once:true});
@@ -9434,14 +9490,14 @@ main#home{
     const a=c.announcement||{}, h=c.header||{}, g=c.global||{};
     const announcement=$('.announcement');
     if(announcement){
-      if(color(a.backgroundColor)) announcement.style.backgroundColor=color(a.backgroundColor);
+      if(color(a.backgroundColor)) announcement.style.setProperty('background',color(a.backgroundColor),'important');
       if(color(a.textColor)) announcement.style.color=color(a.textColor);
       const msgs=[a.message1,a.message2,a.message3];
       $$('.announcement-item span',announcement).forEach((el,i)=>{ if(msgs[i%3]!==undefined) el.textContent=txt(msgs[i%3]); });
       visible(announcement,a.isVisible!==false);
     }
     if(color(h.backgroundColor) && $('.header')) $('.header').style.backgroundColor=color(h.backgroundColor);
-    if(color(h.iconsColor)) $$('.hg-icon-v19').forEach(el=>el.style.color=color(h.iconsColor));
+    if(color(h.iconsColor)) document.querySelectorAll('.hg-icon-v19').forEach(el=>el.style.setProperty('color',color(h.iconsColor),'important'));
     visible('.header-menu-btn',h.showMenuBtn);
     visible('.header-account-btn',h.showAccountBtn);
     visible('.header-cart-btn',h.showCartBtn);

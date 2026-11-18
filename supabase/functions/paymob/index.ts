@@ -374,6 +374,34 @@ function boundedNumber(value: unknown, fallback: number, min: number, max: numbe
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
 }
 
+type PaymentMethodAvailability = {
+  card: boolean;
+  wallet: boolean;
+  cod: boolean;
+};
+
+async function getPaymentMethodAvailability(): Promise<PaymentMethodAvailability> {
+  const rows = await supabaseRequest(
+    "site_customizations?id=eq.1&select=config&limit=1",
+    { method: "GET" },
+  ) as any[];
+  const methods = Array.isArray(rows?.[0]?.config?.paymentMethods?.methods)
+    ? rows[0].config.paymentMethods.methods
+    : [];
+  const isEnabled = (...keys: string[]) => {
+    const item = methods.find((entry: any) =>
+      keys.includes(String(entry?.key || "").trim().toLowerCase())
+    );
+    // Keep existing checkout behavior for older configs that predate dashboard switches.
+    return item ? item.isEnabled !== false : true;
+  };
+  return {
+    card: isEnabled("credit_card", "card"),
+    wallet: isEnabled("vodafone_cash"),
+    cod: isEnabled("cod", "cash_on_delivery"),
+  };
+}
+
 async function getPrimeConfig(): Promise<EloryPrimeConfig> {
   const rows = await supabaseRequest(
     "site_customizations?id=eq.1&select=config&limit=1",
@@ -980,6 +1008,15 @@ async function verifyPaymobCallback(
 // PAYMOB CALLBACK
 // ============================================================
 
+function isOrderPaymentConfirmed(status: unknown): boolean {
+  const normalized = String(status || "").trim().toLowerCase();
+  return [
+    "طلب جديد", "تم تأكيد الطلب", "قيد التجهيز", "جاري التجهيز",
+    "جاري التحضير", "جاري الشحن", "تم الشحن", "تم التسليم",
+    "new", "preparing", "shipped", "delivered",
+  ].includes(normalized);
+}
+
 async function handlePaymobCallback(
   request: Request,
 ) {
@@ -1226,11 +1263,9 @@ async function handlePaymobCallback(
     }, 400);
   }
 
-  // Idempotent success.
-  if (
-    String(order.status || "") ===
-    "طلب جديد"
-  ) {
+  // Idempotent success: duplicate callbacks must never move an order backwards
+  // after the dashboard has advanced it to shipping or delivery.
+  if (isOrderPaymentConfirmed(order.status)) {
     await redeemCouponForOrder(order);
     return json({
       ok: true,
@@ -1378,7 +1413,7 @@ async function createPrimeIntention(
     // server-verified, so it does not trust the browser redirect.
     payment_methods: [
       CARD_INTEGRATION_ID,
-      ...(WALLET_INTEGRATION_ID > 0
+      ...(WALLET_INTEGRATION_ID > 0 && body?.allow_wallet_payment !== false
         ? [WALLET_INTEGRATION_ID]
         : []),
     ],
@@ -1451,9 +1486,8 @@ async function createPrimeIntention(
     expiration:
       3600,
 
-    ...(WALLET_INTEGRATION_ID > 0
-      ? {}
-      : { notification_url: CALLBACK_URL }),
+    // Paymob transaction callbacks are supported for card and wallet methods.
+    notification_url: CALLBACK_URL,
 
     redirection_url:
       SITE_URL,
@@ -1694,16 +1728,8 @@ async function createNormalOrderIntention(
       expiration:
         3600,
 
-      // Paymob's current Intention API documents notification_url
-      // for card integrations. Therefore it is sent for Card.
-      // Wallet uses the redirection URL and does not depend on
-      // notification_url being supported by a wallet Integration ID.
-      ...(selectedMethod === "card"
-        ? {
-            notification_url:
-              CALLBACK_URL,
-          }
-        : {}),
+      // The transaction callback is the authoritative confirmation for both Card and Vodafone Cash.
+      notification_url: CALLBACK_URL,
 
       redirection_url:
         SITE_URL,
@@ -2129,6 +2155,17 @@ async function verifyAndFinalizePayment(params: {
     };
   }
 
+  if (isOrderPaymentConfirmed(order.status)) {
+    await redeemCouponForOrder(order);
+    return {
+      ok: true,
+      confirmed: true,
+      status: "already_confirmed",
+      order_id: order.id,
+      transaction_id: transaction?.id || null,
+    };
+  }
+
   const updated = await updateOrderPaymentStatus(order.id, "طلب جديد");
   await redeemCouponForOrder(order);
   return {
@@ -2199,12 +2236,16 @@ serve(async (request: Request) => {
     // --------------------------------------------------------
 
     if (body?.action === "payment_capabilities") {
+      const methodAvailability = await getPaymentMethodAvailability();
+      const cardEnabled = Number(CARD_INTEGRATION_ID) > 0 && methodAvailability.card;
+      const walletEnabled = Number(WALLET_INTEGRATION_ID) > 0 && methodAvailability.wallet;
       return json({
         ok: true,
         mode: PAYMOB_MODE,
-        card_enabled: Number(CARD_INTEGRATION_ID) > 0,
-        wallet_enabled: Number(WALLET_INTEGRATION_ID) > 0,
-        prime_enabled: Number(CARD_INTEGRATION_ID) > 0,
+        card_enabled: cardEnabled,
+        wallet_enabled: walletEnabled,
+        cod_enabled: methodAvailability.cod,
+        prime_enabled: cardEnabled,
       }, 200);
     }
 
@@ -2279,6 +2320,12 @@ serve(async (request: Request) => {
       }
       body.user_id = authUserId;
 
+      const methodAvailability = await getPaymentMethodAvailability();
+      if (!methodAvailability.card || Number(CARD_INTEGRATION_ID) <= 0) {
+        return json({ ok: false, error: "الدفع بالبطاقة واشتراك Prime غير متاحين حاليًا." }, 403);
+      }
+      body.allow_wallet_payment = methodAvailability.wallet;
+
       const result =
         await createPrimeIntention(
           body,
@@ -2311,6 +2358,14 @@ serve(async (request: Request) => {
         return json({ ok: false, error: "حساب المستخدم لا يطابق جلسة تسجيل الدخول." }, 403);
       }
       body.user_id = authUserId;
+
+      const methodAvailability = await getPaymentMethodAvailability();
+      if (paymentMethod === "card" && !methodAvailability.card) {
+        return json({ ok: false, error: "الدفع بالبطاقة غير متاح حاليًا." }, 403);
+      }
+      if (paymentMethod === "vodafone_cash" && !methodAvailability.wallet) {
+        return json({ ok: false, error: "الدفع بالمحافظ الإلكترونية غير متاح حاليًا." }, 403);
+      }
 
       const result =
         await createNormalOrderIntention(
