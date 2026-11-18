@@ -1008,6 +1008,15 @@ async function verifyPaymobCallback(
 // PAYMOB CALLBACK
 // ============================================================
 
+function isOrderPaymentConfirmed(status: unknown): boolean {
+  const normalized = String(status || "").trim().toLowerCase();
+  return [
+    "طلب جديد", "تم تأكيد الطلب", "قيد التجهيز", "جاري التجهيز",
+    "جاري التحضير", "جاري الشحن", "تم الشحن", "تم التسليم",
+    "new", "preparing", "shipped", "delivered",
+  ].includes(normalized);
+}
+
 async function handlePaymobCallback(
   request: Request,
 ) {
@@ -1254,11 +1263,9 @@ async function handlePaymobCallback(
     }, 400);
   }
 
-  // Idempotent success.
-  if (
-    String(order.status || "") ===
-    "طلب جديد"
-  ) {
+  // Idempotent success: duplicate callbacks must never move an order backwards
+  // after the dashboard has advanced it to shipping or delivery.
+  if (isOrderPaymentConfirmed(order.status)) {
     await redeemCouponForOrder(order);
     return json({
       ok: true,
@@ -1479,9 +1486,8 @@ async function createPrimeIntention(
     expiration:
       3600,
 
-    ...(WALLET_INTEGRATION_ID > 0
-      ? {}
-      : { notification_url: CALLBACK_URL }),
+    // Paymob transaction callbacks are supported for card and wallet methods.
+    notification_url: CALLBACK_URL,
 
     redirection_url:
       SITE_URL,
@@ -1722,16 +1728,8 @@ async function createNormalOrderIntention(
       expiration:
         3600,
 
-      // Paymob's current Intention API documents notification_url
-      // for card integrations. Therefore it is sent for Card.
-      // Wallet uses the redirection URL and does not depend on
-      // notification_url being supported by a wallet Integration ID.
-      ...(selectedMethod === "card"
-        ? {
-            notification_url:
-              CALLBACK_URL,
-          }
-        : {}),
+      // The transaction callback is the authoritative confirmation for both Card and Vodafone Cash.
+      notification_url: CALLBACK_URL,
 
       redirection_url:
         SITE_URL,
@@ -2152,6 +2150,17 @@ async function verifyAndFinalizePayment(params: {
       ok: true,
       confirmed: false,
       status: "payment_failed",
+      order_id: order.id,
+      transaction_id: transaction?.id || null,
+    };
+  }
+
+  if (isOrderPaymentConfirmed(order.status)) {
+    await redeemCouponForOrder(order);
+    return {
+      ok: true,
+      confirmed: true,
+      status: "already_confirmed",
       order_id: order.id,
       transaction_id: transaction?.id || null,
     };
