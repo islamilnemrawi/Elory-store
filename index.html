@@ -7431,7 +7431,7 @@ main#home{
       const primeFee=primeRequested?getPrimePrice():0;
       const total=Math.max(0,subtotal+shippingCost+primeFee-couponDiscount);
       const user=hasSupabaseClient()?(await elorySupabase.auth.getUser()).data?.user:null;
-      const order={user_id:user?.id||null,customer_access_token:customerAccessToken,customer_name:customerName,phone,governorate,center,address,notes:primeRequested?("طلب اشتراك Elory Prime بقيمة "+formatPrice(getPrimePrice())+" — "+(notes?notes+" — ":"")+"التفعيل بعد تسليم الطلب."):notes,items:cart.map(item=>({product_id:item.id,name:item.name,price:getPrimeUnitPrice(getCartItemCurrentPrice(item)),quantity:Number(item.qty||0),image:item.image||null,color:item.color||null,color_hex:item.colorHex||null,size:item.size||null,code:item.code||null})),subtotal,shipping_cost:shippingCost,total,payment_method:selectedPaymentMethod,prime:!!(primeActive||primeRequested),prime_requested:primeRequested,status:"جديد",coupon_code:appliedCoupon?.code||null,coupon_discount:couponDiscount,coupon_free_shipping:!!(appliedCoupon?.free_shipping&&!primeFreeAvailable),prime_discount:primeActive?getPrimeDiscountTotal():0,prime_free_shipping:primeFreeAvailable};
+      const order={user_id:user?.id||null,customer_access_token:customerAccessToken,customer_name:customerName,phone,governorate,center,address,notes:primeRequested?("طلب اشتراك Elory Prime بقيمة "+formatPrice(getPrimePrice())+" — "+(notes?notes+" — ":"")+"التفعيل بعد تسليم الطلب."):notes,items:cart.map(item=>({product_id:item.id,name:item.name,price:getPrimeUnitPrice(getCartItemCurrentPrice(item)),quantity:Number(item.qty||0),image:item.image||null,color:item.color||null,color_hex:item.colorHex||null,size:item.size||null,code:item.code||null})),subtotal,shipping_cost:shippingCost,total,payment_method:selectedPaymentMethod,prime:!!(primeActive||primeRequested),prime_requested:primeRequested,status:selectedPaymentMethod==="cash_on_delivery"?"جاري التأكيد":"جاري الدفع",coupon_code:appliedCoupon?.code||null,coupon_discount:couponDiscount,coupon_free_shipping:!!(appliedCoupon?.free_shipping&&!primeFreeAvailable),prime_discount:primeActive?getPrimeDiscountTotal():0,prime_free_shipping:primeFreeAvailable};
       const button=document.querySelector('#checkoutForm button[type="submit"]');
       if(button){button.disabled=true;button.dataset.oldText=button.textContent;button.textContent="جاري إرسال الطلب...";}
       try{
@@ -8471,14 +8471,16 @@ main#home{
     /* =========================================================
        CUSTOMER ORDERS / ORDER HISTORY
        ========================================================= */
-    const ORDER_STATUS_LABELS={"طلب جديد":"جاري التحضير","NEW":"جاري التحضير","جديد":"جاري التحضير","جاري التأكيد":"جاري التحضير","CONFIRMING":"جاري التحضير","تم التأكيد":"جاري التحضير","CONFIRMED":"جاري التحضير","جاري التجهيز":"جاري التحضير","جاري التحضير":"جاري التحضير","PREPARING":"جاري التحضير","تم الشحن":"جاري الشحن","جاري الشحن":"جاري الشحن","SHIPPED":"جاري الشحن","تم التسليم":"تم التسليم","DELIVERED":"تم التسليم","ملغي":"تم إلغاء الطلب","CANCELLED":"تم إلغاء الطلب","CANCELED":"تم إلغاء الطلب"};
+    const ORDER_STATUS_LABELS={"طلب جديد":"جاري التحضير","NEW":"جاري التأكيد","جديد":"جاري التأكيد","جاري التأكيد":"جاري التأكيد","CONFIRMING":"جاري التأكيد","تم التأكيد":"جاري التحضير","CONFIRMED":"جاري التحضير","جاري التجهيز":"جاري التحضير","قيد التجهيز":"جاري التحضير","جاري التحضير":"جاري التحضير","PREPARING":"جاري التحضير","تم الشحن":"تم الشحن","جاري الشحن":"جاري الشحن","SHIPPED":"تم الشحن","تم التسليم":"تم التسليم","DELIVERED":"تم التسليم","ملغي":"تم إلغاء الطلب","ملغى":"تم إلغاء الطلب","CANCELLED":"تم إلغاء الطلب","CANCELED":"تم إلغاء الطلب"};
     function orderStatusLabel(status){return ORDER_STATUS_LABELS[String(status||"")]||String(status||"الحالة غير محددة");}
-    function orderStatusTimelineHtml(status){
+    function orderStatusTimelineHtml(status,paymentMethod){
       const raw=String(status||"").trim();
       const normalized=raw.toLocaleUpperCase("ar");
-      if(["ملغي","CANCELLED","CANCELED"].includes(normalized)) return '<div class="order-cancelled-status"><i class="fa-solid fa-circle-xmark"></i> تم إلغاء الطلب</div>';
+      if(["ملغي","ملغى","CANCELLED","CANCELED"].includes(normalized)) return '<div class="order-cancelled-status"><i class="fa-solid fa-circle-xmark"></i> تم إلغاء الطلب</div>';
+      const isCod=["cash_on_delivery","cash","cod","الدفع عند الاستلام"].includes(String(paymentMethod||"").trim().toLowerCase());
       const stages=[
-        {label:"جاري التحضير",values:["طلب جديد","جديد","جاري التأكيد","تم التأكيد","جاري التجهيز","جاري التحضير","NEW","CONFIRMING","CONFIRMED","PREPARING"]},
+        ...(isCod?[{label:"جاري التأكيد",values:["جديد","جاري التأكيد","NEW","CONFIRMING"]}]:[]),
+        {label:"جاري التحضير",values:["طلب جديد","تم التأكيد","جاري التجهيز","قيد التجهيز","جاري التحضير","NEW","CONFIRMED","PREPARING"]},
         {label:"جاري الشحن",values:["جاري الشحن","تم الشحن","SHIPPED"]},
         {label:"تم التسليم",values:["تم التسليم","DELIVERED"]}
       ];
@@ -8503,7 +8505,7 @@ main#home{
       ].filter(([,value])=>value!==undefined&&value!==null&&value!=="");
       return `<article class="customer-order-card">
         <div class="customer-order-top"><div><div class="customer-order-number">رمز الطلب: ${escapeHtml(String(order.customer_order_code||"سيظهر قريبًا"))}</div><div class="customer-order-date">${order.created_at?new Date(order.created_at).toLocaleString("ar-EG"):""}</div></div><span class="customer-order-status">${escapeHtml(orderStatusLabel(order.status))}</span></div>
-        ${orderStatusTimelineHtml(order.status)}
+        ${orderStatusTimelineHtml(order.status,order.payment_method)}
         <div class="customer-order-items">${items.length?items.map(item=>{
           const id=item.product_id??item.productId??item.id;
           const link=id?`<button type="button" class="customer-order-item-open" onclick="openProductDetails('${escapeHtml(String(id))}')">`:"<div>";
