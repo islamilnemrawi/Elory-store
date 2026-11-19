@@ -1,0 +1,49 @@
+name: Elory product data access regression
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "supabase/migrations/20261119213107_elory_secure_product_data_access.sql"
+      - "supabase/tests/product_access_hardening_fixture.sql"
+      - "supabase/tests/product_access_hardening_assertions.sql"
+      - ".github/workflows/security-product-access.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-17-product-access:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: elory_security_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d elory_security_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create isolated Supabase-compatible fixture
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d elory_security_test -v ON_ERROR_STOP=1 -f supabase/tests/product_access_hardening_fixture.sql
+      - name: Apply product data access migration
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d elory_security_test -v ON_ERROR_STOP=1 -f supabase/migrations/20261119213107_elory_secure_product_data_access.sql
+      - name: Verify public, customer, and staff access boundaries
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d elory_security_test -v ON_ERROR_STOP=1 -f supabase/tests/product_access_hardening_assertions.sql
