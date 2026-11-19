@@ -7029,7 +7029,7 @@ main#home{
         const category=String(product.category||"").trim();
         const code=String(product.code||"").trim();
         const label=[category,code].filter(Boolean).join(" • ");
-        return `<option value="${escapeHtml(name)}"${label?` label="${escapeHtml(label)}`:""}></option>`;
+        return `<option value="${escapeHtml(name)}"${label?` label="${escapeHtml(label)}"`:""}></option>`;
       }).join("");
     }
 
