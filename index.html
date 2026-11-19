@@ -3086,7 +3086,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
 @keyframes eloryWaveDrift{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,3px,0)}}
 
 #categoriesSection{position:relative;z-index:1;margin:0;padding:82px 0 12px;overflow:hidden;background:var(--bg,#fffafb)}
-#categoryWrapper{display:flex;justify-content:center;width:100%;padding:0 16px;overflow:hidden;touch-action:pan-y}
+#heroSlider{touch-action:pan-y pinch-zoom}
+#categoryWrapper{display:flex;justify-content:center;width:100%;padding:0 16px;overflow:hidden;touch-action:pan-y pinch-zoom}
 #categoryWrapper.has-overflow{justify-content:flex-start}
 #categoriesSection #categories{display:flex;flex:0 0 auto;width:max-content;will-change:transform}
 #categoriesSection .category-set{display:flex;align-items:flex-start;gap:clamp(10px,2vw,22px);width:max-content;padding:3px 8px 9px;overflow:visible}
@@ -6058,9 +6059,49 @@ main#home{
     }
 
     let productsRefreshTimer = null;
+    let productsRealtimeChannel = null;
+    let productsRealtimeDebounce = null;
+    let productsRealtimeRefreshQueued = false;
+
+    function scheduleProductsRealtimeRefresh() {
+      if (productsRealtimeDebounce) clearTimeout(productsRealtimeDebounce);
+      productsRealtimeDebounce = setTimeout(() => {
+        productsRealtimeDebounce = null;
+        if (productsLoadPromise) {
+          if (productsRealtimeRefreshQueued) return;
+          productsRealtimeRefreshQueued = true;
+          productsLoadPromise.then(() => {
+            productsRealtimeRefreshQueued = false;
+            loadProducts(true);
+          }, () => {
+            productsRealtimeRefreshQueued = false;
+            loadProducts(true);
+          });
+          return;
+        }
+        loadProducts(true);
+      }, 180);
+    }
+
     function startProductsLiveSync() {
       if (productsRefreshTimer) clearInterval(productsRefreshTimer);
+      // Realtime is the primary path; polling remains a recovery path for
+      // offline clients and rows hidden by the public active-product policy.
       productsRefreshTimer = setInterval(() => loadProducts(true), 60000);
+      const client = ensureSupabaseClient();
+      if (!client || productsRealtimeChannel) return;
+      try {
+        productsRealtimeChannel = client
+          .channel("elory-products-live")
+          .on("postgres_changes", { event: "*", schema: "public", table: "products" }, scheduleProductsRealtimeRefresh)
+          .subscribe(status => {
+            if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+              console.warn("Realtime products unavailable; polling remains active.", status);
+            }
+          });
+      } catch (error) {
+        console.warn("Realtime products unavailable; polling remains active.", error);
+      }
     }
 
     async function loadShippingCenters() {
@@ -6089,6 +6130,9 @@ main#home{
 
         const govSelect = document.getElementById("governorate");
         if (!govSelect) return;
+        const selectedGovernorate = govSelect.value;
+        const centerSelect = document.getElementById("center");
+        const selectedCenter = centerSelect?.value || "";
 
         const dbGovernors = shippingGovernoratesRows
           .filter(x => x.active !== false)
@@ -6112,8 +6156,17 @@ main#home{
 
         govSelect.innerHTML = '<option value="">اختاري المحافظة</option>' +
           governors.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join("");
+        if (selectedGovernorate && governors.includes(selectedGovernorate)) {
+          govSelect.value = selectedGovernorate;
+        }
 
         loadCenters();
+        if (selectedCenter && centerSelect &&
+            Array.from(centerSelect.options).some(option => option.value === selectedCenter)) {
+          centerSelect.value = selectedCenter;
+          currentShippingCost = getShippingCost(govSelect.value, selectedCenter);
+          updateCheckoutTotals();
+        }
       } catch (error) {
         console.warn("تعذر تحميل أسعار الشحن من Supabase:", error);
         shippingGovernoratesRows = [];
@@ -6134,6 +6187,47 @@ main#home{
         x.active !== false
       );
       return govRow ? Number(govRow.price || 0) : 0;
+    }
+
+    let storefrontRealtimeChannel = null;
+    let shippingRealtimeFallbackTimer = null;
+    let shippingRealtimeDebounce = null;
+    let primeRealtimeDebounce = null;
+
+    function scheduleShippingRealtimeRefresh() {
+      if (shippingRealtimeDebounce) clearTimeout(shippingRealtimeDebounce);
+      shippingRealtimeDebounce = setTimeout(() => {
+        shippingRealtimeDebounce = null;
+        loadShippingCenters();
+      }, 180);
+    }
+
+    function startStorefrontRealtimeSync() {
+      if (shippingRealtimeFallbackTimer) clearInterval(shippingRealtimeFallbackTimer);
+      // Keep shipping choices fresh if Realtime is temporarily disconnected.
+      shippingRealtimeFallbackTimer = setInterval(() => loadShippingCenters(), 60000);
+      const client = ensureSupabaseClient();
+      if (!client || storefrontRealtimeChannel) return;
+      try {
+        storefrontRealtimeChannel = client
+          .channel("elory-storefront-live")
+          .on("postgres_changes", { event: "*", schema: "public", table: "shipping_governorates" }, scheduleShippingRealtimeRefresh)
+          .on("postgres_changes", { event: "*", schema: "public", table: "shipping_centers" }, scheduleShippingRealtimeRefresh)
+          .on("postgres_changes", { event: "*", schema: "public", table: "prime_subscriptions" }, () => {
+            if (primeRealtimeDebounce) clearTimeout(primeRealtimeDebounce);
+            primeRealtimeDebounce = setTimeout(() => {
+              primeRealtimeDebounce = null;
+              refreshPrimeState();
+            }, 180);
+          })
+          .subscribe(status => {
+            if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+              console.warn("Some storefront live updates are unavailable; fallback refresh remains active.", status);
+            }
+          });
+      } catch (error) {
+        console.warn("Storefront Realtime subscription could not start; fallback refresh remains active.", error);
+      }
     }
 
     /* =========================================================
@@ -8019,12 +8113,13 @@ main#home{
       }
 
       const DURATION = 520;
-      const AUTO_DELAY = 3000;
+      const AUTO_DELAY = 2500;
       let current = Math.max(0, Math.min(Number(window.heroIndex) || 0, slides.length - 1));
       let timer = null;
       let transitionFallback = null;
       let moving = false;
       let pointerStartX = 0, pointerStartY = 0, pointerActive = false;
+      let suppressHeroClickUntil = 0;
 
       // A true stacked carousel: no clones, no track reset, no hidden blank slide.
       slides.forEach((slide, i) => {
@@ -8144,10 +8239,18 @@ main#home{
         const dx = e.clientX - pointerStartX;
         const dy = e.clientY - pointerStartY;
         if (!moving && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+          suppressHeroClickUntil = Date.now() + 350;
           dx < 0 ? nextHero() : previousHero();
         }
         restartHeroTimer();
       }, {passive:true});
+
+      slider.addEventListener("click", e => {
+        if (Date.now() < suppressHeroClickUntil) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+      }, true);
 
       slider.addEventListener("pointercancel", () => {
         pointerActive = false;
@@ -8250,22 +8353,45 @@ main#home{
         if (event.pointerType === "mouse" && event.button !== 0) return;
         const animation = track.getAnimations().find(item => item.animationName === "eloryCategoryInfinite") || track.getAnimations()[0];
         if (!animation) return;
-        animation.pause();
-        dragState = { id:event.pointerId, x:event.clientX, lastX:event.clientX, animation, moved:false, time:Number(animation.currentTime)||0 };
-        wrapper.classList.add("dragging");
-        try { wrapper.setPointerCapture(event.pointerId); } catch (_) {}
+        // Do not capture or pause on touch-down. Let the browser decide whether
+        // the gesture is vertical page scrolling or an intentional horizontal drag.
+        dragState = {
+          id: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          lastX: event.clientX,
+          animation,
+          moved: false,
+          horizontal: false
+        };
       }, {passive:true});
 
       wrapper.addEventListener("pointermove", event => {
         if (!dragState || dragState.id !== event.pointerId) return;
-        const dx = event.clientX - dragState.lastX;
-        if (Math.abs(event.clientX - dragState.x) > 5) dragState.moved = true;
-        if (dragState.moved) {
-          const duration = Math.max(1, Number(dragState.animation.effect?.getTiming?.().duration) || 32000);
-          const distance = Math.max(1, Number.parseFloat(getComputedStyle(track).getPropertyValue("--elory-category-distance")) || 1);
-          dragState.animation.currentTime = (Number(dragState.animation.currentTime)||0) - (dx / distance) * duration;
-          dragState.lastX = event.clientX;
+        const totalX = event.clientX - dragState.x;
+        const totalY = event.clientY - dragState.y;
+
+        if (!dragState.horizontal) {
+          if (Math.abs(totalX) < 8 && Math.abs(totalY) < 8) return;
+          if (Math.abs(totalY) >= Math.abs(totalX)) {
+            // Vertical intent belongs to native page scrolling. The animation
+            // was never paused, and no pointer capture was taken.
+            dragState = null;
+            wrapper.classList.remove("dragging");
+            return;
+          }
+          dragState.horizontal = true;
+          dragState.moved = true;
+          dragState.animation.pause();
+          wrapper.classList.add("dragging");
+          try { wrapper.setPointerCapture(event.pointerId); } catch (_) {}
         }
+
+        const dx = event.clientX - dragState.lastX;
+        const duration = Math.max(1, Number(dragState.animation.effect?.getTiming?.().duration) || 32000);
+        const distance = Math.max(1, Number.parseFloat(getComputedStyle(track).getPropertyValue("--elory-category-distance")) || 1);
+        dragState.animation.currentTime = (Number(dragState.animation.currentTime)||0) - (dx / distance) * duration;
+        dragState.lastX = event.clientX;
       }, {passive:true});
 
       function finishDrag(event) {
@@ -9462,8 +9588,10 @@ main#home{
         bindEloryAuthState();
         if(initialProductId!==null) openProductDetails(initialProductId,initialProductAlreadyInHistory);
         startProductsLiveSync();
+        startCategoriesLiveSync();
 
         loadShippingCenters();
+        startStorefrontRealtimeSync();
 
         startHero();
 
@@ -10568,6 +10696,15 @@ main#home{
       });
       Array.from(dots.children).forEach((dot, index) => dot.classList.toggle('active', index === current));
     };
+    let pointerStartX = 0;
+    let pointerStartY = 0;
+    let pointerActive = false;
+    let suppressHeroClickUntil = 0;
+    function restartTimer() {
+      if (timer) clearInterval(timer);
+      timer = cards.length > 1 ? setInterval(() => show(current + 1), 2500) : null;
+      window.__eloryHeroRecoveryTimer = timer;
+    }
     cards.forEach((card, index) => {
       const dot = document.createElement('button');
       dot.type = 'button';
@@ -10575,8 +10712,7 @@ main#home{
       dot.setAttribute('aria-label', 'الشريحة ' + (index + 1));
       dot.addEventListener('click', () => {
         show(index);
-        if (timer) clearInterval(timer);
-        timer = cards.length > 1 ? setInterval(() => show(current + 1), 3500) : null;
+        restartTimer();
       });
       dots.appendChild(dot);
     });
@@ -10591,9 +10727,35 @@ main#home{
     hero.hidden = false;
     hero.style.removeProperty('display');
     show(0);
-    if (timer) clearInterval(timer);
-    timer = cards.length > 1 ? setInterval(() => show(current + 1), 3500) : null;
-    window.__eloryHeroRecoveryTimer = timer;
+    slider.addEventListener('pointerdown', event => {
+      if (event.pointerType === 'mouse') return;
+      pointerActive = true;
+      pointerStartX = event.clientX;
+      pointerStartY = event.clientY;
+      if (timer) clearInterval(timer);
+    }, { passive: true });
+    slider.addEventListener('pointerup', event => {
+      if (!pointerActive) return;
+      pointerActive = false;
+      const dx = event.clientX - pointerStartX;
+      const dy = event.clientY - pointerStartY;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+        suppressHeroClickUntil = Date.now() + 350;
+        show(current + (dx < 0 ? 1 : -1));
+      }
+      restartTimer();
+    }, { passive: true });
+    slider.addEventListener('pointercancel', () => {
+      pointerActive = false;
+      restartTimer();
+    }, { passive: true });
+    slider.addEventListener('click', event => {
+      if (Date.now() < suppressHeroClickUntil) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }, true);
+    restartTimer();
     console.info('Elory hero campaigns rendered by recovery path:', cards.length);
   } catch (error) {
     console.warn('Elory hero recovery did not complete:', error);
