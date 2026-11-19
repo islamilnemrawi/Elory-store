@@ -7251,6 +7251,9 @@ main#home{
 
       if (!cart.length) {
 
+        const emptyCartPrimeOption=document.getElementById("cartPrimeOption");
+        if(emptyCartPrimeOption) emptyCartPrimeOption.hidden=true;
+
         container.innerHTML = `
           <div class="cart-empty">
             <i
