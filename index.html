@@ -4830,7 +4830,7 @@ main#home{
 <button class="nav-orders-btn header-orders-btn" id="ordersBtn" title="طلباتي" type="button"><span>طلباتي</span><span class="nav-orders-count" id="ordersCount" style="display:none">0</span></button>
 <div class="header-search-line">
 <div class="search-compact-v19">
-<input aria-label="البحث عن منتج" id="searchInput" list="productSearchSuggestions" placeholder="البحث" type="text"/>
+<input aria-label="البحث عن منتج" id="searchInput" list="productSearchSuggestions" placeholder="ابحث عن منتج أو كلمة قريبة منه" type="text"/>
 <datalist id="productSearchSuggestions"></datalist>
 <button aria-label="بحث عن المنتجات" class="search-btn" onclick="submitSearch()" type="button"><i class="fa-solid fa-magnifying-glass"></i></button>
 </div>
@@ -6941,23 +6941,95 @@ main#home{
        SEARCH
        ========================================================= */
 
+    function normalizeProductSearchText(value){
+      return String(value||"")
+        .normalize("NFKC")
+        .toLocaleLowerCase("ar")
+        .replace(/[\u064B-\u065F\u0670\u0640]/g,"")
+        .replace(/[أإآٱ]/g,"ا")
+        .replace(/[ؤ]/g,"و")
+        .replace(/[ئىي]/g,"ي")
+        .replace(/ة/g,"ه")
+        .replace(/[٠-٩]/g,char=>String("٠١٢٣٤٥٦٧٨٩".indexOf(char)))
+        .replace(/\s+/g," ")
+        .trim();
+    }
+
+    function productSearchEditDistance(left,right,limit){
+      if(Math.abs(left.length-right.length)>limit) return limit+1;
+      let previous=Array.from({length:right.length+1},(_,index)=>index);
+      for(let i=1;i<=left.length;i++){
+        const current=[i];
+        let rowMinimum=i;
+        for(let j=1;j<=right.length;j++){
+          const cost=left[i-1]===right[j-1]?0:1;
+          current[j]=Math.min(current[j-1]+1,previous[j]+1,previous[j-1]+cost);
+          rowMinimum=Math.min(rowMinimum,current[j]);
+        }
+        if(rowMinimum>limit) return limit+1;
+        previous=current;
+      }
+      return previous[right.length];
+    }
+
+    function productSearchTokenMatches(queryToken,candidateTokens){
+      if(candidateTokens.some(token=>token.includes(queryToken))) return true;
+      if(queryToken.length<3) return false;
+      const maxDistance=queryToken.length>=8?2:1;
+      return candidateTokens.some(token=>
+        token.length>=3&&
+        Math.abs(token.length-queryToken.length)<=maxDistance&&
+        productSearchEditDistance(queryToken,token,maxDistance)<=maxDistance
+      );
+    }
+
+    function productSearchScore(product,query){
+      const normalizedQuery=normalizeProductSearchText(query);
+      if(!normalizedQuery) return 1;
+      const fields=[product.name,product.category,product.code]
+        .map(normalizeProductSearchText)
+        .filter(Boolean);
+      if(!fields.length) return 0;
+      const combined=fields.join(" ");
+      if(combined.includes(normalizedQuery)) return 1000;
+      const queryTokens=normalizedQuery.split(" ").filter(Boolean);
+      const candidateTokens=fields.flatMap(value=>value.split(" ").filter(Boolean));
+      let score=0;
+      for(const token of queryTokens){
+        if(fields.some(value=>value.split(" ").some(word=>word===token))){
+          score+=100;
+          continue;
+        }
+        if(fields.some(value=>value.includes(token))){
+          score+=85;
+          continue;
+        }
+        if(!productSearchTokenMatches(token,candidateTokens)) return 0;
+        score+=50;
+      }
+      return score;
+    }
+
     function productMatchesSearch(product,query){
-      if(!query) return true;
-      return [product.name,product.category,product.code]
-        .some(value=>String(value||"").toLocaleLowerCase("ar").includes(query));
+      return !normalizeProductSearchText(query)||productSearchScore(product,query)>0;
     }
 
     function updateProductSearchSuggestions(value=""){
       const list=document.getElementById("productSearchSuggestions");
       if(!list) return;
-      const query=String(value||"").trim().toLocaleLowerCase("ar");
-      const matches=products.filter(product=>productMatchesSearch(product,query)).slice(0,8);
+      const query=normalizeProductSearchText(value);
+      const matches=products
+        .map(product=>({product,score:productSearchScore(product,query)}))
+        .filter(item=>item.score>0)
+        .sort((a,b)=>b.score-a.score)
+        .slice(0,8)
+        .map(item=>item.product);
       list.innerHTML=matches.map(product=>{
         const name=String(product.name||"").trim();
         const category=String(product.category||"").trim();
         const code=String(product.code||"").trim();
         const label=[category,code].filter(Boolean).join(" • ");
-        return `<option value="${escapeHtml(name)}"${label?` label="${escapeHtml(label)}"`:""}></option>`;
+        return `<option value="${escapeHtml(name)}"${label?` label="${escapeHtml(label)}`:""}></option>`;
       }).join("");
     }
 
