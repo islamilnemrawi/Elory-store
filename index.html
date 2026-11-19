@@ -5917,11 +5917,13 @@ main#home{
           ? rows.filter(x => x && String(x.name || "").trim())
           : [];
         renderCategories();
+        if(productsLoadState==="loaded"&&!document.getElementById("shopPage")?.classList.contains("show")) renderProducts();
       } catch (error) {
         console.error("Elory Store categories query failed:", error);
         if (!silent) {
           storeCategories = [];
           renderCategories();
+          if(productsLoadState==="loaded"&&!document.getElementById("shopPage")?.classList.contains("show")) renderProducts();
         }
       }
     }
