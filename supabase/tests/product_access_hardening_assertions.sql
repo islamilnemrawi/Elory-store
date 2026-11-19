@@ -7,7 +7,7 @@ INSERT INTO public.products(
 ) VALUES (
   '22222222-2222-4222-8222-222222222222',
   'Test product', 'Fixture only', 'Test', 100, 45, 'ELORY-PRIVATE-1', 5,
-  0, false, true, now(), '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 'SKU-PRIVATE-1',
+  0, false, true, now(), '[]'::jsonb, '[]'::jsonb, '[{"id":"variant-1","name":"Red / S","price":110,"stock":3,"sku":"VAR-SKU-1","code":"VAR-CODE-1","wholesale_price":20}]'::jsonb, 'SKU-PRIVATE-1',
   0.2, '[]'::jsonb, '[]'::jsonb
 );
 INSERT INTO public.products(
@@ -31,6 +31,7 @@ BEGIN
     RAISE EXCEPTION 'anon lost the public product columns';
   END IF;
   IF has_column_privilege('anon', 'public.products', 'wholesale_price', 'SELECT')
+     OR has_column_privilege('anon', 'public.products', 'variants', 'SELECT')
      OR has_column_privilege('anon', 'public.products', 'code', 'SELECT')
      OR has_column_privilege('anon', 'public.products', 'sku', 'SELECT')
      OR has_column_privilege('anon', 'public.products', 'stock', 'SELECT')
@@ -66,7 +67,7 @@ BEGIN
     FROM (
       SELECT id, name, description, image, category, price, old_price,
              discount, featured, active, colors, color_options, sizes,
-             variants, created_at
+             created_at
         FROM public.products
        WHERE active IS TRUE
     ) AS storefront_rows;
@@ -87,6 +88,31 @@ BEGIN
   END IF;
 END;
 $anon_storefront_query$;
+DO $anon_variant_catalog$
+DECLARE
+  v_stock boolean;
+  v_variants jsonb;
+BEGIN
+  IF has_column_privilege('anon', 'public.products', 'variants', 'SELECT') THEN
+    RAISE EXCEPTION 'Anonymous users can read raw nested product variants';
+  END IF;
+
+  SELECT in_stock, variants INTO v_stock, v_variants
+    FROM public.catalog_products
+   WHERE id = '22222222-2222-4222-8222-222222222222';
+
+  IF v_stock IS DISTINCT FROM true THEN
+    RAISE EXCEPTION 'Public catalog must retain a safe in-stock availability flag';
+  END IF;
+  IF v_variants->0->>'in_stock' IS DISTINCT FROM 'true' THEN
+    RAISE EXCEPTION 'Public variant availability flag is missing';
+  END IF;
+  IF (v_variants->0) ?| ARRAY['stock','sku','code','product_code','wholesale_price','wholesalePrice','barcode'] THEN
+    RAISE EXCEPTION 'Public catalog leaked a nested internal variant field: %', v_variants;
+  END IF;
+END;
+$anon_variant_catalog$;
+
 RESET ROLE;
 
 -- A signed-in customer retains active public catalog access, but no private fields.
@@ -97,6 +123,7 @@ DO $customer$
 DECLARE v_count integer;
 BEGIN
   IF has_column_privilege('authenticated', 'public.products', 'wholesale_price', 'SELECT')
+     OR has_column_privilege('authenticated', 'public.products', 'variants', 'SELECT')
      OR has_column_privilege('authenticated', 'public.products', 'code', 'SELECT')
      OR has_column_privilege('authenticated', 'public.products', 'sku', 'SELECT') THEN
     RAISE EXCEPTION 'authenticated can still read internal product columns directly';
@@ -130,6 +157,12 @@ BEGIN
   IF v_row ? 'wholesale_price' OR v_row ? 'code' OR v_row ? 'sku' THEN
     RAISE EXCEPTION 'RPC leaked fields without their explicit staff permissions';
   END IF;
+  IF (v_row->'variants'->0) ?| ARRAY['sku','code','product_code','wholesale_price','wholesalePrice','barcode'] THEN
+    RAISE EXCEPTION 'Limited staff RPC leaked nested fields without explicit permissions';
+  END IF;
+  IF v_row->'variants'->0->>'stock' <> '3' THEN
+    RAISE EXCEPTION 'Staff product visibility unexpectedly lost variant stock';
+  END IF;
 END;
 $staff_limited$;
 
@@ -144,6 +177,11 @@ BEGIN
      OR v_row->>'code' <> 'ELORY-PRIVATE-1'
      OR v_row->>'sku' <> 'SKU-PRIVATE-1' THEN
     RAISE EXCEPTION 'Authorized staff lost their wholesale/internal-code fields';
+  END IF;
+  IF v_row->'variants'->0->>'wholesale_price' <> '20'
+     OR v_row->'variants'->0->>'code' <> 'VAR-CODE-1'
+     OR v_row->'variants'->0->>'sku' <> 'VAR-SKU-1' THEN
+    RAISE EXCEPTION 'Fully authorized staff lost nested variant fields';
   END IF;
 END;
 $staff_full$;

@@ -8,6 +8,7 @@ on:
       - "supabase/migrations/20261119213107_elory_secure_product_data_access.sql"
       - "supabase/tests/product_access_hardening_fixture.sql"
       - "supabase/tests/product_access_hardening_assertions.sql"
+      - "supabase/migrations/20261119220449_elory_public_catalog_variant_safety.sql"
       - ".github/workflows/security-product-access.yml"
 
 permissions:
@@ -42,6 +43,11 @@ jobs:
           PGPASSWORD: postgres
         run: |
           psql -h 127.0.0.1 -U postgres -d elory_security_test -v ON_ERROR_STOP=1 -f supabase/migrations/20261119213107_elory_secure_product_data_access.sql
+      - name: Apply public catalog variant privacy migration
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d elory_security_test -v ON_ERROR_STOP=1 -f supabase/migrations/20261119220449_elory_public_catalog_variant_safety.sql
       - name: Verify public, customer, and staff access boundaries
         env:
           PGPASSWORD: postgres

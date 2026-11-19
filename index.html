@@ -5643,10 +5643,10 @@ main#home{
     let filteredProducts = [];
     let productsLoadState = "loading";
     const PRODUCTS_PAGE_SIZE = 1000;
-    const PRODUCTS_PUBLIC_QUERY = "select=id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at&active=eq.true&order=created_at.desc,id.asc";
+    const PRODUCTS_PUBLIC_QUERY = "select=id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at,in_stock&active=eq.true&order=created_at.desc,id.asc";
     let productsNextOffset = 0;
     let productsHasMore = false;
-    let productsSourceTable = "products";
+    let productsSourceTable = "catalog_products";
     let productsPageLoading = false;
     let storeCategories = [];
     let cart = [];
@@ -5825,6 +5825,7 @@ main#home{
         stock: row.stock !== undefined && row.stock !== null && row.stock !== "" && Number.isFinite(Number(row.stock))
           ? Number(row.stock)
           : null,
+        inStock: typeof row.in_stock === "boolean" ? row.in_stock : null,
 
         category:
           row.category ??
@@ -6080,28 +6081,10 @@ main#home{
       const publicQuery = `${PRODUCTS_PUBLIC_QUERY}&limit=${PRODUCTS_PAGE_SIZE}&offset=0`;
 
       try {
-        let rows = [];
-        let publicError = null;
-
-        try {
-          rows = await eloryFetchRows("products", publicQuery);
-          productsSourceTable = "products";
-        } catch (error) {
-          publicError = error;
-          console.warn("Elory public products REST query failed; trying catalog_products:", error);
-        }
-
-        if (publicError) {
-          try {
-            rows = await eloryFetchRows("catalog_products", publicQuery);
-            productsSourceTable = "catalog_products";
-            publicError = null;
-          } catch (error) {
-            publicError = error;
-          }
-        }
-
-        if (publicError) throw publicError;
+        // The public catalog view exposes safe product fields and a boolean
+        // stock-availability signal; it never reads raw inventory or variant internals.
+        const rows = await eloryFetchRows("catalog_products", publicQuery);
+        productsSourceTable = "catalog_products";
 
         const previouslyLoadedOffset=productsNextOffset;
         const firstPage = rows.map(normalizeProduct);
@@ -6509,25 +6492,10 @@ main#home{
     async function fetchProductDetailsById(id){
       const productId=String(id||"").trim();
       if(!/^[A-Za-z0-9_-]{1,128}$/.test(productId)) return null;
-      const fields="id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at,gallery";
-      const tables=[
-        {name:"products",fields:`${fields},stock`},
-        {name:"catalog_products",fields}
-      ];
-      const params=new URLSearchParams({select:tables[0].fields,id:`eq.${productId}`,active:"eq.true",limit:"1"});
-      let lastError=null;
-      for(const table of tables){
-        params.set("select",table.fields);
-        try{
-          const rows=await eloryFetchRows(table.name,params.toString());
-          if(rows.length) return normalizeProduct(rows[0],0);
-        }catch(error){
-          lastError=error;
-          console.warn(`Elory product details query failed for ${table.name}; trying public catalog fallback:`,error);
-        }
-      }
-      if(lastError) throw lastError;
-      return null;
+      const fields="id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at,gallery,in_stock";
+      const params=new URLSearchParams({select:fields,id:`eq.${productId}`,active:"eq.true",limit:"1"});
+      const rows=await eloryFetchRows("catalog_products",params.toString());
+      return rows.length?normalizeProduct(rows[0],0):null;
     }
 
     function legacyColorHex(name){
@@ -6616,9 +6584,20 @@ main#home{
     }
 
     function productStockValue(product,variant=null){
+      if(typeof variant?.in_stock==="boolean") return variant.in_stock?null:0;
       const variantStock=variant?.stock;
-      const value=variantStock!==undefined&&variantStock!==null&&variantStock!==""?variantStock:product?.stock;
+      if(variantStock!==undefined&&variantStock!==null&&variantStock!==""&&Number.isFinite(Number(variantStock))) return Number(variantStock);
+      if(typeof product?.inStock==="boolean") return product.inStock?null:0;
+      const value=product?.stock;
       return value!==undefined&&value!==null&&value!==""&&Number.isFinite(Number(value))?Number(value):null;
+    }
+
+    function productStockAvailability(product,variant=null){
+      if(typeof variant?.in_stock==="boolean") return variant.in_stock;
+      if(variant?.stock!==undefined&&variant?.stock!==null&&variant?.stock!==""&&Number.isFinite(Number(variant.stock))) return Number(variant.stock)>0;
+      if(typeof product?.inStock==="boolean") return product.inStock;
+      if(product?.stock!==undefined&&product?.stock!==null&&product?.stock!==""&&Number.isFinite(Number(product.stock))) return Number(product.stock)>0;
+      return null;
     }
 
     function productDetailImageUrl(value){
@@ -6777,13 +6756,14 @@ main#home{
       const images=[...new Set((Array.isArray(product.images)?product.images:[]).map(productDetailImageUrl).filter(Boolean))];
       const mainImage=(state.imageOverride?images[state.imageIndex]:"")||selectedVariantImage||selectedColorImage||images[state.imageIndex]||productDetailImageUrl(product.image);
       const stockValue=productStockValue(product,variant);
-      const hasStock=stockValue!==null;
-      const stock=hasStock?Math.max(0,stockValue):null;
+      const stockAvailability=productStockAvailability(product,variant);
+      const hasStock=stockAvailability!==null||stockValue!==null;
+      const stock=stockValue!==null?Math.max(0,stockValue):null;
       const currentPrice=Number(variant?.price??product.price??0);
       const oldPrice=Number(product.oldPrice||0);
       const discount=Number(product.discount||0)||(oldPrice>currentPrice?Math.round((oldPrice-currentPrice)/oldPrice*100):0);
-      const canAdd=(colors.length===0||state.colorIndex!==null)&&(sizes.length===0||!!state.size)&&(!hasStock||stock>0);
-      const maxQuantity=hasStock?stock:null;
+      const canAdd=(colors.length===0||state.colorIndex!==null)&&(sizes.length===0||!!state.size)&&stockAvailability!==false;
+      const maxQuantity=stockValue!==null?stock:null;
       const productUrl=escapeHtml(`${window.location.origin}${window.location.pathname}${window.location.search}#product`);
       const trustItems=[
         '<div><i class="fa-solid fa-truck-fast"></i><span>شحن سريع</span></div>',
@@ -6816,7 +6796,7 @@ main#home{
             </div>
             ${product.description?`<p class="product-details-description">${escapeHtml(product.description)}</p>`:""}
             ${product.code?`<div class="product-details-code">الكود الداخلي: <b>${escapeHtml(product.code)}</b></div>`:""}
-            ${hasStock?`<div class="product-details-stock${stock>0?" in-stock":" out-of-stock"}"><i class="fa-solid ${stock>0?"fa-circle-check":"fa-circle-xmark"}"></i>${stock>0?`متوفر${stock>1?` (${stock} قطع)`:""}`:"غير متوفر حاليًا"}</div>`:""}
+            ${hasStock?`<div class="product-details-stock${stockAvailability?" in-stock":" out-of-stock"}"><i class="fa-solid ${stockAvailability?"fa-circle-check":"fa-circle-xmark"}"></i>${stockAvailability?`متوفر${stock!==null&&stock>1?` (${stock} قطع)`:""}`:"غير متوفر حاليًا"}</div>`:""}
             ${colorOptions}${sizeOptions}
             <div class="product-details-option">
               <h2>الكمية</h2>
@@ -6826,7 +6806,7 @@ main#home{
                 <button type="button" aria-label="تقليل الكمية" ${state.quantity<=1?"disabled":""} onclick="changeProductDetailQuantity(-1)">−</button>
               </div>
             </div>
-            <button type="button" class="product-details-add" id="productDetailsAdd" ${canAdd?"":"disabled"} onclick="addProductDetailsToCart()"><i class="fa-solid fa-bag-shopping"></i>${stock===0?"غير متوفر حاليًا":"أضف إلى السلة"}</button>
+            <button type="button" class="product-details-add" id="productDetailsAdd" ${canAdd?"":"disabled"} onclick="addProductDetailsToCart()"><i class="fa-solid fa-bag-shopping"></i>${hasStock&&!stockAvailability?"غير متوفر حاليًا":"أضف إلى السلة"}</button>
             <div id="productDetailsFeedback" class="product-details-feedback" role="status" aria-live="polite"></div>
             <div class="product-details-trust">${trustItems.join("")}</div>
             ${detailsSections.length?renderProductDetailsAccordion(product):""}
@@ -6835,7 +6815,7 @@ main#home{
         ${renderProductDetailRecommendations(product)}
         <div id="productDetailsStickyCart" class="product-details-sticky" aria-label="إضافة المنتج إلى السلة">
           <strong>${formatPrice(primeActive?getPrimeUnitPrice(currentPrice):currentPrice)}</strong>
-          <button type="button" ${canAdd?"":"disabled"} onclick="addProductDetailsToCart()"><i class="fa-solid fa-bag-shopping"></i>${stock===0?"غير متوفر حاليًا":"أضف إلى السلة"}</button>
+          <button type="button" ${canAdd?"":"disabled"} onclick="addProductDetailsToCart()"><i class="fa-solid fa-bag-shopping"></i>${hasStock&&!stockAvailability?"غير متوفر حاليًا":"أضف إلى السلة"}</button>
         </div>
         <div id="productDetailsLightbox" class="product-details-lightbox" hidden role="dialog" aria-modal="true" aria-label="عرض صورة المنتج" onclick="closeProductLightboxOutside(event)">
           <button type="button" class="product-details-lightbox-close" aria-label="إغلاق الصورة" onclick="closeProductLightbox()"><i class="fa-solid fa-xmark"></i></button>
@@ -8929,8 +8909,12 @@ main#home{
 
     function favoriteStockValue(product){
       if(product?.stock!==undefined&&product.stock!==null&&product.stock!=="") return Number(product.stock);
-      const stocks=(Array.isArray(product?.variants)?product.variants:[])
-        .map(variant=>variant.stock)
+      const variants=Array.isArray(product?.variants)?product.variants:[];
+      const knownVariantAvailability=variants.map(variant=>variant?.in_stock).filter(value=>typeof value==="boolean");
+      if(knownVariantAvailability.length&&knownVariantAvailability.every(value=>value===false)) return 0;
+      if(product?.inStock===false) return 0;
+      if(product?.inStock===true) return null;
+      const stocks=variants.map(variant=>variant.stock)
         .filter(value=>value!==undefined&&value!==null&&value!=="")
         .map(Number)
         .filter(Number.isFinite);
