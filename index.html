@@ -9840,17 +9840,14 @@ main#home{
         /^ELORY-(?:LIVE|TEST)-/i.test(String(payment?.reference||""));
       if(isPrimePayment){
         try{sessionStorage.removeItem("elory_pending_payment");}catch(e){}
-        if(!primeReturn){
-          // A user may leave Paymob with Back instead of using its return URL.
-          // Refresh quietly; never interpret leaving checkout as a failed payment.
-          await refreshPrimeState();
-          return;
+        if(primeReturn){
+          params.delete("prime_payment_return");
+          const cleanSearch=params.toString();
+          history.replaceState(history.state,"",
+            window.location.pathname+(cleanSearch?"?"+cleanSearch:"")+window.location.hash);
         }
-
-        params.delete("prime_payment_return");
-        const cleanSearch=params.toString();
-        history.replaceState(history.state,"",
-          window.location.pathname+(cleanSearch?"?"+cleanSearch:"")+window.location.hash);
+        // A Paymob return may use its redirect URL or the browser Back button.
+        // In both cases show only the server-confirmed membership state.
         openPrime();
 
         // Paymob's signed server callback activates Prime. Poll only the
