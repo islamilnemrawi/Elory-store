@@ -49,7 +49,7 @@ jobs:
           assert 'eloryFetchRows("catalog_products",params.toString())' in html, "Product details must not request protected product-table columns"
           assert "function productStockAvailability(product,variant=null)" in html, "Customer product details must retain safe stock availability"
           assert "stockAvailability!==false" in html, "Out-of-stock products must remain blocked from adding to cart"
-          catalog_privacy = Path("supabase/tests/product_catalog_variant_safety.sql").read_text(encoding="utf-8")
+          catalog_privacy = Path("supabase/migrations/20261119220449_elory_public_catalog_variant_safety.sql").read_text(encoding="utf-8")
           assert "REVOKE SELECT (variants)" in catalog_privacy, "Raw nested variant JSON must not be publicly readable"
           assert "private.elory_public_product_metadata" in catalog_privacy, "Public catalog must use the narrow safe metadata helper"
           assert "v_hidden_variant_fields" in catalog_privacy, "Staff RPC must filter nested private fields by permission"
