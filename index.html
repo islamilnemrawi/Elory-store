@@ -6343,7 +6343,7 @@ main#home{
       const derivedOriginal=discount>0 && salePrice>0 ? salePrice/(1-discount/100) : 0;
       const originalPrice=oldPrice>salePrice ? oldPrice : (derivedOriginal>salePrice ? derivedOriginal : 0);
       const primeDiscount=getPrimeDiscountPercent();
-      const primePrice=Math.round(salePrice*(1-primeDiscount/100)*100)/100;
+      const primePrice=Math.round(salePrice*(1-primeDiscount/100));
       return `
         <article class="product-card" data-product-card="true" data-product-id="${escapeHtml(product.id)}" tabindex="0" role="group" aria-label="عرض تفاصيل ${escapeHtml(product.name)}">
           <div class="product-image">
@@ -7469,7 +7469,7 @@ main#home{
     function isPrimeEnabled(){return window.ELORY_PRIME_CONFIG?.enabled!==false;}
     function getPrimeDiscountPercent(){const saved=Number(primeStatus?.discount_percent);const configured=Number(window.ELORY_PRIME_CONFIG?.discountPercent??10);const n=primeActive&&Number.isFinite(saved)?saved:configured;return Number.isFinite(n)?Math.max(0,Math.min(100,n)):10;}
     function getPrimeFreeShippingCount(){const saved=Number(primeStatus?.free_shipping_limit);const configured=Number(window.ELORY_PRIME_CONFIG?.freeShippingOrdersCount??6);const n=primeActive&&Number.isFinite(saved)?saved:configured;return Number.isFinite(n)?Math.max(0,Math.min(100,n)):6;}
-    function getPrimeOfferPrice(price){const base=Number(price||0);return Math.round(base*(1-getPrimeDiscountPercent()/100)*100)/100;}
+    function getPrimeOfferPrice(price){const base=Number(price||0);return Math.round(base*(1-getPrimeDiscountPercent()/100));}
     function getPrimeUnitPrice(price){const base=Number(price||0);return primeActive?getPrimeOfferPrice(base):base;}
     function getCheckoutSubtotal(){
       return cart.reduce((sum,item)=>{
