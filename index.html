@@ -4684,6 +4684,25 @@ main#home{
 }
 .prime-status-refresh{background:#fff;color:#76527e;border:1px solid rgba(125,82,139,.20);box-shadow:none;}
 .prime-status-cta:disabled,.prime-direct-btn:disabled{opacity:.62;cursor:wait;}
+.account-prime-offer{
+  margin:12px 0 16px;padding:18px;border:1px solid rgba(157,119,190,.3);border-radius:22px;
+  background:radial-gradient(circle at 92% 5%,rgba(255,255,255,.22),transparent 30%),linear-gradient(135deg,#382449 0%,#76509a 58%,#9870b5 100%);
+  color:#fff;box-shadow:0 13px 30px rgba(91,61,119,.18);overflow:hidden;
+}
+.account-prime-offer-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.account-prime-offer-kicker{color:#ead8f5;font-size:9px;font-weight:800;letter-spacing:2px;direction:ltr}
+.account-prime-offer-crown{display:grid;place-items:center;width:34px;height:34px;border:1px solid rgba(255,255,255,.25);border-radius:50%;background:rgba(255,255,255,.12);color:#f1d99a}
+.account-prime-offer h3{margin:8px 0 4px;color:#fff;font-size:22px;direction:ltr;text-align:right}
+.account-prime-offer-intro{margin:0 0 12px;color:rgba(255,255,255,.82);font-size:11px;line-height:1.8}
+.account-prime-offer-benefits{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px}
+.account-prime-offer-benefits span{display:flex;align-items:center;gap:6px;min-width:0;padding:8px;border:1px solid rgba(255,255,255,.16);border-radius:11px;background:rgba(255,255,255,.09);color:#fff;font-size:9px;line-height:1.6}
+.account-prime-offer-benefits i{flex:0 0 auto;color:#f1d99a}
+.account-prime-offer-cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:43px;padding:10px 14px;border:0;border-radius:13px;background:linear-gradient(110deg,#ead8a5,#f6e8c5);color:#382449;font:900 12px Cairo,sans-serif;cursor:pointer;box-shadow:0 6px 16px rgba(22,12,30,.15)}
+.prime-modal-inactive{margin-top:14px;padding:14px;border:1px solid rgba(139,92,157,.2);border-radius:17px;background:linear-gradient(135deg,#fbf6fd,#f4e9fa)}
+.prime-modal-inactive-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#493752;font-size:13px;font-weight:800}
+.prime-modal-inactive>p{margin:9px 0 0;color:#786b79;font-size:12px;line-height:1.8}
+.prime-modal-inactive .prime-direct-btn{width:100%;margin-top:12px}
+@media(max-width:390px){.account-prime-offer-benefits{grid-template-columns:1fr}}
 
 /* Logout confirmation */
 .logout-confirm-modal{z-index:1200;}
@@ -5642,60 +5661,11 @@ main#home{
     }
     function updatePrimeAccountSummary(){
       const box=document.getElementById("primeAccountSummary"); if(!box)return;
-      if(primeStatusLoadState==="loading"){
-        box.innerHTML='<div class="prime-status-card prime-status-message" role="status"><i class="fa-solid fa-spinner fa-spin"></i><span>جاري التحقق من حالة Elory Prime...</span></div>';
-        return;
-      }
-      if(primeStatusLoadState==="error"){
-        box.innerHTML='<div class="prime-status-card prime-status-message prime-status-error" role="status"><span>تعذر التحقق من حالة الاشتراك. لن تُطبّق مزايا Prime حتى يكتمل التحقق.</span><button class="prime-status-refresh" onclick="refreshPrimeState()" type="button">إعادة المحاولة</button></div>';
-        return;
-      }
-      if(!primeStatus){
-        box.innerHTML='<div class="prime-status-card prime-status-inactive"><div class="prime-status-heading"><span>Elory Prime</span><b class="prime-status-badge is-inactive">غير نشط</b></div><p>اشتركي في Prime للاستفادة من الشحن المجاني والخصم الإضافي والتغليف المميز.</p><button class="prime-status-cta" onclick="subscribePrimeDirectly()" type="button">الاشتراك في Elory Prime <i class="fa-solid fa-arrow-left"></i></button></div>';
-        return;
-      }
-      const expiresAt=primeStatus.expires_at?new Date(primeStatus.expires_at):null;
-      const expiresMs=expiresAt?expiresAt.getTime():NaN;
-      const isActive=primeActive && Number.isFinite(expiresMs) && expiresMs>Date.now();
-      const rawStatus=String(primeStatus.status||"").toLowerCase();
-      const paymentPending=["pending","pending_payment","awaiting_payment","processing","قيد الدفع","بانتظار الدفع","بانتظار تأكيد الدفع"].includes(rawStatus);
-      const expired=Number.isFinite(expiresMs) && expiresMs<=Date.now();
-      const statusLabel=isActive?"نشط":paymentPending?"بانتظار تأكيد الدفع":expired?"منتهي الصلاحية":"غير نشط";
-      const statusClass=isActive?"is-active":paymentPending?"is-pending":expired?"is-expired":"is-inactive";
-      const formatPrimeDate=value=>{
-        if(!value)return "";
-        const date=new Date(value);
-        return Number.isNaN(date.getTime())?"":date.toLocaleDateString("ar-EG",{year:"numeric",month:"short",day:"numeric"});
-      };
-      const tiles=[];
-      const started=formatPrimeDate(primeStatus.started_at);
-      const expires=formatPrimeDate(primeStatus.expires_at);
-      if(started) tiles.push('<div><small>بداية الاشتراك</small><b>'+escapeHtml(started)+'</b></div>');
-      if(expires) tiles.push('<div><small>نهاية الاشتراك</small><b>'+escapeHtml(expires)+'</b></div>');
-      if(isActive && Number.isFinite(expiresMs)){
-        const days=Math.max(0,Math.ceil((expiresMs-Date.now())/86400000));
-        tiles.push('<div><small>الأيام المتبقية</small><b>'+days+' يوم</b></div>');
-      }
-      const hasShipping=(primeStatus.free_shipping_used!==undefined && primeStatus.free_shipping_used!==null) || (primeStatus.free_shipping_remaining!==undefined && primeStatus.free_shipping_remaining!==null);
-      if(hasShipping){
-        const max=Math.max(0,Number(primeStatus.free_shipping_limit??6)||0);
-        const used=Math.min(max,Math.max(0,Number(primeStatus.free_shipping_used)||0));
-        const rawRemaining=primeStatus.free_shipping_remaining;
-        const remaining=rawRemaining!==undefined && rawRemaining!==null?Math.min(max,Math.max(0,Number(rawRemaining)||0)):Math.max(0,max-used);
-        tiles.push('<div><small>الشحن المجاني</small><b>'+used+' مستخدم • '+remaining+' متبقٍ / '+max+'</b></div>');
-      }
-      const benefitParts=[];
-      const discountPercent=Number(primeStatus.discount_percent??getPrimeDiscountPercent())||0;
-      if(discountPercent>0)benefitParts.push('خصم إضافي '+discountPercent+'%');
-      if(Number(primeStatus.free_shipping_limit??0)>0)benefitParts.push('الشحن المجاني وفق الحد المتاح');
-      if(primeStatus.packaging_enabled===true)benefitParts.push('التغليف المميز');
-      if(primeStatus.theme_enabled===true)benefitParts.push('ثيم Prime');
-      if(Array.isArray(primeStatus.features))primeStatus.features.filter(x=>typeof x==='string'&&x.trim()).forEach(x=>benefitParts.push(x.trim()));
-      const benefitText=isActive?(benefitParts.join(' • ')||'لا توجد مزايا إضافية مفعلة حالياً'):paymentPending?'تُفعّل المزايا بعد تأكيد الدفع من Paymob.':'تتضمن الباقة المزايا الموضحة في تفاصيل Prime.';
-      let action="";
-      if(paymentPending) action='<button class="prime-status-refresh" onclick="refreshPrimeState()" type="button">تحققي من حالة الدفع</button>';
-      else if(!isActive) action=isPrimeEnabled()?'<button class="prime-status-cta" onclick="subscribePrimeDirectly()" type="button">'+escapeHtml(window.ELORY_PRIME_CONFIG?.buttonText||'الاشتراك في Elory Prime')+' <i class="fa-solid fa-arrow-left"></i></button>':'<span class="prime-status-message">اشتراكات Elory Prime متوقفة مؤقتًا.</span>';
-      box.innerHTML='<section class="prime-status-card"><div class="prime-status-heading"><span>Elory Prime</span><b class="prime-status-badge '+statusClass+'">'+statusLabel+'</b></div><div class="prime-status-grid">'+tiles.join("")+'</div><p class="prime-status-benefits">'+benefitText+'</p>'+action+'</section>';
+      const active=primeActive;
+      const pending=!!primeStatus && ["pending","pending_payment","awaiting_payment","processing","قيد الدفع","بانتظار الدفع","بانتظار تأكيد الدفع"].includes(String(primeStatus.status||"").toLowerCase());
+      const actionLabel=active?"عرض عضويتك في Prime":pending?"متابعة اشتراكك":"اشترك الآن";
+      const intro=active?"استمتعي بمزايا عضويتك وتجربتك البنفسجية الخاصة.":"انضمي إلى Elory Prime واستمتعي بمزايا حصرية وتجربة تسوق مميزة.";
+      box.innerHTML='<section class="account-prime-offer"><div class="account-prime-offer-top"><span class="account-prime-offer-kicker">ELORY EXCLUSIVE</span><span class="account-prime-offer-crown"><i class="fa-solid fa-crown"></i></span></div><h3>Elory Prime</h3><p class="account-prime-offer-intro">'+intro+'</p><div class="account-prime-offer-benefits"><span><i class="fa-solid fa-percent"></i> خصم إضافي 10%</span><span><i class="fa-solid fa-truck-fast"></i> شحن مجاني حتى 6 طلبات شهريًا</span><span><i class="fa-solid fa-gift"></i> تغليف خاص لطلبات Prime</span><span><i class="fa-solid fa-palette"></i> ثيم موف/بنفسجي مميز</span></div><button class="account-prime-offer-cta" type="button" onclick="openPrime()">'+actionLabel+' <i class="fa-solid fa-arrow-left"></i></button></section>';
     }
     function setPrimeTheme(active){
       const wasActive=primeActive;
@@ -8047,7 +8017,7 @@ main#home{
       }else if(!isPrimeEnabled()){
         box.innerHTML='<div class="prime-status-message">اشتراكات Elory Prime متوقفة مؤقتًا. يمكنك الاستفادة من عضويتك الحالية حتى تاريخ انتهائها.</div>';
       }else{
-        box.innerHTML='<button class="checkout-btn prime-direct-btn" type="button" onclick="subscribePrimeDirectly()"><i class="fa-solid fa-crown"></i> '+escapeHtml(window.ELORY_PRIME_CONFIG?.buttonText||'اشتركي في Elory Prime')+'</button>';
+        box.innerHTML='<section class="prime-modal-inactive"><div class="prime-modal-inactive-heading"><span>حالة العضوية</span><b class="prime-status-badge is-inactive">غير نشط</b></div><p>اشترك الآن لتفعيل مزايا Elory Prime والاستمتاع بالخصومات والشحن المجاني والتغليف المميز.</p><button class="checkout-btn prime-direct-btn" type="button" onclick="subscribePrimeDirectly()"><i class="fa-solid fa-crown"></i> اشترك الآن</button></section>';
       }
     }
 
