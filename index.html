@@ -5681,6 +5681,7 @@ main#home{
 
       return {
         id: row.id ?? ("product-" + index),
+        active: row.active !== false && row.is_active !== false,
         createdAt: row.created_at ?? "",
         sortIndex: Number(index) || 0,
         name:
@@ -6131,16 +6132,33 @@ main#home{
         grid.innerHTML='<div class="loading"><div class="spinner"></div> جاري تحميل المنتجات...</div>';
         syncFavoriteButtons(); return;
       }
-      if(!filteredProducts.length){
-        const query=String(document.getElementById("searchInput")?.value||"").trim();
+
+      // The homepage's featured block is controlled only by the product's
+      // featured flag. Search remains able to find every active product.
+      const query=String(document.getElementById("searchInput")?.value||"").trim();
+      const homepageProducts=query
+        ? filteredProducts
+        : filteredProducts.filter(product=>product.featured === true);
+
+      if(!homepageProducts.length){
         const catalogUnavailable=productsLoadState==="error";
-        const title=catalogUnavailable?"المنتجات غير متاحة مؤقتًا":(query?"لا توجد منتجات مطابقة للبحث":"لا توجد منتجات متاحة حاليًا");
-        const message=catalogUnavailable?"تعذر تحميل المنتجات من المتجر. تحققي من الاتصال ثم أعيدي المحاولة.":(query?"جرّبي اسمًا أو تصنيفًا آخر.":"سنحاول عرض المنتجات عند توفرها.");
-        const action=catalogUnavailable?'<button type="button" onclick="loadProducts()">إعادة تحميل المنتجات</button>':(query?'<button type="button" onclick="clearProductSearch()">مسح البحث</button>'+(productsHasMore?'<button type="button" onclick="loadMoreProducts()">البحث في باقي المنتجات</button>':''):'');
+        const title=catalogUnavailable
+          ?"المنتجات غير متاحة مؤقتًا"
+          :(query?"لا توجد منتجات مطابقة للبحث":"لا توجد منتجات مميزة بالصفحة الرئيسية حاليًا");
+        const message=catalogUnavailable
+          ?"تعذر تحميل المنتجات من المتجر. تحققي من الاتصال ثم أعيدي المحاولة."
+          :(query
+            ?"جرّبي اسمًا أو تصنيفًا آخر."
+            :"يمكنك تفعيل «عرض كمنتج مميز بالصفحة الرئيسية» من تعديل المنتج. ستظل باقي المنتجات متاحة داخل أقسامها.");
+        const action=catalogUnavailable
+          ?'<button type="button" onclick="loadProducts()">إعادة تحميل المنتجات</button>'
+          :(query
+            ?'<button type="button" onclick="clearProductSearch()">مسح البحث</button>'+(productsHasMore?'<button type="button" onclick="loadMoreProducts()">البحث في باقي المنتجات</button>':'')
+            :'');
         grid.innerHTML=`<div class="search-empty-state"><i class="fa-solid ${catalogUnavailable?'fa-cloud-arrow-down':'fa-magnifying-glass'}" aria-hidden="true"></i><strong>${title}</strong><span>${message}</span>${action}</div>`;
         syncFavoriteButtons(); return;
       }
-      grid.innerHTML=filteredProducts.slice(0,8).map(product=>productCardHtml(product)).join("");
+      grid.innerHTML=homepageProducts.slice(0,8).map(product=>productCardHtml(product)).join("");
       syncFavoriteButtons();
     }
 
@@ -6893,6 +6911,7 @@ main#home{
     function addToCart(productId, options={}) {
       const product=options.product||products.find(p=>String(p.id)===String(productId));
       if(!product){showToast("لم يتم العثور على المنتج");return false;}
+      if(product.active===false){showToast("هذا المنتج غير متاح للشراء حاليًا");return false;}
       const colors=getProductColors(product), sizes=Array.isArray(product.sizes)?product.sizes:[];
       if(!options.color && !options.size && (colors.length||sizes.length)){openProductOptions(product);return false;}
       const variant=options.variant||findVariant(product,options.color||'',options.size||'',options.colorHex||'');
@@ -6981,6 +7000,14 @@ main#home{
 
     function refreshCartFromProducts(){
       let changed=false;
+      // Once the complete active catalog has loaded, remove stale cart lines
+      // whose products were deactivated or deleted by the store owner.
+      if(!productsHasMore){
+        const activeProductIds=new Set(products.map(product=>String(product.id)));
+        const previousCount=cart.length;
+        cart=cart.filter(item=>activeProductIds.has(String(item?.id)));
+        if(cart.length!==previousCount)changed=true;
+      }
       cart.forEach(item=>{
         const product=products.find(entry=>String(entry.id)===String(item?.id));
         if(!product) return;
@@ -7458,6 +7485,32 @@ main#home{
       updateCheckoutTotals();
     }
 
+    async function verifyCartProductsAreActive(){
+      const productIds=[...new Set(cart.map(item=>String(item?.id||"")).filter(Boolean))];
+      if(!productIds.length)return false;
+      const query="select=id&active=eq.true&id=in.("+productIds.map(id=>encodeURIComponent(id)).join(",")+")&limit="+productIds.length;
+      const primaryTable=productsSourceTable||"products";
+      let rows;
+      try{
+        rows=await eloryFetchRows(primaryTable,query);
+      }catch(primaryError){
+        const fallbackTable=primaryTable==="products"?"catalog_products":"products";
+        rows=await eloryFetchRows(fallbackTable,query);
+      }
+      const activeIds=new Set((Array.isArray(rows)?rows:[]).map(row=>String(row.id)));
+      const unavailable=cart.filter(item=>!activeIds.has(String(item?.id)));
+      if(unavailable.length){
+        cart=cart.filter(item=>activeIds.has(String(item?.id)));
+        saveCart();
+        renderCart();
+        closeModal("checkoutModal");
+        openCart();
+        showToast("تم استبعاد منتج لم يعد متاحًا للشراء. راجعي السلة.");
+        return false;
+      }
+      return true;
+    }
+
     async function submitOrder(event) {
       event.preventDefault();
       if (!cart.length) { showToast("السلة فارغة"); return; }
@@ -7486,6 +7539,7 @@ main#home{
       const button=document.querySelector('#checkoutForm button[type="submit"]');
       if(button){button.disabled=true;button.dataset.oldText=button.textContent;button.textContent="جاري إرسال الطلب...";}
       try{
+        if(!(await verifyCartProductsAreActive()))return;
         if(selectedPaymentMethod!=="cash_on_delivery"){
           const paymentCapabilities = await window.ELORY_PAYMENT_CAPABILITIES_PROMISE;
           const paymentReady = selectedPaymentMethod === "card"
