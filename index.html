@@ -1851,7 +1851,7 @@ body.prime-mode .section-title{color:var(--pink);}
 .prime-modal{background:linear-gradient(145deg,#fffaff 0%,#f7effb 52%,#eee1f5 100%)!important;border:1px solid #c9addb!important;box-shadow:0 28px 70px rgba(73,43,91,.24)!important}
 
 /* Dedicated Elory Prime membership page — scoped to the Prime modal only */
-.modal#primeModal.prime-page-mode .prime-modal{justify-content:flex-start!important;gap:0!important}
+#primeModal.modal.prime-page-mode .modal-box.prime-modal{justify-content:flex-start!important;gap:0!important}
 .prime-page-hero{text-align:center;max-width:760px;width:100%;margin:0 auto 22px}
 .prime-page-brand-mark{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 12px;border:1px solid rgba(132,94,155,.22);border-radius:20px;background:linear-gradient(135deg,#49305c,#946eac);color:#f2dfa8;font-size:23px;box-shadow:0 10px 28px rgba(91,61,119,.2)}
 .prime-page-eyebrow{color:#9a7aa8;font-size:9px;font-weight:900;letter-spacing:3px;direction:ltr}
@@ -5514,11 +5514,11 @@ main#home{
 <div class="prime-page-eyebrow">ELORY MEMBERSHIP</div>
 <h2 class="modal-title">Elory Prime</h2>
 <p class="modal-subtitle">عضويتك المميزة… وكل تفاصيلها في مكان واحد</p>
-<div class="prime-page-price"><strong>300</strong><span>ج.م <small>/ شهر</small></span></div>
+<div class="prime-page-price"><strong id="primePagePriceAmount">300</strong><span>ج.م <small>/ شهر</small></span></div>
 </header>
 <section class="prime-page-benefits" aria-label="مميزات Elory Prime">
-<div class="prime-page-benefit"><i class="fa-solid fa-percent"></i><span><b>خصم إضافي 10%</b><small>فوق خصم المنتج</small></span></div>
-<div class="prime-page-benefit"><i class="fa-solid fa-truck-fast"></i><span><b>شحن مجاني</b><small>حتى 6 طلبات شهريًا</small></span></div>
+<div class="prime-page-benefit"><i class="fa-solid fa-percent"></i><span><b id="primePageDiscountBenefit">خصم إضافي 10%</b><small>فوق خصم المنتج</small></span></div>
+<div class="prime-page-benefit"><i class="fa-solid fa-truck-fast"></i><span><b>شحن مجاني</b><small id="primePageShippingBenefit">حتى 6 طلبات شهريًا</small></span></div>
 <div class="prime-page-benefit"><i class="fa-solid fa-gift"></i><span><b>تغليف مميز</b><small>عناية خاصة بطلباتك</small></span></div>
 <div class="prime-page-benefit"><i class="fa-solid fa-palette"></i><span><b>ثيم Prime</b><small>تجربة موف/بنفسجي خاصة</small></span></div>
 </section>
@@ -8059,6 +8059,12 @@ main#home{
         box.innerHTML='<div class="prime-page-state prime-page-error"><span class="prime-page-state-icon"><i class="fa-solid fa-triangle-exclamation"></i></span><b>تعذر تحميل بيانات العضوية</b><p>لم نتمكن من التحقق من حالة اشتراكك الآن. لن نبدأ عملية دفع جديدة قبل التأكد من الحالة.</p><button class="prime-page-action secondary" type="button" onclick="refreshPrimeState().then(updatePrimeModalStatus)"><i class="fa-solid fa-rotate"></i> إعادة التحقق</button></div>';return;
       }
       const data=primeStatus||{};
+      const priceAmount=document.getElementById("primePagePriceAmount");
+      if(priceAmount)priceAmount.textContent=Math.round(getPrimePrice()).toLocaleString("ar-EG");
+      const discountBenefit=document.getElementById("primePageDiscountBenefit");
+      if(discountBenefit)discountBenefit.textContent="خصم إضافي "+getPrimeDiscountPercent()+"%";
+      const shippingBenefit=document.getElementById("primePageShippingBenefit");
+      if(shippingBenefit)shippingBenefit.textContent="حتى "+getPrimeFreeShippingCount()+" طلبات شهريًا";
       const expiry=data.expires_at?new Date(data.expires_at):null;
       const expiryMs=expiry?expiry.getTime():NaN;
       const active=data.active===true&&Number.isFinite(expiryMs)&&expiryMs>Date.now();
@@ -8067,7 +8073,7 @@ main#home{
       const expired=Number.isFinite(expiryMs)&&expiryMs<=Date.now();
       const statusLabel=active?"نشط":pending?"بانتظار تأكيد الدفع":expired?"منتهي الصلاحية":"غير نشط";
       const statusClass=active?"active":pending?"pending":expired?"expired":"inactive";
-      const paymentRaw=String(data.payment_status||data.paymentStatus||"").toLowerCase();
+      const paymentRaw=String(data.payment_status||data.paymentStatus||rawStatus).toLowerCase();
       const paymentLabel=active? "تم تأكيد الدفع":pending?"قيد تأكيد الدفع":paymentRaw?(
         ["paid","completed","success","successful","confirmed"].includes(paymentRaw)?"تم تأكيد الدفع":
         ["failed","declined","cancelled","canceled","rejected"].includes(paymentRaw)?"تعذر إتمام الدفع":"قيد المراجعة"
@@ -8089,7 +8095,7 @@ main#home{
       if(method)details.push(["طريقة الدفع",method.toLowerCase()==="paymob"?"Paymob":method,"fa-credit-card"]);
       const reference=String(data.payment_reference||data.paymentReference||data.reference||"");
       if(reference)details.push(["مرجع الدفع",reference,"fa-hashtag"]);
-      const shippingMax=Math.max(0,Number(data.free_shipping_limit??6)||0);
+      const shippingMax=Math.max(0,Number(data.free_shipping_limit??getPrimeFreeShippingCount())||0);
       const hasShipping=data.free_shipping_used!==undefined||data.free_shipping_remaining!==undefined||active;
       if(hasShipping&&shippingMax){
         const used=Math.max(0,Number(data.free_shipping_used)||0);
@@ -8110,7 +8116,7 @@ main#home{
           ?'<button class="prime-page-action secondary" type="button" onclick="refreshPrimeState().then(updatePrimeModalStatus)"><i class="fa-solid fa-rotate"></i> التحقق من حالة الدفع</button>'
           :!isPrimeEnabled()
             ?'<div class="prime-page-disabled"><i class="fa-solid fa-circle-pause"></i> الاشتراكات متوقفة مؤقتًا. يمكنك العودة لاحقًا لإتمام الاشتراك.</div>'
-            :'<button class="prime-page-action primary prime-direct-btn" type="button" onclick="subscribePrimeDirectly()"><i class="fa-solid fa-crown"></i> اشترك الآن — 300 ج.م / شهر</button>';
+            :'<button class="prime-page-action primary prime-direct-btn" type="button" onclick="subscribePrimeDirectly()"><i class="fa-solid fa-crown"></i> اشترك الآن — '+escapeHtml(formatPrice(getPrimePrice()))+'</button>';
       box.innerHTML=statusCard+'<div class="prime-page-actions">'+action+'</div>'+(benefitParts.length?'<div class="prime-page-active-benefits"><span>المزايا المرتبطة بعضويتك</span><p>'+benefitParts.map(escapeHtml).join(" <b>•</b> ")+'</p></div>':"");
     }
 
