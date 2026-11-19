@@ -1490,7 +1490,7 @@ async function createPrimeIntention(
     notification_url: CALLBACK_URL,
 
     redirection_url:
-      SITE_URL,
+      `${SITE_URL}?prime_payment_return=1`,
   };
 
   return await sendIntention(
