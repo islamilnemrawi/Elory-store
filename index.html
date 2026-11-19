@@ -11264,10 +11264,12 @@ main#home{
   const notice = document.getElementById("paymentCapabilityNotice");
   function apply(){
     options.forEach(input=>{
+      // The primary checkout settings loader owns COD visibility.
+      // This recovery guard must not re-enable COD when the dashboard disables it.
+      if(input.value==="cash_on_delivery") return;
       const label=input.closest(".payment-option");
       if(!label) return;
-      const available=input.value==="cash_on_delivery" ||
-        (input.value==="card" && state.card_enabled) ||
+      const available=(input.value==="card" && state.card_enabled) ||
         (input.value==="vodafone_cash" && state.wallet_enabled);
       input.disabled=!available;
       label.hidden=!available;
@@ -11281,7 +11283,7 @@ main#home{
     const selected=document.querySelector('input[name="paymentMethod"]:checked');
     if(selected && selected.disabled){
       const cod=document.querySelector('input[name="paymentMethod"][value="cash_on_delivery"]');
-      if(cod){cod.checked=true;window.selectPaymentMethod?.("cash_on_delivery");}
+      if(cod && !cod.disabled){cod.checked=true;window.selectPaymentMethod?.("cash_on_delivery");}
     }
   }
   options.forEach(input=>{
