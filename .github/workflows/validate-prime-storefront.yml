@@ -44,6 +44,15 @@ jobs:
           assert "setProperty('background',color(a.backgroundColor),'important')" in html, "CMS announcement color must override the storefront gradient"
           assert "document.querySelectorAll('.hg-icon-v19').forEach(el=>el.style.setProperty('color',color(h.iconsColor),'important'))" in html, "CMS header icon color must override the default icon style"
           assert "paymentMethods?.methods" in html, "Storefront must read dashboard payment method settings"
+          assert 'const PRODUCTS_PUBLIC_QUERY = "select=id,name,description,image,category,price,old_price,discount,featured,active,colors,color_options,sizes,variants,created_at,in_stock' in html, "Public product listing must use the safe catalog availability field"
+          assert 'eloryFetchRows("catalog_products", publicQuery)' in html, "Storefront product listing must read only from the safe catalog view"
+          assert 'eloryFetchRows("catalog_products",params.toString())' in html, "Product details must not request protected product-table columns"
+          assert "function productStockAvailability(product,variant=null)" in html, "Customer product details must retain safe stock availability"
+          assert "stockAvailability!==false" in html, "Out-of-stock products must remain blocked from adding to cart"
+          catalog_privacy = Path("supabase/tests/product_catalog_variant_safety.sql").read_text(encoding="utf-8")
+          assert "REVOKE SELECT (variants)" in catalog_privacy, "Raw nested variant JSON must not be publicly readable"
+          assert "private.elory_public_product_metadata" in catalog_privacy, "Public catalog must use the narrow safe metadata helper"
+          assert "v_hidden_variant_fields" in catalog_privacy, "Staff RPC must filter nested private fields by permission"
           assert "capabilities.cod_enabled!==false" in html, "Storefront must honor the COD availability flag"
           payment_guard = html[html.index('id="elory-payment-capability-guard"'):]
           assert 'if(input.value==="cash_on_delivery") return;' in payment_guard, "Payment recovery guard must not override dashboard COD availability"
