@@ -1,0 +1,373 @@
+name: Elory protected schema-only baseline
+
+on:
+  push:
+    branches:
+      - elory/security-hardening
+    paths:
+      - ".github/workflows/security-schema-baseline.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: elory-protected-schema-baseline
+  cancel-in-progress: false
+
+jobs:
+  schema-only-audit:
+    name: Export and inspect production schema without row data
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Validate Session Pooler secret and prepare protected password file
+        shell: bash
+        env:
+          ELORY_SUPABASE_DB_URL: ${{ secrets.ELORY_SUPABASE_DB_URL }}
+          ELORY_SUPABASE_DB_PASSWORD: ${{ secrets.ELORY_SUPABASE_DB_PASSWORD }}
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import os
+          import shlex
+          from pathlib import Path
+          from urllib.parse import unquote, urlsplit
+
+          raw = os.environ.get("ELORY_SUPABASE_DB_URL", "").strip()
+          separate_password = os.environ.get("ELORY_SUPABASE_DB_PASSWORD")
+          if not raw:
+              raise SystemExit("Required Actions secret ELORY_SUPABASE_DB_URL is missing.")
+
+          raw_upper = raw.upper()
+          if any(token in raw_upper for token in (
+              "[YOUR-PASSWORD]", "[YOUR_PASSWORD]", "[DB-PASSWORD]", "[PASSWORD]"
+          )):
+              raise SystemExit(
+                  "The saved Supabase connection string still contains a password placeholder. "
+                  "Replace it with the actual Database password in the GitHub secret."
+              )
+
+          # Parse URI, libpq key/value, or the psql -h/-p/-d/-U form.
+          candidate = raw
+          try:
+              tokens = shlex.split(raw)
+          except ValueError:
+              tokens = []
+          uri_token = next(
+              (token for token in tokens if token.startswith(("postgres://", "postgresql://"))),
+              None,
+          )
+          host_value = user_value = db_value = password_value = None
+          port_value = "5432"
+          if uri_token or raw.startswith(("postgres://", "postgresql://")):
+              candidate = uri_token or raw
+              # Remove dashboard display brackets from the copied URI.
+              candidate = candidate.replace("[", "").replace("]", "")
+              parsed = urlsplit(candidate)
+              if parsed.scheme not in ("postgres", "postgresql"):
+                  raise SystemExit("The saved value does not contain a PostgreSQL URI.")
+              if not parsed.hostname or not parsed.username:
+                  raise SystemExit("The PostgreSQL URI is missing its host or username.")
+              host_value = parsed.hostname
+              try:
+                  port_value = str(parsed.port or 5432)
+              except ValueError:
+                  raise SystemExit("The PostgreSQL URI has an invalid port.")
+              user_value = unquote(parsed.username)
+              password_value = unquote(parsed.password) if parsed.password is not None else None
+              db_value = unquote(parsed.path.lstrip("/"))
+          else:
+              params = {}
+              i = 0
+              while i < len(tokens):
+                  token = tokens[i]
+                  if token.startswith("--") and "=" in token:
+                      key, value = token[2:].split("=", 1)
+                      params[key.lower()] = value
+                  elif token in ("-h", "-p", "-d", "-U") and i + 1 < len(tokens):
+                      key = {"-h":"host", "-p":"port", "-d":"dbname", "-U":"user"}[token]
+                      params[key] = tokens[i + 1]
+                      i += 1
+                  elif "=" in token:
+                      key, value = token.split("=", 1)
+                      params[key.lower()] = value
+                  i += 1
+              host_value = params.get("host")
+              port_value = params.get("port", "5432")
+              user_value = params.get("user")
+              db_value = params.get("dbname", params.get("database"))
+              password_value = params.get("password")
+          if password_value is not None and password_value.strip("[]").strip().upper() in {
+              "YOUR-PASSWORD", "YOUR_PASSWORD", "REPLACE_WITH_YOUR_PASSWORD"
+          }:
+              raise SystemExit("The saved connection string still contains a password placeholder.")
+
+          host = host_value.lower()
+          try:
+              port = int(port_value)
+          except (TypeError, ValueError):
+              raise SystemExit("The saved connection string has an invalid port.")
+          if not host.endswith(".pooler.supabase.com") or port != 5432:
+              raise SystemExit(
+                  "Use the Supabase Session Pooler connection (pooler.supabase.com, port 5432)."
+              )
+
+          username = user_value
+          password = password_value if password_value is not None else separate_password
+          database = db_value
+          if not username or not database or password is None:
+              raise SystemExit("The connection string is missing username, database, or password.")
+          if any("\n" in value or "\r" in value for value in (host, username, password, database)):
+              raise SystemExit("The connection string contains an unsupported line break.")
+          def pgpass_escape(value: str) -> str:
+              return value.replace("\\", "\\\\").replace(":", "\\:")
+
+          pgpass = Path(os.environ["RUNNER_TEMP"]) / "elory.pgpass"
+          pgpass.write_text(
+              ":".join(pgpass_escape(v) for v in (host, str(port), database, username, password))
+              + "\n",
+              encoding="utf-8",
+          )
+          pgpass.chmod(0o600)
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+              env.write(f"ELORY_PGHOST={host}\n")
+              env.write(f"ELORY_PGPORT={port}\n")
+              env.write(f"ELORY_PGUSER={username}\n")
+              env.write(f"ELORY_PGDATABASE={database}\n")
+          PY
+
+      - name: Create schema-only dump in the ephemeral runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/elory-schema"
+          docker run --rm --network host \
+            --user "$(id -u):$(id -g)" \
+            --volume "$RUNNER_TEMP/elory.pgpass:/tmp/elory.pgpass:ro" \
+            --volume "$RUNNER_TEMP/elory-schema:/out" \
+            -e PGHOST="$ELORY_PGHOST" \
+            -e PGPORT="$ELORY_PGPORT" \
+            -e PGUSER="$ELORY_PGUSER" \
+            -e PGDATABASE="$ELORY_PGDATABASE" \
+            -e PGPASSFILE=/tmp/elory.pgpass \
+            -e PGSSLMODE=require \
+            -e PGOPTIONS="-c default_transaction_read_only=on" \
+            postgres:17 \
+            pg_dump --schema-only --format=plain --file=/out/production-schema.sql
+          test -s "$RUNNER_TEMP/elory-schema/production-schema.sql"
+
+      - name: Read safe catalog metadata only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SQL="$(cat <<'SQL'
+          COPY (
+          WITH expected(name) AS (
+            SELECT unnest(ARRAY[
+              'admin_apply_shipping_governorate_price',
+              'admin_delete_order',
+              'admin_delete_shipping_center',
+              'admin_get_my_staff_profile',
+              'admin_grant_prime_by_email',
+              'admin_list_orders',
+              'admin_list_prime_subscriptions',
+              'admin_list_shipping',
+              'admin_list_staff',
+              'admin_save_shipping_center',
+              'admin_save_shipping_governorate',
+              'admin_set_prime_subscription_active',
+              'admin_set_staff_active',
+              'admin_update_order_status',
+              'admin_upsert_staff_by_email',
+              'elora_admin_allowed',
+              'get_customer_orders',
+              'get_my_prime_status',
+              'has_staff_permission',
+              'is_elora_staff',
+              'redeem_coupon',
+              'register_dashboard_push_device'
+            ]::text[])
+          ),
+          target_functions AS (
+            SELECT p.*
+              FROM pg_proc p
+              JOIN pg_namespace n ON n.oid = p.pronamespace
+              JOIN expected e ON e.name = p.proname
+             WHERE n.nspname = 'public'
+               AND p.prokind = 'f'
+          )
+          SELECT jsonb_build_object(
+            'server_version', current_setting('server_version'),
+            'schema_count', (SELECT count(*) FROM pg_namespace
+                             WHERE nspname NOT LIKE 'pg\_%'
+                               AND nspname <> 'information_schema'),
+            'table_count', (SELECT count(*) FROM pg_class c
+                            JOIN pg_namespace n ON n.oid = c.relnamespace
+                            WHERE n.nspname NOT LIKE 'pg\_%'
+                              AND n.nspname <> 'information_schema'
+                              AND c.relkind IN ('r','p','v','m','f')),
+            'policy_count', (SELECT count(*) FROM pg_policies),
+            'extension_count', (SELECT count(*) FROM pg_extension),
+            'expected_rpc_count', (SELECT count(*) FROM target_functions),
+            'missing_expected_rpc_names', (
+              SELECT coalesce(jsonb_agg(e.name ORDER BY e.name), '[]'::jsonb)
+                FROM expected e
+               WHERE NOT EXISTS (SELECT 1 FROM target_functions t WHERE t.proname = e.name)
+            ),
+            'target_security_definer_count', (
+              SELECT count(*) FROM target_functions WHERE prosecdef IS TRUE
+            ),
+            'target_public_execute_count', (
+              SELECT count(DISTINCT t.oid)
+                FROM target_functions t
+                CROSS JOIN LATERAL aclexplode(
+                  coalesce(t.proacl, acldefault('f', t.proowner))
+                ) acl
+               WHERE acl.grantee = 0 AND acl.privilege_type = 'EXECUTE'
+            ),
+            'validate_coupon_security_definer', coalesce((
+              SELECT p.prosecdef
+                FROM pg_proc p
+                JOIN pg_namespace n ON n.oid = p.pronamespace
+               WHERE n.nspname = 'public'
+                 AND p.proname = 'validate_coupon'
+                 AND pg_get_function_identity_arguments(p.oid) = 'p_code text, p_subtotal numeric'
+               LIMIT 1
+            ), false),
+            'staff_coupon_policy_restrictive', EXISTS (
+              SELECT 1 FROM pg_policies
+               WHERE schemaname = 'public'
+                 AND tablename = 'coupons'
+                 AND policyname = 'Staff coupon select permission'
+                 AND permissive = 'RESTRICTIVE'
+            ),
+            'private_trigger_search_path', (
+              SELECT coalesce(array_to_string(p.proconfig, ','), '[default]')
+                FROM pg_proc p
+                JOIN pg_namespace n ON n.oid = p.pronamespace
+               WHERE n.nspname = 'private'
+                 AND p.proname = 'elora_notify_new_order'
+                 AND p.prokind = 'f'
+               LIMIT 1
+            ),
+            'private_trigger_public_execute', EXISTS (
+              SELECT 1
+                FROM pg_proc p
+                JOIN pg_namespace n ON n.oid = p.pronamespace
+                CROSS JOIN LATERAL aclexplode(
+                  coalesce(p.proacl, acldefault('f', p.proowner))
+                ) acl
+               WHERE n.nspname = 'private'
+                 AND p.proname = 'elora_notify_new_order'
+                 AND acl.grantee = 0
+                 AND acl.privilege_type = 'EXECUTE'
+            ),
+            'private_schema_usage_anon', has_schema_privilege('anon', 'private', 'USAGE'),
+            'private_schema_usage_authenticated', has_schema_privilege('authenticated', 'private', 'USAGE')
+          )::text
+          ) TO STDOUT;
+          SQL
+          )"
+          docker run --rm --network host \
+            --user "$(id -u):$(id -g)" \
+            --volume "$RUNNER_TEMP/elory.pgpass:/tmp/elory.pgpass:ro" \
+            -e PGHOST="$ELORY_PGHOST" \
+            -e PGPORT="$ELORY_PGPORT" \
+            -e PGUSER="$ELORY_PGUSER" \
+            -e PGDATABASE="$ELORY_PGDATABASE" \
+            -e PGPASSFILE=/tmp/elory.pgpass \
+            -e PGSSLMODE=require \
+            -e PGOPTIONS="-c default_transaction_read_only=on" \
+            postgres:17 \
+            psql -X -q -v ON_ERROR_STOP=1 --command "$SQL" > "$RUNNER_TEMP/elory-catalog.json"
+          test -s "$RUNNER_TEMP/elory-catalog.json" || {
+            echo "Catalog export returned no JSON bytes; refusing to continue."
+            exit 1
+          }
+          python3 -c 'import json, pathlib, sys; json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))' "$RUNNER_TEMP/elory-catalog.json"
+
+      - name: Fingerprint dump and validate audited baseline gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          root = Path(os.environ["RUNNER_TEMP"])
+          dump_path = root / "elory-schema" / "production-schema.sql"
+          catalog_path = root / "elory-catalog.json"
+
+          digest = hashlib.sha256()
+          size = 0
+          with dump_path.open("rb") as source:
+              for block in iter(lambda: source.read(1024 * 1024), b""):
+                  digest.update(block)
+                  size += len(block)
+
+          sql = dump_path.read_text(encoding="utf-8", errors="replace")
+          catalog = json.loads(catalog_path.read_text(encoding="utf-8").strip())
+
+          dump_counts = {
+              "dump_bytes": size,
+              "dump_sha256": digest.hexdigest(),
+              "dump_table_definitions": len(re.findall(r"^CREATE TABLE ", sql, re.MULTILINE)),
+              "dump_function_definitions": len(re.findall(r"^CREATE FUNCTION ", sql, re.MULTILINE)),
+              "dump_policy_definitions": len(re.findall(r"^CREATE POLICY ", sql, re.MULTILINE)),
+              "dump_extension_definitions": len(re.findall(r"^CREATE EXTENSION ", sql, re.MULTILINE)),
+          }
+
+          required = {
+              "expected_rpc_count": 22,
+              "target_security_definer_count": 22,
+              "target_public_execute_count": 0,
+              "validate_coupon_security_definer": True,
+              "staff_coupon_policy_restrictive": True,
+              "private_trigger_public_execute": True,
+              "private_schema_usage_anon": False,
+              "private_schema_usage_authenticated": False,
+          }
+          problems = []
+          for key, expected in required.items():
+              if catalog.get(key) != expected:
+                  problems.append(f"{key}: expected {expected!r}, found {catalog.get(key)!r}")
+          if catalog.get("missing_expected_rpc_names") != []:
+              problems.append("One or more expected privileged RPCs are missing.")
+          trigger_path = str(catalog.get("private_trigger_search_path") or "").lower().replace(" ", "")
+          if "search_path=public,private" not in trigger_path:
+              problems.append("The private notification trigger search_path differs from the audited baseline.")
+          if size < 1024:
+              problems.append("The schema-only export is unexpectedly small.")
+
+          print("Safe schema-only baseline summary:")
+          print(json.dumps({"catalog": catalog, **dump_counts}, indent=2, sort_keys=True))
+          if problems:
+              print("Baseline gate failed:")
+              for problem in problems:
+                  print(f"- {problem}")
+              raise SystemExit(1)
+
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          with summary.open("a", encoding="utf-8") as out:
+              out.write("## Elory production schema-only baseline\n\n")
+              out.write("- Export mode: schema only; no table row data\n")
+              out.write("- Destination: ephemeral GitHub runner; no artifact or repository file created\n")
+              out.write(f"- SHA-256: `{digest.hexdigest()}`\n")
+              out.write(f"- Export size: {size:,} bytes\n")
+              out.write(f"- Expected privileged RPCs found: {catalog['expected_rpc_count']}/22\n")
+              out.write(f"- SECURITY DEFINER RPCs before hardening: {catalog['target_security_definer_count']}\n")
+              out.write(f"- Unexpected PUBLIC EXECUTE grants on those RPCs: {catalog['target_public_execute_count']}\n")
+              out.write("- Production was accessed using read-only transactions.\n")
+          PY
+
+      - name: Remove all temporary database material
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          rm -f "$RUNNER_TEMP/elory.pgpass" "$RUNNER_TEMP/elory-catalog.json"
+          rm -rf "$RUNNER_TEMP/elory-schema"

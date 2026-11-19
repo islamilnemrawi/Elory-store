@@ -1,0 +1,348 @@
+name: Elory Dashboard compatibility for security hardening
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "supabase/migrations/20261114180000_elory_security_privilege_hardening.sql"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: elory-dashboard-apk
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Android Debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout Elory security PR
+        uses: actions/checkout@v4
+
+      - name: Checkout canonical dashboard source
+        uses: actions/checkout@v4
+        with:
+          repository: islamilnemrawi/pinky--dashboard
+          ref: main
+          path: dashboard
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Extract Android project archive
+        id: extract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          ARCHIVE="$GITHUB_WORKSPACE/dashboard/Elory_Dashboard_Build_Ready.zip"
+          SOURCE_DIR="$RUNNER_TEMP/elory-source"
+
+          if [[ ! -s "$ARCHIVE" ]]; then
+            echo "Required project archive not found: $ARCHIVE"
+            echo "Repository contents:"
+            ls -lah "$GITHUB_WORKSPACE"
+            exit 1
+          fi
+
+          mkdir -p "$SOURCE_DIR"
+          unzip -q "$ARCHIVE" -d "$SOURCE_DIR"
+
+          SETTINGS_FILE="$(find "$SOURCE_DIR" -type f -name settings.gradle.kts -print -quit)"
+          if [[ -z "$SETTINGS_FILE" ]]; then
+            echo 'settings.gradle.kts was not found inside the project ZIP.'
+            echo 'Archive contents:'
+            unzip -l "$ARCHIVE" | head -80
+            exit 1
+          fi
+
+          PROJECT_DIR="$(dirname "$SETTINGS_FILE")"
+          if [[ ! -f "$PROJECT_DIR/app/build.gradle.kts" ]]; then
+            echo "Found settings.gradle.kts but app/build.gradle.kts is missing in $PROJECT_DIR"
+            exit 1
+          fi
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Android project extracted to: $PROJECT_DIR"
+          echo 'Project files:'
+          ls -lah "$PROJECT_DIR"
+
+      - name: Apply Elory CMS updates
+        # CMS patch includes hero visibility, custom-section image uploads, and safe section ordering.
+        # Adds the live phone preview component missing from the source archive.
+        # Synchronizes custom-section visibility between the section list and custom content object.
+        shell: bash
+        working-directory: dashboard
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/apply-elory-cms-patch.py
+
+      - name: Apply shipping, Prime, and staff management fixes
+        shell: bash
+        working-directory: dashboard
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/apply-elory-operations-fixes.py
+
+      - name: Verify order item image and pricing fields
+        shell: bash
+        working-directory: dashboard
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/verify-order-item-display.py
+
+      - name: Prepare project configuration
+        shell: bash
+        env:
+          GEMINI_API_KEY: ''
+        run: |
+          set -Eeuo pipefail
+          cd "$PROJECT_DIR"
+
+          if [[ ! -f .env.example ]]; then
+            echo '.env.example is missing from the Android project.'
+            exit 1
+          fi
+
+          cp .env.example .env
+          python3 - <<'PYENV'
+          import os
+          from pathlib import Path
+
+          env_file = Path('.env')
+          lines = env_file.read_text().splitlines()
+          api_key = os.environ.get('GEMINI_API_KEY', '')
+          lines = [line for line in lines if not line.startswith('GEMINI_API_KEY=')]
+          lines.append('GEMINI_API_KEY="' + api_key + '"')
+          env_file.write_text('\n'.join(lines) + '\n')
+          PYENV
+
+          if [[ ! -f debug.keystore ]]; then
+            keytool -genkeypair -v \
+              -keystore debug.keystore \
+              -alias androiddebugkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass android \
+              -keypass android \
+              -dname 'CN=Android Debug,O=Android,C=US'
+          fi
+
+      - name: Inspect Gemini BuildConfig configuration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo '--- All project references to Gemini ---'
+          grep -R -n -i -C 4 --exclude-dir=.gradle --exclude-dir=build 'GEMINI_API_KEY\|geminiApiKey' "$PROJECT_DIR" || true
+          echo '--- Gradle configuration files ---'
+          find "$PROJECT_DIR" -maxdepth 3 -type f \( -name '*.gradle' -o -name '*.gradle.kts' -o -name 'gradle.properties' \) -print
+          echo '--- Root Gradle settings ---'
+          for file in "$PROJECT_DIR/build.gradle.kts" "$PROJECT_DIR/gradle.properties" "$PROJECT_DIR/app/build.gradle.kts"; do
+            if [[ -f "$file" ]]; then echo "--- $file ---"; sed -n '1,260p' "$file"; fi
+          done
+          echo '--- Environment template ---'
+          sed -n '1,100p' "$PROJECT_DIR/.env.example"
+
+      - name: Configure optional Gemini key safely
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PYFIX'
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ["PROJECT_DIR"])
+          gradle_file = root / "app/build.gradle.kts"
+          source = gradle_file.read_text()
+
+          # The Secrets plugin cannot emit a valid Java String for an absent key.
+          # Exclude this property from the plugin and provide an explicit empty String.
+          runner_line = '    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"'
+          field_line = r'    buildConfigField("String", "GEMINI_API_KEY", "\"\"")'
+          if 'buildConfigField("String", "GEMINI_API_KEY"' not in source:
+              if runner_line not in source:
+                  raise SystemExit("Could not locate defaultConfig insertion point")
+              source = source.replace(runner_line, runner_line + "\n" + field_line, 1)
+
+          secrets_line = '  ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")'
+          gemini_ignore = '  ignoreList.add("GEMINI_API_KEY")'
+          if gemini_ignore not in source:
+              if secrets_line not in source:
+                  raise SystemExit("Could not locate Secrets plugin ignoreList")
+              source = source.replace(secrets_line, secrets_line + "\n" + gemini_ignore, 1)
+
+          gradle_file.write_text(source)
+          for env_file in (root / ".env", root / ".env.example"):
+              if env_file.exists():
+                  lines = [line for line in env_file.read_text().splitlines()
+                           if not line.startswith("GEMINI_API_KEY=")]
+                  env_file.write_text("\n".join(lines) + "\n")
+
+          print("Gemini key configured as an optional empty Java String.")
+          PYFIX
+          echo '--- Applied optional Gemini configuration ---'
+          grep -n -C 2 'GEMINI_API_KEY' "$PROJECT_DIR/app/build.gradle.kts"
+
+      - name: Verify previously reported Kotlin fix
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE_FILE="$PROJECT_DIR/app/src/main/java/com/pinky/dashboard/ui/screens/health/HealthCheckScreen.kt"
+          if [[ ! -f "$SOURCE_FILE" ]]; then
+            echo "Expected Kotlin file not found: $SOURCE_FILE"
+            exit 1
+          fi
+          if ! grep -Fq 'rangeUnit = "items"' "$SOURCE_FILE"; then
+            echo 'The previously reported getProducts() fix is missing from the source archive.'
+            exit 1
+          fi
+          echo 'Previously reported getProducts() parameters are present.'
+
+      - name: Configure Kotlin compiler mirror
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          POM_PATH="org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.10/kotlin-compiler-embeddable-2.2.10.pom"
+          JAR_PATH="org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.10/kotlin-compiler-embeddable-2.2.10.jar"
+          SELECTED_MIRROR=""
+
+          # Test metadata AND the 54 MB compiler JAR. A mirror that serves only one
+          # of them is not accepted.
+          CANDIDATES=(
+            "Google Americas|https://maven-central.storage-download.googleapis.com/maven2"
+            "Google Europe|https://maven-central-eu.storage-download.googleapis.com/maven2"
+            "Google Asia Pacific|https://maven-central-asia.storage-download.googleapis.com/maven2"
+            "Aliyun Central|https://maven.aliyun.com/repository/central"
+            "WSO2 Central|https://maven.wso2.org/nexus/content/repositories/central"
+          )
+
+          for candidate in "${CANDIDATES[@]}"; do
+            LABEL="${candidate%%|*}"
+            BASE="${candidate#*|}"
+            echo "Preflighting $LABEL ($BASE)"
+            rm -f "$RUNNER_TEMP/kotlin-compiler-preflight.pom" "$RUNNER_TEMP/kotlin-compiler-preflight.jar"
+
+            if curl --fail --location --silent --show-error \
+                 --retry 1 --retry-all-errors --connect-timeout 15 --max-time 90 \
+                 "$BASE/$POM_PATH" --output "$RUNNER_TEMP/kotlin-compiler-preflight.pom" \
+               && curl --fail --location --silent --show-error \
+                 --retry 2 --retry-all-errors --retry-delay 3 --connect-timeout 20 --max-time 240 \
+                 "$BASE/$JAR_PATH" --output "$RUNNER_TEMP/kotlin-compiler-preflight.jar" \
+               && [[ -s "$RUNNER_TEMP/kotlin-compiler-preflight.pom" ]] \
+               && [[ "$(stat -c %s "$RUNNER_TEMP/kotlin-compiler-preflight.jar")" -gt 1000000 ]]; then
+              SELECTED_MIRROR="$BASE"
+              echo "Verified both POM and compiler JAR on $LABEL."
+              ls -lh "$RUNNER_TEMP/kotlin-compiler-preflight.pom" "$RUNNER_TEMP/kotlin-compiler-preflight.jar"
+              break
+            fi
+
+            echo "$LABEL did not pass both artifact checks; trying the next mirror."
+          done
+
+          if [[ -z "$SELECTED_MIRROR" ]]; then
+            echo "No tested Maven mirror could serve both Kotlin compiler files."
+            exit 1
+          fi
+
+          echo "KOTLIN_COMPILER_MIRROR=$SELECTED_MIRROR" >> "$GITHUB_ENV"
+          echo "Selected Kotlin compiler mirror: $SELECTED_MIRROR"
+
+          cat > "$RUNNER_TEMP/kotlin-compiler-mirror.init.gradle" <<'GRADLE'
+          def mirrorBase = System.getenv("KOTLIN_COMPILER_MIRROR")
+          if (mirrorBase == null || mirrorBase.trim().isEmpty()) {
+              throw new GradleException("KOTLIN_COMPILER_MIRROR was not exported by the preflight step.")
+          }
+
+          def installKotlinCompilerMirror = { repositoryHandler, label ->
+              def existing = repositoryHandler.findByName("EloryKotlinCompilerMirror")
+              if (existing != null) {
+                  repositoryHandler.remove(existing)
+              }
+
+              def mirror = repositoryHandler.maven {
+                  name = "EloryKotlinCompilerMirror"
+                  url = uri(mirrorBase)
+                  content {
+                      includeModule("org.jetbrains.kotlin", "kotlin-compiler-embeddable")
+                  }
+              }
+
+              repositoryHandler.remove(mirror)
+              repositoryHandler.addFirst(mirror)
+              println("[Elory build] Verified Kotlin compiler mirror installed first in " + label + ": " + mirrorBase)
+          }
+
+          def preferSettingsRepositories = false
+
+          gradle.settingsEvaluated { settings ->
+              def repositoriesMode = settings.dependencyResolutionManagement.repositoriesMode.get().toString()
+              preferSettingsRepositories = repositoriesMode.endsWith("PREFER_SETTINGS") ||
+                                           repositoriesMode.endsWith("FAIL_ON_PROJECT_REPOS")
+
+              installKotlinCompilerMirror(
+                  settings.dependencyResolutionManagement.repositories,
+                  "dependencyResolutionManagement"
+              )
+              println("[Elory build] dependency repositories mode: " + repositoriesMode)
+          }
+
+          gradle.beforeProject { project ->
+              if (!preferSettingsRepositories) {
+                  installKotlinCompilerMirror(project.repositories, project.path + " project repositories")
+              }
+              installKotlinCompilerMirror(project.buildscript.repositories, project.path + " buildscript repositories")
+          }
+          GRADLE
+          echo 'Verified Kotlin compiler metadata and JAR; Gradle mirror init script prepared.'
+
+      - name: Build Debug APK
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          # Retry transient repository/network failures (for example HTTP 502/504).
+          for attempt in 1 2 3; do
+            echo "Android build attempt $attempt/3"
+            if gradle --no-daemon --no-configuration-cache --init-script "$RUNNER_TEMP/kotlin-compiler-mirror.init.gradle" --stacktrace --max-workers=2 \
+              -p "$PROJECT_DIR" :app:assembleDebug; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              echo "Build attempt $attempt failed; waiting before retry..."
+              sleep $((attempt * 20))
+            fi
+          done
+          echo "Android build failed after 3 attempts."
+          exit 1
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APK="$PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
+          if [[ ! -s "$APK" ]]; then
+            echo "APK was not generated: $APK"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/apk-output"
+          cp "$APK" "$RUNNER_TEMP/apk-output/Elory-Dashboard-debug.apk"
+          ls -lh "$RUNNER_TEMP/apk-output/Elory-Dashboard-debug.apk"
+
