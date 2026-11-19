@@ -3107,6 +3107,19 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
 #featured .section-title-wrap{position:relative}
 #featured .section-title-wrap:after{content:"♥";position:absolute;left:50%;bottom:-1px;display:flex;width:24px;height:14px;align-items:center;justify-content:center;transform:translateX(-50%);background:var(--bg,#fffafb);color:var(--pink,#c8698c);font-size:11px;line-height:1}
 #featured .products-grid,#productsGrid,.featured-grid,#featuredGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))!important;align-items:start;gap:18px;width:100%;max-width:1280px;margin:0 auto}
+/* Homepage featured products are grouped by category; keep exactly three cards per row. */
+#featured #productsGrid{display:block!important;}
+#featured .elory-home-category-section{width:100%;margin:0 0 clamp(24px,3.5vw,42px);}
+#featured .elory-home-category-section:last-child{margin-bottom:0;}
+#featured .elory-home-category-heading{display:flex;align-items:center;justify-content:flex-start;width:100%;margin:0 0 12px;text-align:right;direction:rtl;}
+#featured .elory-home-category-heading h3{margin:0;font-size:clamp(17px,2vw,22px);font-weight:800;line-height:1.4;}
+#featured .elory-home-category-link{display:inline-flex;align-items:center;gap:7px;color:var(--pink-dark,#b94e75);text-decoration:none;border-bottom:1px solid rgba(185,78,117,.35);padding:0 0 4px;transition:color .18s ease,border-color .18s ease;}
+#featured .elory-home-category-link::after{content:"←";font-size:.85em;transition:transform .18s ease;}
+#featured .elory-home-category-link:hover{color:var(--pink,#d9437e);border-color:currentColor;}
+#featured .elory-home-category-link:hover::after{transform:translateX(-3px);}
+#featured #productsGrid .elory-home-category-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:start;gap:clamp(8px,1.5vw,18px);width:100%;max-width:1280px;margin:0 auto;}
+#featured .elory-home-load-more{text-align:center;margin:16px auto 0;}
+#featured .elory-home-load-more button{border:1px solid var(--pink-light,#edbfd0);border-radius:22px;background:var(--pink-soft,#fff0f5);color:var(--pink-dark,#b94e75);padding:9px 18px;font:700 12px Cairo,sans-serif;}
 #productsGrid>.product-card:only-child{grid-column:1/-1;justify-self:center;width:min(100%,300px)}
 #featured .product-card{position:relative;display:flex;min-width:0;flex-direction:column;overflow:hidden;border:1px solid #efd8e1;border-radius:15px;background:var(--surface,#fff);box-shadow:0 5px 17px rgba(118,50,75,.08);transition:transform .18s ease,box-shadow .18s ease}
 #featured .product-card:hover{transform:translateY(-3px);box-shadow:0 9px 22px rgba(118,50,75,.13)}
@@ -5904,11 +5917,13 @@ main#home{
           ? rows.filter(x => x && String(x.name || "").trim())
           : [];
         renderCategories();
+        if(productsLoadState==="loaded"&&!document.getElementById("shopPage")?.classList.contains("show")) renderProducts();
       } catch (error) {
         console.error("Elory Store categories query failed:", error);
         if (!silent) {
           storeCategories = [];
           renderCategories();
+          if(productsLoadState==="loaded"&&!document.getElementById("shopPage")?.classList.contains("show")) renderProducts();
         }
       }
     }
@@ -6125,6 +6140,46 @@ main#home{
        PRODUCTS RENDER
        ========================================================= */
 
+    function normalizeHomepageCategoryName(value){
+      return String(value||"").normalize("NFKC").toLocaleLowerCase("ar")
+        .replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")
+        .replace(/ـ/g,"").replace(/[\u064B-\u065F]/g,"")
+        .replace(/\s+/g," ").trim();
+    }
+
+    function homepageCategoryPriority(name){
+      const value=normalizeHomepageCategoryName(name);
+      if((/مدارس|school/.test(value))&&(/شنط|حقائب|bag/.test(value))) return 5;
+      if(/تجميل|مكياج|beauty|makeup/.test(value)) return 0;
+      if(/اكسسوار|accessor/.test(value)) return 1;
+      if(/ساعات/.test(value)&&/حريمي|نسائي|نساء|women|lady/.test(value)) return 2;
+      if((/شنط|حقائب|bags?/.test(value))&&!/مدارس|school/.test(value)) return 3;
+      if(/ساعات/.test(value)&&/رجالي|رجال|men|man/.test(value)) return 4;
+      return 6;
+    }
+
+    function getHomepageFeaturedCategories(featuredProducts){
+      const categories=[];
+      const seen=new Set();
+      const addCategory=(name,sortOrder=999999)=>{
+        const label=String(name||"").trim();
+        const key=normalizeHomepageCategoryName(label);
+        if(!label||!key||seen.has(key)) return;
+        seen.add(key);
+        categories.push({name:label,key,sortOrder});
+      };
+      storeCategories
+        .filter(category=>category&&category.active!==false&&String(category.name||"").trim())
+        .forEach(category=>addCategory(category.name,Number(category.sort_order??999999)));
+      featuredProducts.forEach(product=>addCategory(product.category));
+      return categories.sort((a,b)=>{
+        const ap=homepageCategoryPriority(a.name),bp=homepageCategoryPriority(b.name);
+        if(ap!==bp)return ap-bp;
+        if(ap===6&&a.sortOrder!==b.sortOrder)return a.sortOrder-b.sortOrder;
+        return a.name.localeCompare(b.name,"ar");
+      });
+    }
+
     function renderProducts(){
       const grid=document.getElementById("productsGrid");
       if(!grid)return;
@@ -6133,12 +6188,12 @@ main#home{
         syncFavoriteButtons(); return;
       }
 
-      // The homepage's featured block is controlled only by the product's
-      // featured flag. Search remains able to find every active product.
+      // Homepage sections show every active product marked as featured,
+      // grouped by its live category. Search keeps its existing all-products behavior.
       const query=String(document.getElementById("searchInput")?.value||"").trim();
       const homepageProducts=query
         ? filteredProducts
-        : filteredProducts.filter(product=>product.featured === true);
+        : filteredProducts.filter(product=>product.featured===true);
 
       if(!homepageProducts.length){
         const catalogUnavailable=productsLoadState==="error";
@@ -6149,7 +6204,7 @@ main#home{
           ?"تعذر تحميل المنتجات من المتجر. تحققي من الاتصال ثم أعيدي المحاولة."
           :(query
             ?"جرّبي اسمًا أو تصنيفًا آخر."
-            :"يمكنك تفعيل «عرض كمنتج مميز بالصفحة الرئيسية» من تعديل المنتج. ستظل باقي المنتجات متاحة داخل أقسامها.");
+            :"فعّلي خيار عرض المنتج في الصفحة الرئيسية من تعديل المنتج، وسيظل باقي الكتالوج متاحًا داخل أقسامه.");
         const action=catalogUnavailable
           ?'<button type="button" onclick="loadProducts()">إعادة تحميل المنتجات</button>'
           :(query
@@ -6158,7 +6213,25 @@ main#home{
         grid.innerHTML=`<div class="search-empty-state"><i class="fa-solid ${catalogUnavailable?'fa-cloud-arrow-down':'fa-magnifying-glass'}" aria-hidden="true"></i><strong>${title}</strong><span>${message}</span>${action}</div>`;
         syncFavoriteButtons(); return;
       }
-      grid.innerHTML=homepageProducts.slice(0,8).map(product=>productCardHtml(product)).join("");
+
+      if(query){
+        grid.innerHTML=`<section class="elory-home-category-section elory-home-search-results"><div class="elory-home-category-heading"><h3>نتائج البحث</h3></div><div class="products-grid elory-home-category-grid">${homepageProducts.map(product=>productCardHtml(product)).join("")}</div>${productsHasMore?'<div class="elory-home-load-more"><button type="button" onclick="loadMoreProducts()">البحث في باقي المنتجات</button></div>':""}</section>`;
+        syncFavoriteButtons(); return;
+      }
+
+      const categories=getHomepageFeaturedCategories(homepageProducts);
+      const sections=categories.map(category=>{
+        const categoryProducts=homepageProducts.filter(product=>normalizeHomepageCategoryName(product.category)===category.key);
+        if(!categoryProducts.length)return "";
+        const categoryArg=escapeHtml(JSON.stringify(category.name));
+        return `<section class="elory-home-category-section" data-home-category="${escapeHtml(category.name)}"><div class="elory-home-category-heading"><h3><a class="elory-home-category-link" href="#shopPage" onclick="showShopPage(${categoryArg},${categoryArg});return false;">${escapeHtml(category.name)}</a></h3></div><div class="products-grid elory-home-category-grid">${categoryProducts.map(product=>productCardHtml(product)).join("")}</div></section>`;
+      }).filter(Boolean);
+
+      if(!sections.length){
+        grid.innerHTML='<div class="search-empty-state"><strong>لا توجد منتجات مميزة بالصفحة الرئيسية حاليًا</strong><span>فعّلي خيار عرض المنتج في الصفحة الرئيسية من تعديل المنتج.</span></div>';
+      }else{
+        grid.innerHTML=sections.join("");
+      }
       syncFavoriteButtons();
     }
 
