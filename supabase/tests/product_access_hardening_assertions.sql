@@ -7,7 +7,7 @@ INSERT INTO public.products(
 ) VALUES (
   '22222222-2222-4222-8222-222222222222',
   'Test product', 'Fixture only', 'Test', 100, 45, 'ELORY-PRIVATE-1', 5,
-  0, false, true, now(), '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, 'SKU-PRIVATE-1',
+  0, false, true, now(), '[]'::jsonb, '[]'::jsonb, '[{"id":"variant-1","name":"Red / S","price":110,"stock":3,"sku":"VAR-SKU-1","code":"VAR-CODE-1","wholesale_price":20}]'::jsonb, 'SKU-PRIVATE-1',
   0.2, '[]'::jsonb, '[]'::jsonb
 );
 INSERT INTO public.products(
