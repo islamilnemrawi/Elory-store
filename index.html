@@ -2978,7 +2978,7 @@ html,body{
   max-width:none !important;
   margin:0 !important;
   padding:0 !important;
-  overflow-x:hidden !important;
+  overflow-x:clip !important;
 }
 body > *{box-sizing:border-box;}
 .header,
@@ -9281,7 +9281,26 @@ main#home{
         ${details.length?`<details class="customer-order-details"><summary>بيانات الطلب والشحن</summary><div>${details.map(([label,value])=>`<p><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></p>`).join("")}</div></details>`:""}
       </article>`;
     }
-    function openOrdersPage(){document.getElementById("home")?.style.setProperty("display","none");document.getElementById("shopPage")?.classList.remove("show");const s=document.getElementById("orderSuccessPage");if(s)s.hidden=true;const p=document.getElementById("customerOrdersPage");if(p){p.hidden=false;p.style.display="block";}startOrdersLiveSync();loadCustomerOrders();window.scrollTo({top:0,behavior:"smooth"});}
+    function openOrdersPage(){
+      const primeModal=document.getElementById("primeModal");
+      if(primeModal?.classList.contains("show")){
+        const primeHistoryState=history.state?.eloryApp==="Elory"&&history.state?.modal==="primeModal";
+        closeModalVisual("primeModal");
+        if(primeHistoryState){
+          const nextState={...history.state,view:"orders"};
+          delete nextState.modal;
+          history.replaceState(nextState,"",window.location.pathname+window.location.search+"#orders");
+        }
+      }
+      document.getElementById("home")?.style.setProperty("display","none");
+      document.getElementById("shopPage")?.classList.remove("show");
+      const s=document.getElementById("orderSuccessPage");if(s)s.hidden=true;
+      const p=document.getElementById("customerOrdersPage");
+      if(p){p.hidden=false;p.style.display="block";}
+      startOrdersLiveSync();
+      loadCustomerOrders();
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
     function continueFromOrders(){const p=document.getElementById("customerOrdersPage");if(p){p.hidden=true;p.style.display="none";}document.getElementById("home")?.style.removeProperty("display");window.scrollTo({top:0,behavior:"smooth"});}
     async function loadCustomerOrders(){
       const state=document.getElementById("ordersPageState");
