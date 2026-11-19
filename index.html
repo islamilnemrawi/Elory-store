@@ -6131,16 +6131,33 @@ main#home{
         grid.innerHTML='<div class="loading"><div class="spinner"></div> جاري تحميل المنتجات...</div>';
         syncFavoriteButtons(); return;
       }
-      if(!filteredProducts.length){
-        const query=String(document.getElementById("searchInput")?.value||"").trim();
+
+      // The homepage's featured block is controlled only by the product's
+      // featured flag. Search remains able to find every active product.
+      const query=String(document.getElementById("searchInput")?.value||"").trim();
+      const homepageProducts=query
+        ? filteredProducts
+        : filteredProducts.filter(product=>product.featured === true);
+
+      if(!homepageProducts.length){
         const catalogUnavailable=productsLoadState==="error";
-        const title=catalogUnavailable?"المنتجات غير متاحة مؤقتًا":(query?"لا توجد منتجات مطابقة للبحث":"لا توجد منتجات متاحة حاليًا");
-        const message=catalogUnavailable?"تعذر تحميل المنتجات من المتجر. تحققي من الاتصال ثم أعيدي المحاولة.":(query?"جرّبي اسمًا أو تصنيفًا آخر.":"سنحاول عرض المنتجات عند توفرها.");
-        const action=catalogUnavailable?'<button type="button" onclick="loadProducts()">إعادة تحميل المنتجات</button>':(query?'<button type="button" onclick="clearProductSearch()">مسح البحث</button>'+(productsHasMore?'<button type="button" onclick="loadMoreProducts()">البحث في باقي المنتجات</button>':''):'');
+        const title=catalogUnavailable
+          ?"المنتجات غير متاحة مؤقتًا"
+          :(query?"لا توجد منتجات مطابقة للبحث":"لا توجد منتجات مميزة بالصفحة الرئيسية حاليًا");
+        const message=catalogUnavailable
+          ?"تعذر تحميل المنتجات من المتجر. تحققي من الاتصال ثم أعيدي المحاولة."
+          :(query
+            ?"جرّبي اسمًا أو تصنيفًا آخر."
+            :"يمكنك تفعيل «عرض كمنتج مميز بالصفحة الرئيسية» من تعديل المنتج. ستظل باقي المنتجات متاحة داخل أقسامها.");
+        const action=catalogUnavailable
+          ?'<button type="button" onclick="loadProducts()">إعادة تحميل المنتجات</button>'
+          :(query
+            ?'<button type="button" onclick="clearProductSearch()">مسح البحث</button>'+(productsHasMore?'<button type="button" onclick="loadMoreProducts()">البحث في باقي المنتجات</button>':'')
+            :'');
         grid.innerHTML=`<div class="search-empty-state"><i class="fa-solid ${catalogUnavailable?'fa-cloud-arrow-down':'fa-magnifying-glass'}" aria-hidden="true"></i><strong>${title}</strong><span>${message}</span>${action}</div>`;
         syncFavoriteButtons(); return;
       }
-      grid.innerHTML=filteredProducts.slice(0,8).map(product=>productCardHtml(product)).join("");
+      grid.innerHTML=homepageProducts.slice(0,8).map(product=>productCardHtml(product)).join("");
       syncFavoriteButtons();
     }
 
