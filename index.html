@@ -4936,6 +4936,7 @@ main#home{
 <!-- =========================================================
        TOP ANNOUNCEMENT
        ========================================================= -->
+<div class="elory-global-sticky-shell" id="eloryGlobalStickyShell">
 <div aria-label="إعلانات Elory" class="announcement">
 <div class="announcement-track" id="announcementTrack">
 <div aria-hidden="false" class="announcement-group">
@@ -4998,6 +4999,7 @@ main#home{
 </div>
 </div>
 </nav>
+</div>
 <div aria-label="اقتراحات المنتجات" class="product-search-dropdown" id="productSearchDropdown" role="listbox" hidden></div>
 <!-- =========================================================
        MOBILE / QUICK MENU
@@ -11334,6 +11336,49 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
 @media(max-width:700px){
   .modal#primeModal.prime-page-mode .prime-modal{padding:25px 14px 32px!important}
   .modal#primeModal.prime-page-mode .close-modal{top:10px!important;right:10px!important}
+}
+</style>
+<style id="elory-global-sticky-header">
+/* Keep the complete announcement, identity header and primary navigation
+   together as one sticky surface across every storefront view. */
+#eloryGlobalStickyShell{
+  position:sticky!important;
+  top:0!important;
+  z-index:900!important;
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  isolation:isolate!important;
+  background:#fff8fb;
+  box-shadow:0 5px 18px rgba(119,45,75,.12);
+}
+#eloryGlobalStickyShell>.announcement,
+#eloryGlobalStickyShell>.header,
+#eloryGlobalStickyShell>.elory-reference-nav{
+  flex:none!important;
+}
+#eloryGlobalStickyShell>.header{
+  position:relative!important;
+  top:auto!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav{
+  position:relative!important;
+  top:auto!important;
+  margin-bottom:0!important;
+}
+main#home{
+  margin-top:0!important;
+  padding-top:0!important;
+}
+@media(max-width:760px){
+  #eloryGlobalStickyShell{top:0!important}
+  main#home{margin-top:0!important;padding-top:0!important}
+  #eloryGlobalStickyShell>.elory-reference-nav{margin-bottom:0!important}
+}
+@media(max-width:380px){
+  main#home{margin-top:0!important;padding-top:0!important}
 }
 </style>
 </body>
