@@ -6141,8 +6141,8 @@ main#home{
     function normalizeHomepageCategoryName(value){
       return String(value||"").normalize("NFKC").toLocaleLowerCase("ar")
         .replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")
-        .replace(/ـ/g,"").replace(/[\\u064B-\\u065F]/g,"")
-        .replace(/\\s+/g," ").trim();
+        .replace(/ـ/g,"").replace(/[\u064B-\u065F]/g,"")
+        .replace(/\s+/g," ").trim();
     }
 
     function homepageCategoryPriority(name){
