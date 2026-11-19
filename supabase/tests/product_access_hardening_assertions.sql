@@ -54,6 +54,39 @@ BEGIN
   END IF;
 END;
 $anon_catalog$;
+
+-- Match the exact public product columns requested by the live storefront.
+-- This must keep working after table-wide SELECT is revoked and replaced by
+-- safe column-level grants. Product detail reads that request stock must fail
+-- closed and use catalog_products as their existing fallback.
+DO $anon_storefront_query$
+DECLARE v_count integer;
+BEGIN
+  SELECT count(*) INTO v_count
+    FROM (
+      SELECT id, name, description, image, category, price, old_price,
+             discount, featured, active, colors, color_options, sizes,
+             variants, created_at
+        FROM public.products
+       WHERE active IS TRUE
+    ) AS storefront_rows;
+  IF v_count <> 1 THEN
+    RAISE EXCEPTION 'The storefront public products query should return the active fixture row; found %', v_count;
+  END IF;
+
+  BEGIN
+    PERFORM stock FROM public.products WHERE active IS TRUE;
+    RAISE EXCEPTION 'Anonymous product-detail query unexpectedly read private stock';
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+
+  SELECT count(*) INTO v_count FROM public.catalog_products;
+  IF v_count <> 1 THEN
+    RAISE EXCEPTION 'The catalog_products fallback should remain available; found %', v_count;
+  END IF;
+END;
+$anon_storefront_query$;
 RESET ROLE;
 
 -- A signed-in customer retains active public catalog access, but no private fields.
