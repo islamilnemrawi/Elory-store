@@ -7,7 +7,7 @@ DO $preflight$
 BEGIN
   IF to_regclass('public.products') IS NULL
      OR to_regclass('public.catalog_products') IS NULL
-     OR to_regclass('private.elory_admin_list_products_impl(integer,integer)') IS NULL THEN
+     OR to_regprocedure('private.elory_admin_list_products_impl(integer,integer)') IS NULL THEN
     RAISE EXCEPTION 'Catalog privacy migration stopped: expected product objects are missing';
   END IF;
 
