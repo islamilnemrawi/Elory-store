@@ -1,0 +1,202 @@
+-- Align customer order history RPCs with the order visibility RLS policy.
+-- Keep customer-facing item code (used by the order UI), but remove internal duplicate
+-- fields and cost data from the JSON returned to customers.
+
+CREATE OR REPLACE FUNCTION public.get_customer_orders(
+  p_access_token text DEFAULT NULL::text,
+  p_phone text DEFAULT NULL::text
+)
+RETURNS TABLE(
+  id uuid,
+  order_number text,
+  user_id uuid,
+  created_at timestamptz,
+  status text,
+  items jsonb,
+  shipping_cost numeric,
+  total numeric,
+  governorate text,
+  center text,
+  customer_order_code text
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+  SELECT
+    o.id,
+    coalesce(to_jsonb(o)->>'order_number', to_jsonb(o)->>'order_code', o.id::text) AS order_number,
+    o.user_id,
+    o.created_at,
+    o.status,
+    CASE
+      WHEN jsonb_typeof(o.items) = 'array' THEN
+        coalesce((
+          SELECT jsonb_agg(
+            x.item
+              - 'wholesale_price'
+              - 'product_code'
+              - 'product_image'
+              - 'product_name'
+              - 'wholesalePrice'
+              - 'productCode'
+              - 'productImage'
+              - 'productName'
+              - 'sku'
+              - 'product_sku'
+              - 'productSku'
+              - 'internal_code'
+              - 'internalCode'
+              - 'barcode'
+              - 'cost_price'
+              - 'costPrice'
+              - 'unit_cost'
+              - 'unitCost'
+              - 'product_cost'
+              - 'profit'
+              - 'margin'
+            ORDER BY x.ordinality
+          )
+          FROM jsonb_array_elements(o.items) WITH ORDINALITY AS x(item, ordinality)
+        ), '[]'::jsonb)
+      ELSE coalesce(o.items, '[]'::jsonb)
+    END AS items,
+    coalesce(o.shipping_cost, 0) AS shipping_cost,
+    coalesce(o.total, 0) AS total,
+    o.governorate,
+    o.center,
+    o.customer_order_code
+  FROM public.orders AS o
+  WHERE (
+    (auth.uid() IS NOT NULL AND o.user_id = auth.uid())
+    OR (
+      p_access_token IS NOT NULL
+      AND length(btrim(p_access_token)) >= 24
+      AND o.customer_access_token = btrim(p_access_token)
+    )
+  )
+    AND lower(btrim(coalesce(o.status, ''))) NOT IN (
+      'جاري الدفع',
+      'فشل الدفع',
+      'فشل إنشاء الدفع',
+      'payment pending',
+      'pending payment',
+      'payment failed',
+      'failed payment',
+      'failed to create payment'
+    )
+    AND NOT (
+      lower(btrim(coalesce(o.payment_method, ''))) IN (
+        'card', 'visa', 'paymob', 'vodafone_cash', 'vodafone cash'
+      )
+      AND lower(btrim(coalesce(o.status, ''))) IN (
+        'جديد', 'جاري التأكيد', 'pending', 'new'
+      )
+    )
+  ORDER BY o.created_at DESC;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.get_customer_orders_v2(
+  p_access_token text DEFAULT NULL::text,
+  p_phone text DEFAULT NULL::text
+)
+RETURNS TABLE(
+  id uuid,
+  order_number text,
+  user_id uuid,
+  created_at timestamptz,
+  status text,
+  payment_method text,
+  items jsonb,
+  shipping_cost numeric,
+  total numeric,
+  governorate text,
+  center text,
+  customer_order_code text
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+  SELECT
+    o.id,
+    coalesce(to_jsonb(o)->>'order_number', to_jsonb(o)->>'order_code', o.id::text) AS order_number,
+    o.user_id,
+    o.created_at,
+    o.status,
+    o.payment_method,
+    CASE
+      WHEN jsonb_typeof(o.items) = 'array' THEN
+        coalesce((
+          SELECT jsonb_agg(
+            x.item
+              - 'wholesale_price'
+              - 'product_code'
+              - 'product_image'
+              - 'product_name'
+              - 'wholesalePrice'
+              - 'productCode'
+              - 'productImage'
+              - 'productName'
+              - 'sku'
+              - 'product_sku'
+              - 'productSku'
+              - 'internal_code'
+              - 'internalCode'
+              - 'barcode'
+              - 'cost_price'
+              - 'costPrice'
+              - 'unit_cost'
+              - 'unitCost'
+              - 'product_cost'
+              - 'profit'
+              - 'margin'
+            ORDER BY x.ordinality
+          )
+          FROM jsonb_array_elements(o.items) WITH ORDINALITY AS x(item, ordinality)
+        ), '[]'::jsonb)
+      ELSE coalesce(o.items, '[]'::jsonb)
+    END AS items,
+    coalesce(o.shipping_cost, 0) AS shipping_cost,
+    coalesce(o.total, 0) AS total,
+    o.governorate,
+    o.center,
+    o.customer_order_code
+  FROM public.orders AS o
+  WHERE (
+    (auth.uid() IS NOT NULL AND o.user_id = auth.uid())
+    OR (
+      p_access_token IS NOT NULL
+      AND length(btrim(p_access_token)) >= 24
+      AND o.customer_access_token = btrim(p_access_token)
+    )
+  )
+    AND lower(btrim(coalesce(o.status, ''))) NOT IN (
+      'جاري الدفع',
+      'فشل الدفع',
+      'فشل إنشاء الدفع',
+      'payment pending',
+      'pending payment',
+      'payment failed',
+      'failed payment',
+      'failed to create payment'
+    )
+    AND NOT (
+      lower(btrim(coalesce(o.payment_method, ''))) IN (
+        'card', 'visa', 'paymob', 'vodafone_cash', 'vodafone cash'
+      )
+      AND lower(btrim(coalesce(o.status, ''))) IN (
+        'جديد', 'جاري التأكيد', 'pending', 'new'
+      )
+    )
+  ORDER BY o.created_at DESC;
+$function$;
+
+REVOKE ALL ON FUNCTION public.get_customer_orders(text, text) FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.get_customer_orders_v2(text, text) FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_customer_orders(text, text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_customer_orders_v2(text, text) TO anon, authenticated, service_role;
+
+NOTIFY pgrst, 'reload schema';
