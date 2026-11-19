@@ -5524,7 +5524,7 @@ main#home{
 </section>
 <section class="prime-page-membership">
 <div class="prime-page-section-head"><div><span>مساحتك الخاصة</span><h3>حالة عضويتك وبيانات الاشتراك</h3></div><span class="prime-page-section-icon"><i class="fa-solid fa-shield-heart"></i></span></div>
-<div id="primeModalStatus" class="prime-modal-status" aria-live="polite"><div class="prime-status-message">جاري التحقق من حالة عضويتك...</div></div>
+<div id="primeModalStatus" class="prime-modal-status" aria-live="polite"><div class="prime-status-message">غير نشط</div></div>
 </section>
 <div class="prime-page-footnote"><i class="fa-solid fa-lock"></i> بيانات عضويتك وحالة الدفع تُعرض من حسابك مباشرة.</div>
 </div>
@@ -5652,6 +5652,9 @@ main#home{
     const PRIME_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 
     let primeActive = false;
+    let primePageScrollY = 0;
+    let primePageScrollLocked = false;
+    let primeStatusPollTimer = null;
     let primeStatus = null;
     let primeStatusLoadState = "idle";
     let primeStatusRequest = null;
@@ -5722,8 +5725,7 @@ main#home{
     function updatePrimeAccountSummary(){
       const box=document.getElementById("primeAccountSummary"); if(!box)return;
       const active=primeActive;
-      const pending=!!primeStatus && ["pending","pending_payment","awaiting_payment","processing","قيد الدفع","بانتظار الدفع","بانتظار تأكيد الدفع"].includes(String(primeStatus.status||"").toLowerCase());
-      const actionLabel=active?"عرض عضويتك في Prime":pending?"متابعة اشتراكك":"اشترك الآن";
+      const actionLabel=active?"عرض عضويتك في Prime":"اشترك الآن";
       const intro=active?"استمتعي بمزايا عضويتك وتجربتك البنفسجية الخاصة.":"انضمي إلى Elory Prime واستمتعي بمزايا حصرية وتجربة تسوق مميزة.";
       box.innerHTML='<section class="account-prime-offer"><div class="account-prime-offer-top"><span class="account-prime-offer-kicker">ELORY EXCLUSIVE</span><span class="account-prime-offer-crown"><i class="fa-solid fa-crown"></i></span></div><h3>Elory Prime</h3><p class="account-prime-offer-intro">'+intro+'</p><div class="account-prime-offer-benefits"><span><i class="fa-solid fa-percent"></i> خصم إضافي 10%</span><span><i class="fa-solid fa-truck-fast"></i> شحن مجاني حتى 6 طلبات شهريًا</span><span><i class="fa-solid fa-gift"></i> تغليف خاص لطلبات Prime</span><span><i class="fa-solid fa-palette"></i> ثيم موف/بنفسجي مميز</span></div><button class="account-prime-offer-cta" type="button" onclick="openPrime()">'+actionLabel+' <i class="fa-solid fa-arrow-left"></i></button></section>';
     }
@@ -8041,23 +8043,57 @@ main#home{
        PRIME
        ========================================================= */
 
+    function lockPrimePageScroll(){
+      if(primePageScrollLocked)return;
+      primePageScrollY=window.scrollY||window.pageYOffset||0;
+      document.body.style.setProperty("--elory-prime-scroll-y",primePageScrollY+"px");
+      document.body.classList.add("elory-prime-page-open");
+      primePageScrollLocked=true;
+    }
+    function unlockPrimePageScroll(){
+      if(!primePageScrollLocked)return;
+      const restoreY=primePageScrollY;
+      document.body.classList.remove("elory-prime-page-open");
+      document.body.style.removeProperty("--elory-prime-scroll-y");
+      primePageScrollLocked=false;
+      document.body.style.overflow=getOpenModalId()?"hidden":"";
+      window.scrollTo(0,restoreY);
+    }
+    function stopPrimeStatusAutoRefresh(){
+      if(primeStatusPollTimer!==null){
+        clearInterval(primeStatusPollTimer);
+        primeStatusPollTimer=null;
+      }
+    }
+    function startPrimeStatusAutoRefresh(){
+      stopPrimeStatusAutoRefresh();
+      primeStatusPollTimer=setInterval(async()=>{
+        const modal=document.getElementById("primeModal");
+        if(!modal?.classList.contains("show")){
+          stopPrimeStatusAutoRefresh();
+          return;
+        }
+        if(primeActive||primeStatusRequest)return;
+        const result=await refreshPrimeState();
+        updatePrimeModalStatus();
+        if(result?.active)stopPrimeStatusAutoRefresh();
+      },5000);
+    }
     function openPrime(){
       const modal=document.getElementById("primeModal"); modal?.classList.add("prime-page-mode");
       openModal("primeModal");
-      primeStatusLoadState="loading";
+      lockPrimePageScroll();
       updatePrimeModalStatus();
-      refreshPrimeState().then(()=>updatePrimeModalStatus());
+      startPrimeStatusAutoRefresh();
+      refreshPrimeState().then(result=>{
+        updatePrimeModalStatus();
+        if(result?.active)stopPrimeStatusAutoRefresh();
+      });
     }
 
     function updatePrimeModalStatus(){
       const box=document.getElementById("primeModalStatus");
       if(!box)return;
-      if(primeStatusLoadState==="loading"){
-        box.innerHTML='<div class="prime-page-state prime-page-loading"><i class="fa-solid fa-spinner fa-spin"></i><b>جاري التحقق من عضويتك</b><span>لحظات ونجهز لك تفاصيل Elory Prime.</span></div>';return;
-      }
-      if(primeStatusLoadState==="error"){
-        box.innerHTML='<div class="prime-page-state prime-page-error"><span class="prime-page-state-icon"><i class="fa-solid fa-triangle-exclamation"></i></span><b>تعذر تحميل بيانات العضوية</b><p>لم نتمكن من التحقق من حالة اشتراكك الآن. لن نبدأ عملية دفع جديدة قبل التأكد من الحالة.</p><button class="prime-page-action secondary" type="button" onclick="refreshPrimeState().then(updatePrimeModalStatus)"><i class="fa-solid fa-rotate"></i> إعادة التحقق</button></div>';return;
-      }
       const data=primeStatus||{};
       const priceAmount=document.getElementById("primePagePriceAmount");
       if(priceAmount)priceAmount.textContent=Math.round(getPrimePrice()).toLocaleString("ar-EG");
@@ -8065,19 +8101,12 @@ main#home{
       if(discountBenefit)discountBenefit.textContent="خصم إضافي "+getPrimeDiscountPercent()+"%";
       const shippingBenefit=document.getElementById("primePageShippingBenefit");
       if(shippingBenefit)shippingBenefit.textContent="حتى "+getPrimeFreeShippingCount()+" طلبات شهريًا";
+
       const expiry=data.expires_at?new Date(data.expires_at):null;
       const expiryMs=expiry?expiry.getTime():NaN;
       const active=data.active===true&&Number.isFinite(expiryMs)&&expiryMs>Date.now();
-      const rawStatus=String(data.status||"").toLowerCase();
-      const pending=["pending","pending_payment","awaiting_payment","processing","قيد الدفع","بانتظار الدفع","بانتظار تأكيد الدفع","under_review"].includes(rawStatus);
-      const expired=Number.isFinite(expiryMs)&&expiryMs<=Date.now();
-      const statusLabel=active?"نشط":pending?"بانتظار تأكيد الدفع":expired?"منتهي الصلاحية":"غير نشط";
-      const statusClass=active?"active":pending?"pending":expired?"expired":"inactive";
-      const paymentRaw=String(data.payment_status||data.paymentStatus||rawStatus).toLowerCase();
-      const paymentLabel=active? "تم تأكيد الدفع":pending?"قيد تأكيد الدفع":paymentRaw?(
-        ["paid","completed","success","successful","confirmed"].includes(paymentRaw)?"تم تأكيد الدفع":
-        ["failed","declined","cancelled","canceled","rejected"].includes(paymentRaw)?"تعذر إتمام الدفع":"قيد المراجعة"
-      ):"لا يوجد اشتراك مدفوع نشط";
+      const statusLabel=active?"نشط":"غير نشط";
+      const statusClass=active?"active":"inactive";
       const formatDate=value=>{
         if(!value)return "";
         const d=new Date(value);
@@ -8086,18 +8115,11 @@ main#home{
       const details=[];
       const started=formatDate(data.started_at||data.starts_at);
       const expires=formatDate(data.expires_at);
-      const paidAt=formatDate(data.paid_at||data.payment_confirmed_at);
-      if(started)details.push(["بداية العضوية",started,"fa-calendar-check"]);
-      if(expires)details.push(["نهاية العضوية",expires,"fa-calendar-days"]);
+      if(active&&started)details.push(["بداية العضوية",started,"fa-calendar-check"]);
+      if(active&&expires)details.push(["نهاية العضوية",expires,"fa-calendar-days"]);
       if(active&&Number.isFinite(expiryMs))details.push(["المدة المتبقية",Math.max(0,Math.ceil((expiryMs-Date.now())/86400000))+" يوم","fa-hourglass-half"]);
-      if(paidAt)details.push(["تاريخ تأكيد الدفع",paidAt,"fa-receipt"]);
-      const method=String(data.payment_method||data.paymentMethod||"");
-      if(method)details.push(["طريقة الدفع",method.toLowerCase()==="paymob"?"Paymob":method,"fa-credit-card"]);
-      const reference=String(data.payment_reference||data.paymentReference||data.reference||"");
-      if(reference)details.push(["مرجع الدفع",reference,"fa-hashtag"]);
       const shippingMax=Math.max(0,Number(data.free_shipping_limit??getPrimeFreeShippingCount())||0);
-      const hasShipping=data.free_shipping_used!==undefined||data.free_shipping_remaining!==undefined||active;
-      if(hasShipping&&shippingMax){
+      if(active&&shippingMax){
         const used=Math.max(0,Number(data.free_shipping_used)||0);
         const remaining=data.free_shipping_remaining!==undefined&&data.free_shipping_remaining!==null?Math.max(0,Number(data.free_shipping_remaining)||0):Math.max(0,shippingMax-used);
         details.push(["الشحن المجاني",Math.min(used,shippingMax)+" مستخدم • "+Math.min(remaining,shippingMax)+" متبقٍ من "+shippingMax,"fa-truck-fast"]);
@@ -8109,15 +8131,14 @@ main#home{
       if(data.packaging_enabled===true)benefitParts.push("التغليف المميز");
       if(data.theme_enabled===true)benefitParts.push("ثيم Prime");
       if(Array.isArray(data.features))data.features.filter(x=>typeof x==="string"&&x.trim()).forEach(x=>benefitParts.push(x.trim()));
-      const statusCard='<div class="prime-membership-status-card"><div class="prime-membership-status-top"><span class="prime-membership-status-label">حالة العضوية</span><b class="prime-membership-badge '+statusClass+'"><i class="fa-solid fa-circle"></i> '+statusLabel+'</b></div><div class="prime-payment-status"><span><i class="fa-solid fa-credit-card"></i> حالة الدفع</span><b>'+paymentLabel+'</b></div>'+(details.length?'<div class="prime-membership-details">'+details.map(([label,value,icon])=>'<div class="prime-membership-detail"><i class="fa-solid '+icon+'"></i><span><small>'+escapeHtml(label)+'</small><b>'+escapeHtml(String(value))+'</b></span></div>').join("")+'</div>':"")+(active?'<p class="prime-membership-note"><i class="fa-solid fa-sparkles"></i> عضويتك مفعّلة، ومزايا Prime تُطبق تلقائيًا على مشترياتك المؤهلة.</p>':pending?'<p class="prime-membership-note pending"><i class="fa-solid fa-clock"></i> لا تعيدي الدفع الآن. ننتظر تأكيد العملية وسنحدّث حالتها عند إعادة التحقق.</p>':expired?'<p class="prime-membership-note"><i class="fa-solid fa-circle-info"></i> انتهت مدة العضوية السابقة. يمكنك تجديد اشتراكك من هنا.</p>':'<p class="prime-membership-note">اشتركي الآن لتفعيل المزايا والاستمتاع بتجربة Elory Prime.</p>')+'</div>';
+
+      const statusCard='<div class="prime-membership-status-card"><div class="prime-membership-status-top"><span class="prime-membership-status-label">حالة العضوية</span><b class="prime-membership-badge '+statusClass+'"><i class="fa-solid fa-circle"></i> '+statusLabel+'</b></div>'+(details.length?'<div class="prime-membership-details">'+details.map(([label,value,icon])=>'<div class="prime-membership-detail"><i class="fa-solid '+icon+'"></i><span><small>'+escapeHtml(label)+'</small><b>'+escapeHtml(String(value))+'</b></span></div>').join("")+'</div>':"")+(active?'<p class="prime-membership-note"><i class="fa-solid fa-sparkles"></i> عضويتك مفعّلة، ومزايا Prime تُطبق تلقائيًا على مشترياتك المؤهلة.</p>':'<p class="prime-membership-note">عضويتك غير مفعّلة حاليًا. اشتركي الآن للاستمتاع بمزايا Elory Prime.</p>')+'</div>';
       const action=active
         ?'<button class="prime-page-action secondary" type="button" onclick="refreshPrimeState().then(updatePrimeModalStatus)"><i class="fa-solid fa-rotate"></i> تحديث بيانات العضوية</button>'
-        :pending
-          ?'<button class="prime-page-action secondary" type="button" onclick="refreshPrimeState().then(updatePrimeModalStatus)"><i class="fa-solid fa-rotate"></i> التحقق من حالة الدفع</button>'
-          :!isPrimeEnabled()
-            ?'<div class="prime-page-disabled"><i class="fa-solid fa-circle-pause"></i> الاشتراكات متوقفة مؤقتًا. يمكنك العودة لاحقًا لإتمام الاشتراك.</div>'
-            :'<button class="prime-page-action primary prime-direct-btn" type="button" onclick="subscribePrimeDirectly()"><i class="fa-solid fa-crown"></i> اشترك الآن — '+escapeHtml(formatPrice(getPrimePrice()))+'</button>';
-      box.innerHTML=statusCard+'<div class="prime-page-actions">'+action+'</div>'+(benefitParts.length?'<div class="prime-page-active-benefits"><span>المزايا المرتبطة بعضويتك</span><p>'+benefitParts.map(escapeHtml).join(" <b>•</b> ")+'</p></div>':"");
+        :!isPrimeEnabled()
+          ?'<div class="prime-page-disabled"><i class="fa-solid fa-circle-pause"></i> الاشتراكات متوقفة مؤقتًا. يمكنك العودة لاحقًا للاشتراك.</div>'
+          :'<button class="prime-page-action primary prime-direct-btn" type="button" onclick="subscribePrimeDirectly()"><i class="fa-solid fa-crown"></i> اشترك الآن — '+escapeHtml(formatPrice(getPrimePrice()))+'</button>';
+      box.innerHTML=statusCard+'<div class="prime-page-actions">'+action+'</div>'+(benefitParts.length?'<div class="prime-page-active-benefits"><span>مزايا Elory Prime</span><p>'+benefitParts.map(escapeHtml).join(" <b>•</b> ")+'</p></div>':"");
     }
 
     // Product Prime offer: open the Prime benefits page first.
@@ -8176,14 +8197,9 @@ main#home{
       }
 
       const primeCheck=await refreshPrimeState();
-      if(!primeCheck.ok){showToast("تعذر التحقق من حالة Elory Prime. حاولي مرة أخرى بعد استعادة الاتصال.");return;}
-      if(!primeCheck.user || primeCheck.user.id!==user.id){showToast("انتهت جلسة الدخول. سجلي الدخول مرة أخرى.");return;}
+      if(!primeCheck.ok)return;
+      if(!primeCheck.user || primeCheck.user.id!==user.id)return;
       if(primeCheck.active){showToast("Elory Prime مفعّل بالفعل");return;}
-      const state=String(primeCheck.status?.status||"").toLowerCase();
-      if(["pending","pending_payment","awaiting_payment","processing","قيد الدفع","بانتظار الدفع","بانتظار تأكيد الدفع"].includes(state)){
-        showToast("اشتراك Prime بانتظار تأكيد الدفع. لن نبدأ عملية دفع أخرى الآن.");
-        return;
-      }
 
       if(primeActive){
         showToast("Elory Prime مفعّل بالفعل");
@@ -9528,7 +9544,7 @@ main#home{
 
     function closeModalVisual(id){
       const el=document.getElementById(id);
-      if(el){ el.classList.remove("show"); if(id==="primeModal") el.classList.remove("prime-page-mode"); if(id==="accountModal") el.classList.remove("account-page-mode"); }
+      if(el){ el.classList.remove("show"); if(id==="primeModal"){el.classList.remove("prime-page-mode");stopPrimeStatusAutoRefresh();unlockPrimePageScroll();} if(id==="accountModal") el.classList.remove("account-page-mode"); }
       if(!getOpenModalId()) document.body.style.overflow="";
     }
 
@@ -9798,51 +9814,72 @@ main#home{
     async function handlePaymobReturn(){
       let payment=null;
       try{payment=JSON.parse(sessionStorage.getItem("elory_pending_payment")||"null");}catch(e){payment=null;}
+      const params=new URLSearchParams(window.location.search||"");
+      const primeReturn=params.get("prime_payment_return")==="1";
+      const returnedReference=
+        params.get("merchant_order_id")||
+        params.get("merchant_order")||
+        params.get("special_reference")||
+        params.get("order")||
+        params.get("order_id");
+      const returnedTransactionId=
+        params.get("id")||
+        params.get("transaction_id")||
+        params.get("txn_id");
+      if(!payment&&(returnedReference||returnedTransactionId)){
+        payment={type:"order",reference:""};
+      }
+      if(payment&&returnedReference)payment.reference=String(returnedReference);
+      if(payment&&returnedTransactionId)payment.transaction_id=String(returnedTransactionId);
+      if(payment&&!payment.type){
+        payment.type=String(payment.reference||"").startsWith("ELORY-")?"prime":"order";
+      }
 
-      // Paymob may also return transaction/reference identifiers in the
-      // browser URL. Use them only as lookup hints; the backend still
-      // verifies the transaction directly with Paymob before confirming it.
-      try{
-        const params=new URLSearchParams(window.location.search||"");
-        const returnedReference=
-          params.get("merchant_order_id")||
-          params.get("merchant_order")||
-          params.get("special_reference")||
-          params.get("order")||
-          params.get("order_id");
-        const returnedTransactionId=
-          params.get("id")||
-          params.get("transaction_id")||
-          params.get("txn_id");
-        if(!payment) payment={type:"order",reference:""};
-        if(returnedReference) payment.reference=String(returnedReference);
-        if(returnedTransactionId) payment.transaction_id=String(returnedTransactionId);
-        if(!payment.type){
-          payment.type=String(payment.reference||"").startsWith("ELORY-")?"prime":"order";
+      const isPrimePayment=primeReturn||
+        payment?.type==="prime"||
+        /^ELORY-(?:LIVE|TEST)-/i.test(String(payment?.reference||""));
+      if(isPrimePayment){
+        try{sessionStorage.removeItem("elory_pending_payment");}catch(e){}
+        if(!primeReturn){
+          // A user may leave Paymob with Back instead of using its return URL.
+          // Refresh quietly; never interpret leaving checkout as a failed payment.
+          await refreshPrimeState();
+          return;
         }
-      }catch(e){}
 
-      if(!payment||!payment.reference) return;
+        params.delete("prime_payment_return");
+        const cleanSearch=params.toString();
+        history.replaceState(history.state,"",
+          window.location.pathname+(cleanSearch?"?"+cleanSearch:"")+window.location.hash);
+        openPrime();
+
+        // Paymob's signed server callback activates Prime. Poll only the
+        // authenticated membership state while that callback is being applied.
+        let activated=primeActive;
+        for(let attempt=0;attempt<18&&!activated;attempt++){
+          if(attempt>0)await new Promise(resolve=>setTimeout(resolve,1800));
+          if(!document.getElementById("primeModal")?.classList.contains("show"))break;
+          const state=await refreshPrimeState();
+          updatePrimeModalStatus();
+          activated=!!state?.active;
+        }
+        if(activated)showToast("تم تأكيد الدفع وتفعيل Elory Prime");
+        return;
+      }
+
+      if(!payment||!payment.reference)return;
       if(payment.createdAt&&Date.now()-Number(payment.createdAt)>2*60*60*1000){
         try{sessionStorage.removeItem("elory_pending_payment");}catch(e){}
         return;
       }
 
-      // Paymob's browser redirect is only a UX return. The backend asks Paymob
-      // directly for the transaction and confirms amount/status before anything
-      // is shown as paid.
+      // Existing online-order verification remains unchanged.
       const result=await verifyReturnedPaymentOnce(payment);
       if(result?.confirmed===true){
         try{sessionStorage.removeItem("elory_pending_payment");}catch(e){}
-        if(payment.type==="prime"){
-          await refreshPrimeState();
-          openPrime();
-          showToast("تم تأكيد الدفع وتفعيل Elory Prime");
-        }else{
-          await refreshOrdersCount();
-          openOrdersPage();
-          showToast("تم تأكيد الدفع وتسجيل طلبك");
-        }
+        await refreshOrdersCount();
+        openOrdersPage();
+        showToast("تم تأكيد الدفع وتسجيل طلبك");
       }else{
         const paymentStatus=String(result?.status||"").toLowerCase();
         const pending=["pending","processing","under_review","قيد التحقق","قيد الدفع","بانتظار الدفع"].includes(paymentStatus);
@@ -9851,13 +9888,8 @@ main#home{
           showToast("الدفع ما زال قيد التحقق من Paymob");
         }else if(finalFailure){
           try{sessionStorage.removeItem("elory_pending_payment");}catch(e){}
-          if(payment.type!=="prime"){
-            await refreshOrdersCount();
-            openOrdersPage();
-          }else{
-            await refreshPrimeState();
-            openPrime();
-          }
+          await refreshOrdersCount();
+          openOrdersPage();
           showToast("فشل الدفع — لم يتم تسجيل الطلب كمدفوع.");
         }else{
           showToast("تعذر التحقق من الدفع حالياً. لم يُسجل الدفع كناجح، ويمكن إعادة التحقق لاحقاً.");
@@ -11267,5 +11299,45 @@ main#home{
   })();
 })();
 </script>
+<style id="elory-prime-page-isolation-fix">
+body.elory-prime-page-open{
+  position:fixed!important;
+  top:calc(-1 * var(--elory-prime-scroll-y,0px))!important;
+  left:0!important;right:0!important;width:100%!important;
+  overflow:hidden!important;overscroll-behavior:none!important;
+}
+html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavior:none!important;}
+.modal#primeModal.prime-page-mode{
+  position:fixed!important;inset:0!important;width:100vw!important;
+  height:100vh!important;height:100dvh!important;
+  display:block!important;padding:0!important;margin:0!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  overscroll-behavior:contain!important;touch-action:pan-y!important;
+  align-items:initial!important;justify-content:initial!important;
+  background:#fff!important;backdrop-filter:none!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+.modal#primeModal.prime-page-mode .prime-modal{
+  position:relative!important;inset:auto!important;
+  display:flex!important;flex-direction:column!important;
+  justify-content:flex-start!important;align-items:stretch!important;
+  width:100%!important;max-width:none!important;
+  min-height:100vh!important;min-height:100dvh!important;
+  height:auto!important;max-height:none!important;
+  margin:0!important;padding:clamp(30px,5vw,58px) clamp(16px,6vw,90px) 48px!important;
+  overflow:visible!important;overscroll-behavior:contain!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;
+}
+.modal#primeModal.prime-page-mode .prime-page-hero,
+.modal#primeModal.prime-page-mode .prime-page-benefits,
+.modal#primeModal.prime-page-mode .prime-page-membership,
+.modal#primeModal.prime-page-mode .prime-page-footnote{width:min(900px,100%);margin-left:auto;margin-right:auto}
+.modal#primeModal.prime-page-mode .prime-page-hero{padding-top:18px}
+.modal#primeModal.prime-page-mode .close-modal{position:fixed!important;z-index:5!important;top:14px!important;right:14px!important}
+@media(max-width:700px){
+  .modal#primeModal.prime-page-mode .prime-modal{padding:25px 14px 32px!important}
+  .modal#primeModal.prime-page-mode .close-modal{top:10px!important;right:10px!important}
+}
+</style>
 </body>
 </html>
