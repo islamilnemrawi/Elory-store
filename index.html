@@ -4798,6 +4798,14 @@ main#home{
   line-height:1.45;text-overflow:ellipsis;white-space:nowrap;
 }
 .product-search-suggestion-detail{max-width:100%;overflow:hidden;color:#9a7887;font-size:9px;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}
+.product-search-suggestion-meta{display:flex;max-width:100%;align-items:center;gap:6px;min-width:0}
+.product-search-suggestion-code{
+  display:inline-flex;max-width:100%;align-items:center;padding:2px 7px;
+  border:1px solid rgba(157,83,119,.2);border-radius:999px;
+  background:linear-gradient(135deg,#f8eaf1 0%,#f1dce7 100%);
+  color:#884361;font-size:9px;font-weight:800;letter-spacing:.2px;
+  line-height:1.45;white-space:nowrap;direction:ltr;
+}
 .product-search-suggestion-prices{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px;font-size:10px;line-height:1.4}
 .product-search-suggestion-current{color:#9b456a;font-size:11px;font-weight:800}
 .product-search-suggestion-old{color:#a99aa1;font-size:9px;text-decoration:line-through}
@@ -7085,7 +7093,7 @@ main#home{
           <img class="product-search-suggestion-image" src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden';">
           <span class="product-search-suggestion-content">
             <span class="product-search-suggestion-name">${escapeHtml(name)}</span>
-            ${detail?`<span class="product-search-suggestion-detail">${escapeHtml(detail)}</span>`:""}
+            ${category||code?`<span class="product-search-suggestion-meta">${category?`<span class="product-search-suggestion-detail">${escapeHtml(category)}</span>`:""}${code?`<span class="product-search-suggestion-code" dir="ltr">${escapeHtml(code)}</span>`:""}</span>`:""}
             <span class="product-search-suggestion-prices">
               ${originalPrice>salePrice?`<span class="product-search-suggestion-price-label">قبل الخصم</span><span class="product-search-suggestion-old">${formatPrice(originalPrice)}</span><span class="product-search-suggestion-price-label">بعد الخصم</span>`:""}
               <strong class="product-search-suggestion-current">${formatPrice(salePrice)}</strong>
