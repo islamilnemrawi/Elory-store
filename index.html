@@ -3155,7 +3155,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
 #heroSlider .elory-hero-fullbleed-cta{position:absolute !important;z-index:36 !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;min-height:44px;padding:11px 24px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:linear-gradient(135deg,var(--pink-dark),var(--pink));color:#fff !important;font:800 14px Cairo,Arial,sans-serif !important;text-decoration:none !important;white-space:nowrap;box-shadow:0 8px 24px rgba(40,20,35,.22);cursor:pointer;}
 @media(max-width:700px){#heroSlider .elory-hero-fullbleed-cta{min-height:40px;padding:9px 18px;font-size:13px !important;}}
 #heroSlider>.hero-slide.elory-hero-fullbleed .hero-copy,#heroSlider>.hero-slide.elory-hero-fullbleed .hero-content,#heroSlider>.hero-slide.elory-hero-fullbleed .hero-product-stage,#heroSlider>.hero-slide.elory-hero-fullbleed .hero-wave-top,#heroSlider>.hero-slide.elory-hero-fullbleed .hero-wave-bottom,#heroSlider>.hero-slide.elory-hero-fullbleed .hero-decor{display:none !important;visibility:hidden !important;}
-.hero.elory-hero-campaign-fullbleed>#heroSlider>.hero-dots{z-index:45 !important;}
 .elory-wave-scene{position:absolute;top:auto;left:0;right:0;bottom:-18px;height:90px;z-index:28;overflow:visible;pointer-events:none}
 .elory-wave-top-persistent,.elory-wave-bottom-persistent{position:absolute;left:-2%;width:104%;overflow:visible;pointer-events:none}
 .elory-wave-top-persistent{top:auto;bottom:-49px;height:72px;z-index:29;animation:eloryWaveDrift 5.2s ease-in-out infinite}
@@ -10037,8 +10036,8 @@ main#home{position:relative!important;z-index:1!important;margin-top:-62px!impor
               picture.className='elory-hero-fullbleed-picture';
               const mobile=item.useSeparateMobileMedia===true?imageUrl(item.mobileMediaUrl):'';
               if(mobile){
-
-                 slide.style.setProperty('--elory-hero-image-backdrop', 'url(' + JSON.stringify(mobile) + ')');                const source=document.createElement('source');
+                slide.style.setProperty('--elory-hero-image-backdrop', 'url(' + JSON.stringify(mobile) + ')');
+                const source=document.createElement('source');
                 source.media='(max-width: 700px)';
                 source.srcset=mobile;
                 picture.appendChild(source);
@@ -10125,8 +10124,8 @@ main#home{position:relative!important;z-index:1!important;margin-top:-62px!impor
             active=(index+cards.length)%cards.length;
             cards.forEach((el,i)=>{el.classList.toggle('active',i===active);el.style.opacity=i===active?'1':'0';el.style.visibility=i===active?'visible':'hidden';el.style.transform='translate3d(0,0,0)';});
             indicators.forEach((el,i)=>el.classList.toggle('active',i===active));
+            window.__eloryRestartHeroWaveBeam?.(slider);
           };
-             window.__eloryRestartHeroWaveBeam?.(slider);
           indicators.forEach((el,i)=>el.addEventListener('click',()=>show(i)));
           show(0);
           if(cards.length>1)window.setInterval(()=>show(active+1),2500);
