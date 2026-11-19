@@ -7082,7 +7082,6 @@ main#home{
         const name=String(product.name||"").trim();
         const category=String(product.category||"").trim();
         const code=String(product.code||"").trim();
-        const detail=[category,code].filter(Boolean).join(" • ");
         const salePrice=Math.max(0,Number(product.price||0));
         const discount=Math.max(0,Number(product.discount||0));
         const listedOldPrice=Math.max(0,Number(product.oldPrice||0));
