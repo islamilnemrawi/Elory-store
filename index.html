@@ -5681,6 +5681,7 @@ main#home{
 
       return {
         id: row.id ?? ("product-" + index),
+        active: row.active !== false && row.is_active !== false,
         createdAt: row.created_at ?? "",
         sortIndex: Number(index) || 0,
         name:
@@ -6910,6 +6911,7 @@ main#home{
     function addToCart(productId, options={}) {
       const product=options.product||products.find(p=>String(p.id)===String(productId));
       if(!product){showToast("لم يتم العثور على المنتج");return false;}
+      if(product.active===false){showToast("هذا المنتج غير متاح للشراء حاليًا");return false;}
       const colors=getProductColors(product), sizes=Array.isArray(product.sizes)?product.sizes:[];
       if(!options.color && !options.size && (colors.length||sizes.length)){openProductOptions(product);return false;}
       const variant=options.variant||findVariant(product,options.color||'',options.size||'',options.colorHex||'');
@@ -6998,6 +7000,14 @@ main#home{
 
     function refreshCartFromProducts(){
       let changed=false;
+      // Once the complete active catalog has loaded, remove stale cart lines
+      // whose products were deactivated or deleted by the store owner.
+      if(!productsHasMore){
+        const activeProductIds=new Set(products.map(product=>String(product.id)));
+        const previousCount=cart.length;
+        cart=cart.filter(item=>activeProductIds.has(String(item?.id)));
+        if(cart.length!==previousCount)changed=true;
+      }
       cart.forEach(item=>{
         const product=products.find(entry=>String(entry.id)===String(item?.id));
         if(!product) return;
@@ -7475,6 +7485,32 @@ main#home{
       updateCheckoutTotals();
     }
 
+    async function verifyCartProductsAreActive(){
+      const productIds=[...new Set(cart.map(item=>String(item?.id||"")).filter(Boolean))];
+      if(!productIds.length)return false;
+      const query="select=id&active=eq.true&id=in.("+productIds.map(id=>encodeURIComponent(id)).join(",")+")&limit="+productIds.length;
+      const primaryTable=productsSourceTable||"products";
+      let rows;
+      try{
+        rows=await eloryFetchRows(primaryTable,query);
+      }catch(primaryError){
+        const fallbackTable=primaryTable==="products"?"catalog_products":"products";
+        rows=await eloryFetchRows(fallbackTable,query);
+      }
+      const activeIds=new Set((Array.isArray(rows)?rows:[]).map(row=>String(row.id)));
+      const unavailable=cart.filter(item=>!activeIds.has(String(item?.id)));
+      if(unavailable.length){
+        cart=cart.filter(item=>activeIds.has(String(item?.id)));
+        saveCart();
+        renderCart();
+        closeModal("checkoutModal");
+        openCart();
+        showToast("تم استبعاد منتج لم يعد متاحًا للشراء. راجعي السلة.");
+        return false;
+      }
+      return true;
+    }
+
     async function submitOrder(event) {
       event.preventDefault();
       if (!cart.length) { showToast("السلة فارغة"); return; }
@@ -7503,6 +7539,7 @@ main#home{
       const button=document.querySelector('#checkoutForm button[type="submit"]');
       if(button){button.disabled=true;button.dataset.oldText=button.textContent;button.textContent="جاري إرسال الطلب...";}
       try{
+        if(!(await verifyCartProductsAreActive()))return;
         if(selectedPaymentMethod!=="cash_on_delivery"){
           const paymentCapabilities = await window.ELORY_PAYMENT_CAPABILITIES_PROMISE;
           const paymentReady = selectedPaymentMethod === "card"
