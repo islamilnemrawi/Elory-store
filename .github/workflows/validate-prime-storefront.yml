@@ -45,6 +45,9 @@ jobs:
           assert "document.querySelectorAll('.hg-icon-v19').forEach(el=>el.style.setProperty('color',color(h.iconsColor),'important'))" in html, "CMS header icon color must override the default icon style"
           assert "paymentMethods?.methods" in html, "Storefront must read dashboard payment method settings"
           assert "capabilities.cod_enabled!==false" in html, "Storefront must honor the COD availability flag"
+          payment_guard = html[html.index('id="elory-payment-capability-guard"'):]
+          assert 'if(input.value==="cash_on_delivery") return;' in payment_guard, "Payment recovery guard must not override dashboard COD availability"
+          assert 'if(cod && !cod.disabled)' in payment_guard, "Payment recovery guard must not select a COD method disabled by the dashboard"
           assert 'label:"جاري التأكيد",values:[' in html, "COD customer timeline must include a separate confirmation stage"
           assert '...(isCod?[' in html, "Customer timeline must include confirmation only for COD"
           assert 'label:"جاري التحضير",values:["طلب جديد","تم التأكيد","جاري التجهيز","قيد التجهيز","جاري التحضير","NEW","CONFIRMED","PREPARING"]' in html, "COD and online timelines must use the requested جاري التحضير label"
