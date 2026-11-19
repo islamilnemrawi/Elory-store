@@ -1,0 +1,21 @@
+name: Elory Cloudflare media Worker regression
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "cloudflare/elory-media-worker.js"
+      - "cloudflare/tests/**"
+      - ".github/workflows/test-elory-media-worker.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  media-worker-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Elory media Worker tests
+        run: node cloudflare/tests/elory-media-worker.test.mjs
