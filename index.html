@@ -8349,17 +8349,102 @@ main#home{
         });
       }
 
-      wrapper.addEventListener("pointerdown", event => {
-        if (event.pointerType === "mouse" && event.button !== 0) return;
-        const animation = track.getAnimations().find(item => item.animationName === "eloryCategoryInfinite") || track.getAnimations()[0];
+      function getCategoryAnimation() {
+        return track.getAnimations().find(item => item.animationName === "eloryCategoryInfinite") || track.getAnimations()[0] || null;
+      }
+
+      function applyFingerPosition(state, clientX) {
+        const duration = Math.max(1, Number(state.animation.effect?.getTiming?.().duration) || 32000);
+        const distance = Math.max(1, Number.parseFloat(getComputedStyle(track).getPropertyValue("--elory-category-distance")) || 1);
+        // Map finger pixels directly to animation pixels from a fixed anchor.
+        // This avoids accumulated pointer-event drift and keeps a true 1:1 drag.
+        state.animation.currentTime = state.startTime - ((clientX - state.anchorX) / distance) * duration;
+      }
+
+      function beginHorizontalDrag(state, clientX) {
+        state.horizontal = true;
+        state.moved = true;
+        state.animation.pause();
+        state.startTime = Number(state.animation.currentTime) || 0;
+        state.anchorX = clientX;
+        wrapper.classList.add("dragging");
+      }
+
+      // Touch is handled explicitly so vertical page scrolling remains native,
+      // while a horizontal gesture is claimed immediately and follows the finger.
+      wrapper.addEventListener("touchstart", event => {
+        if (event.touches.length !== 1) {
+          dragState = null;
+          return;
+        }
+        const touch = event.touches[0];
+        const animation = getCategoryAnimation();
         if (!animation) return;
-        // Do not capture or pause on touch-down. Let the browser decide whether
-        // the gesture is vertical page scrolling or an intentional horizontal drag.
         dragState = {
+          kind: "touch",
+          id: touch.identifier,
+          x: touch.clientX,
+          y: touch.clientY,
+          anchorX: touch.clientX,
+          startTime: Number(animation.currentTime) || 0,
+          animation,
+          moved: false,
+          horizontal: false
+        };
+      }, {passive:true});
+
+      wrapper.addEventListener("touchmove", event => {
+        if (!dragState || dragState.kind !== "touch") return;
+        if (event.touches.length !== 1) {
+          finishTouchDrag();
+          return;
+        }
+        const touch = Array.from(event.touches).find(item => item.identifier === dragState.id);
+        if (!touch) return;
+
+        const totalX = touch.clientX - dragState.x;
+        const totalY = touch.clientY - dragState.y;
+        if (!dragState.horizontal) {
+          if (Math.abs(totalX) < 6 && Math.abs(totalY) < 6) return;
+          if (Math.abs(totalY) >= Math.abs(totalX)) {
+            // Release vertical gestures to the browser; do not prevent scrolling.
+            dragState = null;
+            wrapper.classList.remove("dragging");
+            return;
+          }
+          beginHorizontalDrag(dragState, touch.clientX);
+        }
+
+        if (event.cancelable) event.preventDefault();
+        applyFingerPosition(dragState, touch.clientX);
+      }, {passive:false});
+
+      function finishTouchDrag() {
+        if (!dragState || dragState.kind !== "touch") return;
+        const state = dragState;
+        dragState = null;
+        if (state.moved) {
+          suppressClickUntil = Date.now() + 320;
+          window.__eloryCategorySuppressClickUntil = suppressClickUntil;
+        }
+        wrapper.classList.remove("dragging");
+        if (state.horizontal && state.animation && state.animation.playState !== "finished") state.animation.play();
+      }
+      wrapper.addEventListener("touchend", finishTouchDrag, {passive:true});
+      wrapper.addEventListener("touchcancel", finishTouchDrag, {passive:true});
+
+      // Keep precise mouse dragging on desktop without routing touch through Pointer Events.
+      wrapper.addEventListener("pointerdown", event => {
+        if (event.pointerType !== "mouse" || event.button !== 0) return;
+        const animation = getCategoryAnimation();
+        if (!animation) return;
+        dragState = {
+          kind: "pointer",
           id: event.pointerId,
           x: event.clientX,
           y: event.clientY,
-          lastX: event.clientX,
+          anchorX: event.clientX,
+          startTime: Number(animation.currentTime) || 0,
           animation,
           moved: false,
           horizontal: false
@@ -8367,44 +8452,32 @@ main#home{
       }, {passive:true});
 
       wrapper.addEventListener("pointermove", event => {
-        if (!dragState || dragState.id !== event.pointerId) return;
+        if (!dragState || dragState.kind !== "pointer" || dragState.id !== event.pointerId) return;
         const totalX = event.clientX - dragState.x;
         const totalY = event.clientY - dragState.y;
-
         if (!dragState.horizontal) {
-          if (Math.abs(totalX) < 8 && Math.abs(totalY) < 8) return;
+          if (Math.abs(totalX) < 6 && Math.abs(totalY) < 6) return;
           if (Math.abs(totalY) >= Math.abs(totalX)) {
-            // Vertical intent belongs to native page scrolling. The animation
-            // was never paused, and no pointer capture was taken.
             dragState = null;
             wrapper.classList.remove("dragging");
             return;
           }
-          dragState.horizontal = true;
-          dragState.moved = true;
-          dragState.animation.pause();
-          wrapper.classList.add("dragging");
+          beginHorizontalDrag(dragState, event.clientX);
           try { wrapper.setPointerCapture(event.pointerId); } catch (_) {}
         }
-
-        const dx = event.clientX - dragState.lastX;
-        const duration = Math.max(1, Number(dragState.animation.effect?.getTiming?.().duration) || 32000);
-        const distance = Math.max(1, Number.parseFloat(getComputedStyle(track).getPropertyValue("--elory-category-distance")) || 1);
-        dragState.animation.currentTime = (Number(dragState.animation.currentTime)||0) - (dx / distance) * duration;
-        dragState.lastX = event.clientX;
+        applyFingerPosition(dragState, event.clientX);
       }, {passive:true});
 
       function finishDrag(event) {
-        if (!dragState || (event && dragState.id !== event.pointerId)) return;
-        if (dragState.moved) {
-          suppressClickUntil = Date.now() + 280;
+        if (!dragState || dragState.kind !== "pointer" || (event && dragState.id !== event.pointerId)) return;
+        const state = dragState;
+        dragState = null;
+        if (state.moved) {
+          suppressClickUntil = Date.now() + 320;
           window.__eloryCategorySuppressClickUntil = suppressClickUntil;
         }
-        const animation = dragState.animation;
-        dragState = null;
         wrapper.classList.remove("dragging");
-        // Preserve the exact visual position and continue the same infinite cycle.
-        if (animation && animation.playState !== "finished") animation.play();
+        if (state.horizontal && state.animation && state.animation.playState !== "finished") state.animation.play();
       }
       wrapper.addEventListener("pointerup", finishDrag, {passive:true});
       wrapper.addEventListener("pointercancel", finishDrag, {passive:true});
