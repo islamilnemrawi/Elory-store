@@ -1790,6 +1790,12 @@ body.prime-mode .section-title{color:var(--pink);}
     .cart-add-notice img { width:38px; height:38px; flex:0 0 38px; border-radius:10px; object-fit:cover; background:#2a2a2f; }
     .cart-add-notice span { font-size:12px; line-height:1.5; }
     .cart-add-flyer { position:fixed; z-index:10000; width:58px; height:58px; border-radius:14px; object-fit:cover; pointer-events:none; box-shadow:0 10px 30px rgba(0,0,0,.3); transition:transform .62s cubic-bezier(.22,.8,.2,1),opacity .62s ease; }
+    .hg-badge-v19.elory-badge-pop { animation:eloryBadgePop .42s cubic-bezier(.2,.8,.25,1); }
+    @keyframes eloryBadgePop { 0%{transform:scale(.72)} 55%{transform:scale(1.28)} 100%{transform:scale(1)} }
+    .header-favorite-btn.favorite-icon-pulse { animation:eloryFavoritePulse .62s ease; }
+    @keyframes eloryFavoritePulse { 0%{transform:scale(1)} 35%{transform:scale(1.14) rotate(7deg)} 68%{transform:scale(.96) rotate(-4deg)} 100%{transform:scale(1)} }
+    .favorite-heart-flyer { position:fixed; z-index:10001; width:26px; height:26px; display:grid; place-items:center; color:#d94f83; font-size:27px; line-height:1; pointer-events:none; filter:drop-shadow(0 4px 8px rgba(180,55,103,.28)); transform:translate(-50%,-50%) scale(1); transition:transform .68s cubic-bezier(.18,.78,.22,1),opacity .68s ease; will-change:transform,opacity; }
+    @media(prefers-reduced-motion:reduce) { .favorite-heart-flyer { display:none!important; } .header-favorite-btn.favorite-icon-pulse,.hg-badge-v19.elory-badge-pop { animation:none!important; } }
     #orderSuccessPage[hidden], #customerOrdersPage[hidden] { display: none !important; }
     .order-success-page { background: var(--bg) !important; color: var(--text) !important; }
     .order-success-card { background: var(--surface) !important; color: var(--text) !important; border-color: var(--border) !important; }
@@ -7034,18 +7040,31 @@ main#home{
     }
 
     function updateCartCount() {
+      const el=document.getElementById("cartCount");
+      if(!el) return;
 
-      const count =
-        cart.reduce(
-          (total,item) =>
-            total + Number(item.qty || 0),
-          0
-        );
+      const count=cart.reduce((total,item)=>{
+        const quantity=Math.max(0,Math.floor(Number(item?.qty)||0));
+        return total+quantity;
+      },0);
+      const previous=Number(el.dataset.count??el.textContent)||0;
+      const initialized=el.dataset.countInitialized==="true";
 
-      document.getElementById(
-        "cartCount"
-      ).textContent = count;
+      el.textContent=String(count);
+      el.style.display=count>0?"inline-flex":"none";
+      el.dataset.count=String(count);
+      el.dataset.countInitialized="true";
 
+      const cartButton=el.closest(".header-cart-btn");
+      if(cartButton){
+        cartButton.setAttribute("aria-label",count>0?`فتح السلة، ${count} عنصر`:"فتح السلة");
+      }
+      if(initialized&&count>previous){
+        el.classList.remove("elory-badge-pop");
+        void el.offsetWidth;
+        el.classList.add("elory-badge-pop");
+        window.setTimeout(()=>el.classList.remove("elory-badge-pop"),480);
+      }
     }
 
     let pendingProductOptions = null;
@@ -8533,9 +8552,31 @@ main#home{
     function updateFavoriteCount(){
       const el=document.getElementById("favoriteCount");
       if(!el) return;
-      const count=Math.max(0,Number(favorites.length||0));
+      const count=Math.max(0,favorites.length);
+      const previous=Number(el.dataset.count??el.textContent)||0;
+      const initialized=el.dataset.countInitialized==="true";
+
       el.textContent=String(count);
       el.style.display=count>0?"inline-flex":"none";
+      el.dataset.count=String(count);
+      el.dataset.countInitialized="true";
+
+      const favoriteButton=el.closest(".header-favorite-btn");
+      if(favoriteButton){
+        favoriteButton.setAttribute("aria-label",count>0?`فتح المفضلة، ${count} منتج`:"فتح المفضلة");
+      }
+      if(initialized&&count>previous){
+        el.classList.remove("elory-badge-pop");
+        void el.offsetWidth;
+        el.classList.add("elory-badge-pop");
+        window.setTimeout(()=>el.classList.remove("elory-badge-pop"),480);
+        if(favoriteButton){
+          favoriteButton.classList.remove("favorite-icon-pulse");
+          void favoriteButton.offsetWidth;
+          favoriteButton.classList.add("favorite-icon-pulse");
+          window.setTimeout(()=>favoriteButton.classList.remove("favorite-icon-pulse"),680);
+        }
+      }
     }
 
     function syncFavoriteButtons(){
@@ -8549,17 +8590,52 @@ main#home{
       });
     }
 
+    function animateFavoriteToHeader(sourceButton){
+      const targetButton=document.querySelector(".header-favorite-btn");
+      if(!sourceButton||!targetButton) return;
+      if(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+
+      const start=sourceButton.getBoundingClientRect();
+      const end=targetButton.getBoundingClientRect();
+      if(!start.width||!end.width) return;
+
+      const heart=document.createElement("span");
+      heart.className="favorite-heart-flyer";
+      heart.setAttribute("aria-hidden","true");
+      heart.textContent="♥";
+      heart.style.left=`${start.left+start.width/2}px`;
+      heart.style.top=`${start.top+start.height/2}px`;
+      document.body.appendChild(heart);
+
+      const dx=end.left+end.width/2-(start.left+start.width/2);
+      const dy=end.top+end.height/2-(start.top+start.height/2);
+      requestAnimationFrame(()=>{
+        heart.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.22) rotate(18deg)`;
+        heart.style.opacity="0";
+      });
+      window.setTimeout(()=>heart.remove(),760);
+    }
+
     function toggleFavorite(button,productOverride=null){
       const id=button.dataset.productId;
       const product=productOverride||products.find(p=>String(p.id)===String(id));
       if(!product) return;
       const index=favorites.findIndex(x=>String(x.id)===String(id));
       const card=button.closest(".product-card");
-      if(index>=0){ favorites.splice(index,1); showToast("تمت إزالة المنتج من المفضلة"); }
-      else {
+      if(index>=0){
+        favorites.splice(index,1);
+        showToast("تمت إزالة المنتج من المفضلة");
+      }else{
         favorites.push({id:product.id,name:product.name,price:product.price,oldPrice:product.oldPrice||0,image:product.image,stock:product.stock??null});
         showToast("❤ تمت إضافة المنتج للمفضلة");
-        if(card){ const image=card.querySelector(".product-image"); image?.classList.add("favorite-pulse"); setTimeout(()=>image?.classList.remove("favorite-pulse"),700); }
+        if(card){
+          const image=card.querySelector(".product-image");
+          image?.classList.remove("favorite-pulse");
+          void image?.offsetWidth;
+          image?.classList.add("favorite-pulse");
+          window.setTimeout(()=>image?.classList.remove("favorite-pulse"),700);
+        }
+        animateFavoriteToHeader(button);
       }
       saveFavorites();
     }
