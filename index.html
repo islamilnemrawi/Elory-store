@@ -196,7 +196,7 @@ window.ELORY_PAYMENT_CONFIG = Object.freeze({
       background: var(--bg);
       color: var(--text);
       font-family: "Cairo", sans-serif;
-      overflow-x: hidden;
+      overflow-x: clip;
       transition:
         background .4s ease,
         color .4s ease;
@@ -3079,7 +3079,7 @@ body:has(#sideMenu.show) #home{
 </style>
 <style id="elory-v4-mobile-reference-fix">
 :root{--elory-cream:#fff9fb}
-html,body{width:100%;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%}
+html,body{width:100%;max-width:100%;overflow-x:clip;-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg,#fffafb);color:var(--text,#292126)}
 button,a,input{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outline-offset:2px}
@@ -11338,9 +11338,29 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   .modal#primeModal.prime-page-mode .close-modal{top:10px!important;right:10px!important}
 }
 </style>
+<script id="elory-global-sticky-measurement">
+(()=>{
+  const shell=document.getElementById("eloryGlobalStickyShell");
+  if(!shell)return;
+  const root=document.documentElement;
+  const update=()=>{
+    const height=Math.ceil(shell.getBoundingClientRect().height||0);
+    root.style.setProperty("--elory-global-sticky-height",height+"px");
+  };
+  update();
+  if("ResizeObserver" in window){
+    const observer=new ResizeObserver(update);
+    observer.observe(shell);
+  }
+  window.addEventListener("resize",update,{passive:true});
+})();
+</script>
 <style id="elory-global-sticky-header">
 /* Keep the complete announcement, identity header and primary navigation
    together as one sticky surface across every storefront view. */
+html{
+  scroll-padding-top:calc(var(--elory-global-sticky-height, 0px) + 12px);
+}
 #eloryGlobalStickyShell{
   position:sticky!important;
   top:0!important;
