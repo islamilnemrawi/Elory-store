@@ -4768,6 +4768,24 @@ main#home{
 }
 </style>
 
+
+<style id="elory-search-suggestions-only">
+.product-search-dropdown{
+  position:fixed;z-index:10050;max-height:min( min(360px, 55vh), 360px);overflow-y:auto;
+  padding:5px;border:1px solid rgba(201,112,142,.28);border-radius:13px;
+  background:#fff;box-shadow:0 12px 30px rgba(65,30,45,.18);direction:rtl;
+}
+.product-search-dropdown[hidden]{display:none!important}
+.product-search-suggestion{
+  display:flex;width:100%;flex-direction:column;align-items:flex-start;gap:3px;
+  padding:10px 11px;border:0;border-radius:9px;background:transparent;
+  color:#392b32;text-align:right;cursor:pointer;font:inherit;
+}
+.product-search-suggestion+.product-search-suggestion{border-top:1px solid rgba(201,112,142,.12)}
+.product-search-suggestion:hover,.product-search-suggestion:focus-visible{background:#fff1f6;outline:0}
+.product-search-suggestion-name{font-size:13px;font-weight:700;line-height:1.5}
+.product-search-suggestion-detail{font-size:10px;color:#987984;line-height:1.4}
+</style>
 </head>
 <body>
 <div aria-live="polite" class="cart-add-notice" id="cartAddNotice" role="status"><img alt="" id="cartAddNoticeImage"/><span id="cartAddNoticeText"></span></div>
@@ -4830,13 +4848,13 @@ main#home{
 <button class="nav-orders-btn header-orders-btn" id="ordersBtn" title="طلباتي" type="button"><span>طلباتي</span><span class="nav-orders-count" id="ordersCount" style="display:none">0</span></button>
 <div class="header-search-line">
 <div class="search-compact-v19">
-<input aria-label="البحث عن منتج" id="searchInput" list="productSearchSuggestions" placeholder="ابحث عن منتج أو كلمة قريبة منه" type="text"/>
-<datalist id="productSearchSuggestions"></datalist>
+<input aria-label="البحث عن منتج" id="searchInput" autocomplete="off" placeholder="ابحث عن منتج أو كلمة قريبة منه" type="text"/>
 <button aria-label="بحث عن المنتجات" class="search-btn" onclick="submitSearch()" type="button"><i class="fa-solid fa-magnifying-glass"></i></button>
 </div>
 </div>
 </div>
 </nav>
+<div aria-label="اقتراحات المنتجات" class="product-search-dropdown" id="productSearchDropdown" role="listbox" hidden></div>
 <!-- =========================================================
        MOBILE / QUICK MENU
        ========================================================= -->
@@ -7015,22 +7033,54 @@ main#home{
     }
 
     function updateProductSearchSuggestions(value=""){
-      const list=document.getElementById("productSearchSuggestions");
-      if(!list) return;
+      const list=document.getElementById("productSearchDropdown");
+      const input=document.getElementById("searchInput");
+      if(!list||!input) return;
       const query=normalizeProductSearchText(value);
+      if(!query){
+        list.hidden=true;
+        list.innerHTML="";
+        return;
+      }
       const matches=products
         .map(product=>({product,score:productSearchScore(product,query)}))
         .filter(item=>item.score>0)
         .sort((a,b)=>b.score-a.score)
         .slice(0,8)
         .map(item=>item.product);
-      list.innerHTML=matches.map(product=>{
+      list.innerHTML=matches.map((product,index)=>{
         const name=String(product.name||"").trim();
         const category=String(product.category||"").trim();
         const code=String(product.code||"").trim();
-        const label=[category,code].filter(Boolean).join(" • ");
-        return `<option value="${escapeHtml(name)}"${label?` label="${escapeHtml(label)}"`:""}></option>`;
+        const detail=[category,code].filter(Boolean).join(" • ");
+        return `<button class="product-search-suggestion" type="button" role="option" data-product-search-index="${index}">
+          <span class="product-search-suggestion-name">${escapeHtml(name)}</span>
+          ${detail?`<span class="product-search-suggestion-detail">${escapeHtml(detail)}</span>`:""}
+        </button>`;
       }).join("");
+      list._eloryProducts=matches;
+      list.hidden=!matches.length;
+      if(!list.hidden) positionProductSearchDropdown();
+    }
+
+    function positionProductSearchDropdown(){
+      const input=document.getElementById("searchInput");
+      const list=document.getElementById("productSearchDropdown");
+      if(!input||!list||list.hidden) return;
+      const rect=input.getBoundingClientRect();
+      list.style.top=`${Math.round(rect.bottom+6)}px`;
+      list.style.left=`${Math.round(rect.left)}px`;
+      list.style.width=`${Math.round(rect.width)}px`;
+    }
+
+    function chooseProductSearchSuggestion(index){
+      const list=document.getElementById("productSearchDropdown");
+      const input=document.getElementById("searchInput");
+      const product=list?._eloryProducts?.[index];
+      if(!product||!input) return;
+      input.value=String(product.name||"");
+      updateProductSearchSuggestions("");
+      submitSearch();
     }
 
     function handleSearch(value) {
@@ -9751,12 +9801,38 @@ main#home{
         if (searchInput && searchInput.dataset.elorySearchBound !== "true") {
           searchInput.dataset.elorySearchBound = "true";
           searchInput.addEventListener("input", () => handleSearch(searchInput.value || ""));
+          searchInput.addEventListener("focus", () => updateProductSearchSuggestions(searchInput.value || ""));
           searchInput.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+              const dropdown=document.getElementById("productSearchDropdown");
+              if(dropdown) dropdown.hidden=true;
+              return;
+            }
             if (event.key === "Enter") {
               event.preventDefault();
+              const dropdown=document.getElementById("productSearchDropdown");
+              if(dropdown&&!dropdown.hidden&&dropdown._eloryProducts?.length===1){
+                chooseProductSearchSuggestion(0);
+                return;
+              }
+              if(dropdown) dropdown.hidden=true;
               submitSearch();
             }
           });
+        }
+        const searchDropdown=document.getElementById("productSearchDropdown");
+        if(searchDropdown&&searchDropdown.dataset.eloryBound!=="true"){
+          searchDropdown.dataset.eloryBound="true";
+          searchDropdown.addEventListener("pointerdown",event=>event.preventDefault());
+          searchDropdown.addEventListener("click",event=>{
+            const option=event.target.closest("[data-product-search-index]");
+            if(option) chooseProductSearchSuggestion(Number(option.dataset.productSearchIndex));
+          });
+          document.addEventListener("pointerdown",event=>{
+            if(!event.target.closest(".search-compact-v19")&&!event.target.closest("#productSearchDropdown")) searchDropdown.hidden=true;
+          });
+          window.addEventListener("resize",positionProductSearchDropdown,{passive:true});
+          window.addEventListener("scroll",positionProductSearchDropdown,true);
         }
         if (searchButton && searchButton.dataset.eloryBound !== "true") {
           searchButton.dataset.eloryBound = "true";
