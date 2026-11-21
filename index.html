@@ -6335,6 +6335,13 @@ main#home{
         .replace(/\s+/g," ").trim();
     }
 
+    // Keep legacy product category labels connected to the current category name.
+    function canonicalHomepageCategoryKey(value){
+      const key=normalizeHomepageCategoryName(value);
+      if(/تجميل|مكياج|beauty|makeup/.test(key))return "makeup";
+      return key;
+    }
+
     function homepageCategoryPriority(name){
       const value=normalizeHomepageCategoryName(name);
       if((/مدارس|school/.test(value))&&(/شنط|حقائب|bag/.test(value))) return 5;
@@ -6351,7 +6358,7 @@ main#home{
       const seen=new Set();
       const addCategory=(name,sortOrder=999999)=>{
         const label=String(name||"").trim();
-        const key=normalizeHomepageCategoryName(label);
+        const key=canonicalHomepageCategoryKey(label);
         if(!label||!key||seen.has(key)) return;
         seen.add(key);
         categories.push({name:label,key,sortOrder});
@@ -6409,7 +6416,7 @@ main#home{
 
       const categories=getHomepageFeaturedCategories(homepageProducts);
       const sections=categories.map(category=>{
-        const categoryProducts=homepageProducts.filter(product=>normalizeHomepageCategoryName(product.category)===category.key);
+        const categoryProducts=homepageProducts.filter(product=>canonicalHomepageCategoryKey(product.category)===category.key);
         if(!categoryProducts.length)return "";
         const categoryArg=escapeHtml(JSON.stringify(category.name));
         return `<section class="elory-home-category-section" data-home-category="${escapeHtml(category.name)}"><div class="elory-home-category-heading"><h3><a class="elory-home-category-link" href="#shopPage" onclick="showShopPage(${categoryArg},${categoryArg});return false;">${escapeHtml(category.name)}</a></h3></div><div class="products-grid elory-home-category-grid">${categoryProducts.map(product=>productCardHtml(product)).join("")}</div></section>`;
@@ -10817,9 +10824,9 @@ main#home{
     if(!requested)return false;
     const match=categories().find(c=>norm(c?.name)===norm(requested));
     const name=String(match?.name||requested).trim();
+    const categoryKey=canonicalHomepageCategoryKey(name);
     const list=productList();
-    const exact=list.filter(p=>norm(p?.category)===norm(name));
-    const source=exact.length?exact:list.filter(p=>norm(p?.category).includes(norm(name)));
+    const source=list.filter(p=>canonicalHomepageCategoryKey(p?.category)===categoryKey);
     const home=document.getElementById('home');
     const shop=document.getElementById('shopPage');
     const product=document.getElementById('productDetailsPage');
@@ -11352,7 +11359,14 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
     const height=Math.ceil(shell.getBoundingClientRect().height||0);
     root.style.setProperty("--elory-global-sticky-height",height+"px");
   };
+  const syncCompact=()=>{
+    const compact=window.matchMedia("(max-width:760px)").matches && window.scrollY>72;
+    shell.classList.toggle("elory-notch-compact",compact);
+    update();
+  };
   update();
+  syncCompact();
+  window.addEventListener("scroll",syncCompact,{passive:true});
   if("ResizeObserver" in window){
     const observer=new ResizeObserver(update);
     observer.observe(shell);
@@ -11404,6 +11418,63 @@ main#home{
 }
 @media(max-width:380px){
   main#home{margin-top:0!important;padding-top:0!important}
+}
+
+/* Mobile notch header: full identity at top, three compact circular actions while scrolling. */
+@media(max-width:760px){
+  #eloryGlobalStickyShell>.announcement,#eloryGlobalStickyShell>.header{
+    max-height:180px;opacity:1;overflow:hidden;
+    transition:max-height .24s ease,opacity .18s ease,margin .24s ease;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav{
+    min-height:58px;padding:7px 12px;
+    transition:min-height .24s ease,padding .24s ease,box-shadow .24s ease;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-inner{
+    display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    align-items:center!important;gap:10px!important;width:min(100%,430px)!important;margin:0 auto!important;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
+  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn,
+  #eloryGlobalStickyShell>.elory-reference-nav .header-search-line{
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    justify-self:center!important;width:48px!important;min-width:48px!important;
+    height:48px!important;min-height:48px!important;padding:0!important;
+    border-radius:50%!important;box-sizing:border-box!important;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
+  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{font-size:0!important}
+  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn::before{content:"♛";font-size:21px;line-height:1}
+  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn::before{content:"▤";font-size:21px;line-height:1}
+  #eloryGlobalStickyShell>.elory-reference-nav .header-search-line{max-width:none!important;margin:0!important}
+  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19{
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    width:48px!important;height:48px!important;min-height:48px!important;padding:0!important;border-radius:50%!important;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19 input{
+    position:absolute!important;width:1px!important;height:1px!important;padding:0!important;
+    opacity:0!important;pointer-events:none!important;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19 .search-btn{
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    width:100%!important;height:100%!important;flex:0 0 100%!important;border-radius:50%!important;
+  }
+  #eloryGlobalStickyShell.elory-notch-compact>.announcement,
+  #eloryGlobalStickyShell.elory-notch-compact>.header{
+    max-height:0!important;opacity:0!important;margin:0!important;pointer-events:none!important;
+  }
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav{
+    min-height:62px!important;padding:7px 12px!important;
+    border:1px solid rgba(222,160,187,.34)!important;border-radius:0 0 24px 24px!important;
+    background:rgba(255,239,246,.96)!important;box-shadow:0 7px 22px rgba(130,57,88,.14)!important;
+    backdrop-filter:blur(14px);
+  }
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #primeHeaderBtn,
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #ordersBtn,
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .header-search-line,
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .search-compact-v19{
+    width:46px!important;min-width:46px!important;height:46px!important;min-height:46px!important;
+  }
 }
 </style>
 </body>
