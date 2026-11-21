@@ -11360,10 +11360,8 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
     root.style.setProperty("--elory-global-sticky-height",height+"px");
   };
   const syncCompact=()=>{
-    const viewportWidth=window.innerWidth||root.clientWidth||0;
     const scrollTop=window.pageYOffset||root.scrollTop||document.body.scrollTop||0;
-    const compact=viewportWidth<=760&&scrollTop>72;
-    shell.classList.toggle("elory-notch-compact",compact);
+    shell.classList.toggle("elory-notch-compact",scrollTop>72);
     update();
   };
   update();
