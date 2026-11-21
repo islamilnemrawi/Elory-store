@@ -11420,48 +11420,15 @@ main#home{
   main#home{margin-top:0!important;padding-top:0!important}
 }
 
-/* Mobile notch header: full identity at top, three compact circular actions while scrolling. */
+/* Mobile notch header: compact actions appear only after the user scrolls. */
 @media(max-width:760px){
-  #eloryGlobalStickyShell>.announcement,#eloryGlobalStickyShell>.header{
+  #eloryGlobalStickyShell>.announcement,
+  #eloryGlobalStickyShell>.header{
     max-height:180px;opacity:1;overflow:hidden;
     transition:max-height .24s ease,opacity .18s ease,margin .24s ease;
   }
   #eloryGlobalStickyShell>.elory-reference-nav{
-    min-height:58px;padding:7px 12px;
     transition:min-height .24s ease,padding .24s ease,box-shadow .24s ease;
-  }
-  #eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-inner{
-    display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
-    align-items:center!important;gap:10px!important;width:min(100%,430px)!important;margin:0 auto!important;
-  }
-  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
-  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn,
-  #eloryGlobalStickyShell>.elory-reference-nav .header-search-line{
-    display:flex!important;align-items:center!important;justify-content:center!important;
-    justify-self:center!important;width:48px!important;min-width:48px!important;
-    height:48px!important;min-height:48px!important;padding:0!important;
-    border-radius:50%!important;box-sizing:border-box!important;
-  }
-  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
-  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{font-size:0!important}
-  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn::before{content:"♛";font-size:21px;line-height:1}
-  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn::before{content:"▤";font-size:21px;line-height:1}
-  #eloryGlobalStickyShell>.elory-reference-nav .header-search-line{max-width:none!important;margin:0!important}
-  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19{
-    display:flex!important;align-items:center!important;justify-content:center!important;
-    width:48px!important;height:48px!important;min-height:48px!important;padding:0!important;border-radius:50%!important;
-  }
-  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19 input{
-    position:absolute!important;width:1px!important;height:1px!important;padding:0!important;
-    opacity:0!important;pointer-events:none!important;
-  }
-  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19 .search-btn{
-    display:flex!important;align-items:center!important;justify-content:center!important;
-    width:100%!important;height:100%!important;flex:0 0 100%!important;border-radius:50%!important;
-  }
-  #eloryGlobalStickyShell.elory-notch-compact>.announcement,
-  #eloryGlobalStickyShell.elory-notch-compact>.header{
-    max-height:0!important;opacity:0!important;margin:0!important;pointer-events:none!important;
   }
   #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav{
     min-height:62px!important;padding:7px 12px!important;
@@ -11469,13 +11436,39 @@ main#home{
     background:rgba(255,239,246,.96)!important;box-shadow:0 7px 22px rgba(130,57,88,.14)!important;
     backdrop-filter:blur(14px);
   }
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-reference-nav-inner{
+    display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    align-items:center!important;gap:10px!important;width:min(100%,430px)!important;margin:0 auto!important;
+  }
   #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #primeHeaderBtn,
   #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #ordersBtn,
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .header-search-line,
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .search-compact-v19{
-    width:46px!important;min-width:46px!important;height:46px!important;min-height:46px!important;
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .header-search-line{
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    justify-self:center!important;width:46px!important;min-width:46px!important;
+    height:46px!important;min-height:46px!important;padding:0!important;
+    border-radius:50%!important;box-sizing:border-box!important;
   }
-}
-</style>
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #primeHeaderBtn,
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #ordersBtn{font-size:0!important}
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #primeHeaderBtn::before{content:"♛";font-size:21px;line-height:1}
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #ordersBtn::before{content:"▤";font-size:21px;line-height:1}
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .header-search-line{max-width:none!important;margin:0!important}
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .search-compact-v19{
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    width:46px!important;height:46px!important;min-height:46px!important;padding:0!important;border-radius:50%!important;
+  }
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .search-compact-v19 input{
+    position:absolute!important;width:1px!important;height:1px!important;padding:0!important;
+    opacity:0!important;pointer-events:none!important;
+  }
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .search-compact-v19 .search-btn{
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    width:100%!important;height:100%!important;flex:0 0 100%!important;border-radius:50%!important;
+  }
+  #eloryGlobalStickyShell.elory-notch-compact>.announcement,
+  #eloryGlobalStickyShell.elory-notch-compact>.header{
+    max-height:0!important;opacity:0!important;margin:0!important;pointer-events:none!important;
+  }
+}</style>
 </body>
 </html>
