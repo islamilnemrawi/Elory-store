@@ -11360,18 +11360,22 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
     root.style.setProperty("--elory-global-sticky-height",height+"px");
   };
   const syncCompact=()=>{
-    const compact=window.matchMedia("(max-width:760px)").matches && window.scrollY>72;
+    const viewportWidth=window.innerWidth||root.clientWidth||0;
+    const scrollTop=window.pageYOffset||root.scrollTop||document.body.scrollTop||0;
+    const compact=viewportWidth<=760&&scrollTop>72;
     shell.classList.toggle("elory-notch-compact",compact);
     update();
   };
   update();
   syncCompact();
   window.addEventListener("scroll",syncCompact,{passive:true});
+  document.addEventListener("scroll",syncCompact,{passive:true,capture:true});
+  window.addEventListener("resize",syncCompact,{passive:true});
+  window.addEventListener("orientationchange",syncCompact,{passive:true});
   if("ResizeObserver" in window){
-    const observer=new ResizeObserver(update);
+    const observer=new ResizeObserver(syncCompact);
     observer.observe(shell);
   }
-  window.addEventListener("resize",update,{passive:true});
 })();
 </script>
 <style id="elory-global-sticky-header">
