@@ -44,7 +44,7 @@ const { chromium } = require("playwright");
 
     await page.evaluate(() => {
       const shell = document.getElementById("eloryGlobalStickyShell");
-      const audit = window.__eloryNotchAudit = { toggles: [], samples: [], frameGaps: [], cls: 0 };
+      const audit = window.__eloryNotchAudit = { toggles: [], samples: [], frameGaps: [], cls: 0, layoutShifts: [] };
       let lastCompact = shell.classList.contains("elory-notch-compact");
       new MutationObserver(() => {
         const compact = shell.classList.contains("elory-notch-compact");
@@ -62,7 +62,19 @@ const { chromium } = require("playwright");
       if ("PerformanceObserver" in window) {
         try {
           new PerformanceObserver(list => {
-            for (const entry of list.getEntries()) if (!entry.hadRecentInput) audit.cls += entry.value;
+            for (const entry of list.getEntries()) {
+              if (!entry.hadRecentInput) {
+                audit.cls += entry.value;
+                const sources = Array.from(entry.sources || []).map(source => {
+                  const node = source.node;
+                  const name = node ? node.tagName.toLowerCase() +
+                    (node.id ? "#" + node.id : "") +
+                    (typeof node.className === "string" && node.className.trim() ? "." + node.className.trim().split(/\\s+/).join(".") : "") : "unknown";
+                  return { node: name, previousRect: source.previousRect, currentRect: source.currentRect };
+                });
+                audit.layoutShifts.push({ value: entry.value, startTime: entry.startTime, sources });
+              }
+            }
           }).observe({ type: "layout-shift", buffered: true });
         } catch (_) {}
       }
@@ -115,6 +127,7 @@ const { chromium } = require("playwright");
         shellHeightDelta: maxHeight - minHeight,
         documentHeightDelta: documentHeights.length ? Math.max(...documentHeights) - Math.min(...documentHeights) : 0,
         cls: audit.cls,
+        layoutShifts: audit.layoutShifts,
         frameGapCountOver34ms: audit.frameGaps.length,
         maxFrameGapMs: audit.frameGaps.length ? Math.max(...audit.frameGaps) : 0,
         documentHeight: document.documentElement.scrollHeight,
