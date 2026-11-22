@@ -92,6 +92,7 @@ const { chromium } = require("playwright");
             linecap: getComputedStyle(path).strokeLinecap,
             wedgeExists: svg?.querySelectorAll(".elory-reference-nav-beam-comet-layer").length === 4,
             wedgeDuration: svg ? getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDuration : null,
+            wedgeDelay: svg ? getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDelay : null,
             bothStartStyle3: !!svg?.classList.contains("elory-beam-style-3") && !!compactSvg?.classList.contains("elory-beam-style-3")
           } : { exists: false };
         })()
@@ -101,6 +102,7 @@ const { chromium } = require("playwright");
     assert.deepEqual(start.viewport, { width: 390, height: 844 }, "must run at a real 390x844 CSS viewport");
     assert.equal(start.scrollY, 0, "regression test must begin at page top");
     assert.equal(start.beam.bothStartStyle3, true, "both notch SVGs must start in the approved style before first paint");
+    assert.equal(start.beam.wedgeDelay, "-4s", "large notch moving glint must begin away from the upper-left SVG origin");
     assert.equal(start.compact, false, "page must start in full-header state");
     assert.ok(start.navInner.width < start.viewport.width - 12, "large navigation must render as a separate centered notch, not a full-width strip");
     assert.ok(start.navInner.height >= 50, "large navigation notch must have a substantial capsule height");
@@ -134,6 +136,7 @@ const { chromium } = require("playwright");
           glowOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-glow")).opacity,
           midOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-mid")).opacity,
           headOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).opacity,
+          headDelay:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDelay,
           headStroke:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).stroke,
           glowWidth:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-glow")).strokeWidth,duration:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDuration};
       }));
@@ -145,6 +148,7 @@ const { chromium } = require("playwright");
     assert.equal(Number(fullBeamStyles[2].glowOpacity),0,"style 3 must not stack a second glow dash");
     assert.equal(Number(fullBeamStyles[2].midOpacity),0,"style 3 must not stack a second mid dash");
     assert.match(fullBeamStyles[2].headStroke,/246, 184, 206/,"style 3 moving glint must remain Elory blush pink");
+    assert.equal(fullBeamStyles[2].headDelay,"-4s","large notch glint must not start at the upper-left path origin");
     await page.evaluate(() => document.querySelectorAll(".elory-reference-nav-beam,.elory-notch-beam").forEach(svg=>svg.classList.add("elory-beam-style-3")));
     await page.emulateMedia({ reducedMotion: "reduce" });
     const reducedFull = await page.evaluate(() => ({ring:getComputedStyle(document.querySelector(".elory-reference-nav-beam-ring")).opacity,head:getComputedStyle(document.querySelector(".elory-reference-nav-beam-comet-head")).opacity}));
@@ -426,6 +430,7 @@ const { chromium } = require("playwright");
           glowOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-glow")).opacity,
           midOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-mid")).opacity,
           headOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).opacity,
+          headDelay:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).animationDelay,
           headStroke:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).stroke,
           glowWidth:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-glow")).strokeWidth,duration:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).animationDuration};
       }));
@@ -438,6 +443,7 @@ const { chromium } = require("playwright");
     assert.equal(Number(compactBeamStyles[2].glowOpacity),0,"compact style 3 must not stack a second glow dash");
     assert.equal(Number(compactBeamStyles[2].midOpacity),0,"compact style 3 must not stack a second mid dash");
     assert.match(compactBeamStyles[2].headStroke,/246, 184, 206/,"compact style 3 moving glint must remain Elory blush pink");
+    assert.equal(compactBeamStyles[2].headDelay,"-4s","compact notch glint must not start at the upper-left path origin");
     await page.evaluate(() => document.querySelectorAll(".elory-reference-nav-beam,.elory-notch-beam").forEach(svg=>svg.classList.add("elory-beam-style-3")));
     await page.emulateMedia({ reducedMotion: "reduce" });
     const reducedCompact = await page.evaluate(() => ({ring:getComputedStyle(document.querySelector(".elory-notch-beam-ring")).opacity,head:getComputedStyle(document.querySelector(".elory-notch-beam-comet-head")).opacity}));
