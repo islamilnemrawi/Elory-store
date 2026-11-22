@@ -89,6 +89,19 @@ async function runViewport(browser, viewport) {
     results.httpStatus = response ? response.status() : null;
     assert.ok(response && response.status() < 400, viewport.name + ": storefront must return HTTP < 400");
 
+    // Critical late-appended styles must be parsed in <head> before the browser paints <body>.
+    const criticalStylesInHead = await page.evaluate(ids =>
+      ids.every(id => {
+        const style = document.getElementById(id);
+        return !!style && style.parentElement === document.head;
+      }), [
+        "elory-payment-capability-guard-style",
+        "elory-prime-page-isolation-fix",
+        "elory-global-sticky-header"
+      ]);
+    assert.equal(criticalStylesInHead, true,
+      viewport.name + ": all critical storefront styles must be in <head> before first paint");
+
     const started = Date.now();
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     for (const checkpoint of checkpoints) {
