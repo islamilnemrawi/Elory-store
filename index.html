@@ -11406,34 +11406,17 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   const beamMotion=beam?.querySelector(".elory-notch-beam-motion");
   const fullBeam=shell.querySelector(":scope > .elory-reference-nav .elory-reference-nav-beam");
   const beamSvgs=[fullBeam,beam].filter(Boolean);
-  let activeBeamStyle=0,lastScrollY=window.scrollY||0,lastScrollDirection=0;
   const applyBeamStyle=(next)=>{
     const styleNumber=Number(next);
-    if(!Number.isInteger(styleNumber)||styleNumber<1||styleNumber>4)return;
-    activeBeamStyle=styleNumber;
+    if(styleNumber!==3)return;
     beamSvgs.forEach(svg=>{
-      svg.classList.remove("elory-beam-style-1","elory-beam-style-2","elory-beam-style-3","elory-beam-style-4");
-      svg.classList.add("elory-beam-style-"+styleNumber);
-      svg.dataset.beamStyle=String(styleNumber);
+      svg.classList.remove("elory-beam-style-1","elory-beam-style-2","elory-beam-style-4");
+      svg.classList.add("elory-beam-style-3");
+      svg.dataset.beamStyle="3";
     });
   };
-  const chooseBeamStyle=()=>{
-    let next=activeBeamStyle;
-    if(activeBeamStyle===0)return applyBeamStyle(1+Math.floor(Math.random()*4));
-    while(next===activeBeamStyle)next=1+Math.floor(Math.random()*4);
-    applyBeamStyle(next);
-  };
-  const trackBeamScroll=()=>{
-    const currentY=Math.max(0,window.pageYOffset||document.documentElement.scrollTop||document.body.scrollTop||0);
-    const delta=currentY-lastScrollY;
-    if(Math.abs(delta)>=8){
-      const direction=Math.sign(delta);
-      if(lastScrollDirection&&direction!==lastScrollDirection)chooseBeamStyle();
-      lastScrollDirection=direction;
-      lastScrollY=currentY;
-    }
-  };
-  chooseBeamStyle();
+  // One fixed lighting treatment: a slow blush-pink glint and a gentle breathing halo.
+  applyBeamStyle(3);
   let lastBeamWidth=0,lastBeamHeight=0;
 
   // The full navigation remains in normal flow; only this independent overlay is fixed.
@@ -11595,7 +11578,7 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   }
 
   syncCompact();
-  window.addEventListener("scroll",()=>{syncCompact();trackBeamScroll();},{passive:true});
+  window.addEventListener("scroll",syncCompact,{passive:true});
   window.addEventListener("resize",()=>{syncCompact();syncBeamGeometry();},{passive:true});
   window.addEventListener("orientationchange",()=>{syncCompact();syncBeamGeometry();},{passive:true});
   if("ResizeObserver" in window&&overlay){
@@ -11709,7 +11692,7 @@ main#home{margin-top:0!important;padding-top:0!important}
   stroke-linecap:round;
   stroke-linejoin:round;
   stroke-width:3.5;
-  animation:eloryNotchBeamTravel 9s linear infinite;
+  animation:eloryNotchBeamTravel 18s linear infinite;
 }
 /* Four coordinated light treatments. Both capsule sizes share the same effect language. */
 #eloryGlobalStickyShell .elory-reference-nav-beam-comet-layer,
@@ -11721,10 +11704,10 @@ main#home{margin-top:0!important;padding-top:0!important}
   fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:0;
   vector-effect:non-scaling-stroke;pointer-events:none;
 }
-#eloryGlobalStickyShell .elory-reference-nav-beam-comet-layer{animation:eloryReferenceBeamTravel 9s linear infinite}
-#eloryGlobalStickyShell .elory-notch-beam-comet-layer{animation:eloryNotchBeamTravel 9s linear infinite}
-#eloryGlobalStickyShell .elory-reference-nav-beam-secondary-layer{animation:eloryReferenceBeamTravel 9s linear infinite reverse}
-#eloryGlobalStickyShell .elory-notch-beam-secondary-layer{animation:eloryNotchBeamTravel 9s linear infinite reverse}
+#eloryGlobalStickyShell .elory-reference-nav-beam-comet-layer{animation:eloryReferenceBeamTravel 18s linear infinite}
+#eloryGlobalStickyShell .elory-notch-beam-comet-layer{animation:eloryNotchBeamTravel 18s linear infinite}
+#eloryGlobalStickyShell .elory-reference-nav-beam-secondary-layer{animation:eloryReferenceBeamTravel 18s linear infinite reverse}
+#eloryGlobalStickyShell .elory-notch-beam-secondary-layer{animation:eloryNotchBeamTravel 18s linear infinite reverse}
 #eloryGlobalStickyShell .elory-reference-nav-beam-comet-glow,
 #eloryGlobalStickyShell .elory-notch-beam-comet-glow{stroke:var(--elory-beam-main);stroke-width:13;stroke-dasharray:88 912;opacity:.48;filter:blur(4px)}
 #eloryGlobalStickyShell .elory-reference-nav-beam-comet-mid,
@@ -11756,7 +11739,7 @@ main#home{margin-top:0!important;padding-top:0!important}
 
 /* 2 — twin comets: two slim streaks moving in opposite directions. */
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-reference-nav-beam-comet-layer,
-#eloryGlobalStickyShell .elory-beam-style-2 .elory-notch-beam-comet-layer{stroke-dasharray:48 952;animation-duration:9s}
+#eloryGlobalStickyShell .elory-beam-style-2 .elory-notch-beam-comet-layer{stroke-dasharray:48 952;animation-duration:18s}
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-reference-nav-beam-comet-glow,
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-notch-beam-comet-glow{stroke-width:9;opacity:.42}
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-reference-nav-beam-comet-mid,
@@ -11764,7 +11747,7 @@ main#home{margin-top:0!important;padding-top:0!important}
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-reference-nav-beam-comet-core,
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-notch-beam-comet-core{stroke-width:3.5}
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-reference-nav-beam-secondary-layer,
-#eloryGlobalStickyShell .elory-beam-style-2 .elory-notch-beam-secondary-layer{opacity:1;animation-duration:9s}
+#eloryGlobalStickyShell .elory-beam-style-2 .elory-notch-beam-secondary-layer{opacity:1;animation-duration:18s}
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-reference-nav-beam-secondary-glow,
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-notch-beam-secondary-glow{opacity:.38}
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-reference-nav-beam-secondary-mid,
@@ -11772,7 +11755,7 @@ main#home{margin-top:0!important;padding-top:0!important}
 
 /* 3 — luminous halo: a clear breathing outline with a small moving glint. */
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-layer,
-#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-layer{stroke-dasharray:7 993;animation-duration:9s}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-layer{stroke-dasharray:12 988;animation-duration:18s}
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-glow,
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-glow{stroke-width:11;opacity:.72;filter:blur(4px)}
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-mid,
@@ -11780,11 +11763,11 @@ main#home{margin-top:0!important;padding-top:0!important}
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-core,
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-core{opacity:0}
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-ring,
-#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-ring{opacity:.72;animation:eloryBeamHaloPulse 2.8s ease-in-out infinite}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-ring{opacity:.72;animation:eloryBeamHaloPulse 7s ease-in-out infinite}
 
 /* 4 — soft aurora sweep: a wider, silky light ribbon with a crisp inner line. */
 #eloryGlobalStickyShell .elory-beam-style-4 .elory-reference-nav-beam-comet-layer,
-#eloryGlobalStickyShell .elory-beam-style-4 .elory-notch-beam-comet-layer{animation-duration:9s}
+#eloryGlobalStickyShell .elory-beam-style-4 .elory-notch-beam-comet-layer{animation-duration:18s}
 #eloryGlobalStickyShell .elory-beam-style-4 .elory-reference-nav-beam-comet-glow,
 #eloryGlobalStickyShell .elory-beam-style-4 .elory-notch-beam-comet-glow{stroke-width:18;stroke-dasharray:150 850;opacity:.58;filter:blur(6px)}
 #eloryGlobalStickyShell .elory-beam-style-4 .elory-reference-nav-beam-comet-mid,
@@ -11795,6 +11778,32 @@ main#home{margin-top:0!important;padding-top:0!important}
 #eloryGlobalStickyShell .elory-beam-style-4 .elory-notch-beam-comet-head{opacity:.9;stroke-width:2.2}
 @keyframes eloryBeamHaloPulse{0%,100%{opacity:.38}50%{opacity:.95}}
 
+
+/* Refined single blush-pink glint: no comet tail, no competing streaks. */
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-glow,
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-glow{
+  stroke:var(--elory-beam-main);stroke-width:10;stroke-dasharray:12 988;opacity:.58;
+  filter:blur(4.5px);animation:eloryBeamGlowPulse 7s ease-in-out infinite;
+}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-mid,
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-mid{
+  stroke:var(--elory-beam-main);stroke-width:4.5;stroke-dasharray:12 988;opacity:.9;
+  filter:blur(1.2px);animation:eloryBeamGlowPulse 7s ease-in-out infinite;
+}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-head,
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-head{
+  stroke:var(--elory-beam-core);stroke-width:2.2;stroke-dasharray:8 992;
+  filter:drop-shadow(0 0 3px var(--elory-beam-core)) drop-shadow(0 0 8px var(--elory-beam-main));
+}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-core,
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-core{opacity:0}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-ring,
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-ring{
+  stroke:var(--elory-beam-main);stroke-width:2.1;opacity:.48;
+  filter:drop-shadow(0 0 5px var(--elory-beam-main)) drop-shadow(0 0 12px var(--elory-beam-deep));
+  animation:eloryBeamHaloPulse 7s ease-in-out infinite;
+}
+@keyframes eloryBeamGlowPulse{0%,100%{opacity:.42}50%{opacity:.82}}
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-mobile-notch{
   position:relative;
   z-index:3;
@@ -11955,7 +11964,7 @@ main#home{margin-top:0!important;padding-top:0!important}
   stroke:transparent!important;
   stroke-width:3.5!important;
   stroke-dasharray:118 882!important;
-  animation:eloryReferenceBeamTravel 9s linear infinite!important;
+  animation:eloryReferenceBeamTravel 18s linear infinite!important;
 }
 
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>button,
@@ -12186,9 +12195,9 @@ main#home{margin-top:0!important;padding-top:0!important}
   --elory-header-icon-top:#d58aa5;
   --elory-header-icon-bottom:#c987a0;
   --elory-header-icon-shadow:rgba(139,72,98,.18);
-  --elory-beam-main:#e8c995;
-  --elory-beam-deep:#b58a52;
-  --elory-beam-core:#fffdf7;
+  --elory-beam-main:#f3bfd0;
+  --elory-beam-deep:#e79bb6;
+  --elory-beam-core:#fff8fb;
   --elory-nav-surface:rgba(255,248,250,.98);
   --elory-nav-mid:rgba(246,221,230,.98);
 }
@@ -12199,9 +12208,9 @@ body.prime-mode{
   --elory-header-icon-top:#c9b5e6;
   --elory-header-icon-bottom:#967ebb;
   --elory-header-icon-shadow:rgba(112,82,151,.20);
-  --elory-beam-main:#e8c995;
-  --elory-beam-deep:#b58a52;
-  --elory-beam-core:#fffdf7;
+  --elory-beam-main:#f3bfd0;
+  --elory-beam-deep:#e79bb6;
+  --elory-beam-core:#fff8fb;
   --elory-nav-surface:rgba(250,247,254,.99);
   --elory-nav-mid:rgba(233,221,246,.98);
 }
