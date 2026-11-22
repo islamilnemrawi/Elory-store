@@ -118,10 +118,11 @@ const { chromium } = require("playwright");
         const svg=document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam");
         return {style:svg.dataset.beamStyle,secondaryOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-secondary-head")).opacity,
           ringOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-ring")).opacity,
-          glowWidth:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-glow")).strokeWidth};
+          glowWidth:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-glow")).strokeWidth,duration:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDuration};
       }));
     }
     assert.deepEqual(fullBeamStyles.map(x=>x.style),["1","2","3","4"],"all four full-size lighting styles must be independently selectable");
+    assert.deepEqual(fullBeamStyles.map(x=>x.duration),["10s","9s","7s","11s"],"each full-size style must retain its intended animation pace");
     assert.ok(Number(fullBeamStyles[1].secondaryOpacity)>0,"style 2 must show its opposing second comet");
     assert.ok(Number(fullBeamStyles[2].ringOpacity)>0,"style 3 must show its breathing perimeter halo");
     assert.ok(parseFloat(fullBeamStyles[3].glowWidth)>parseFloat(fullBeamStyles[0].glowWidth),"style 4 must have a visibly broader aurora ribbon");
@@ -146,7 +147,7 @@ const { chromium } = require("playwright");
     assert.notEqual(start.beam.animation, "none", "large notch beam must remain animated even when reduced motion is requested");
     assert.ok(start.beam.dasharray.includes("118") && start.beam.dasharray.includes("882"), "large notch retains its invisible perimeter timing track");
     assert.equal(start.beam.wedgeExists, true, "large notch must render its luminous tapered comet");
-    assert.equal(start.beam.wedgeDuration, "10s", "large notch comet must use the coordinated animation duration");
+
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
@@ -367,7 +368,7 @@ const { chromium } = require("playwright");
     assert.equal(notch.beamExists, true, "SVG perimeter beam must exist");
     assert.equal(notch.beamDashOffsetChanged, true, "compact notch timing track must move even when reduced motion is requested");
     assert.equal(notch.wedgeExists, true, "compact notch must render its luminous tapered comet");
-    assert.equal(notch.wedgeDuration, "10s", "compact notch comet must use the coordinated animation duration");
+
     assert.equal(notch.wedgeMoved, true, "compact luminous comet must visibly move along the capsule perimeter");
     assert.equal(notch.strokeLinecap, "round", "compact notch beam must have rounded head and tail");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
@@ -391,10 +392,11 @@ const { chromium } = require("playwright");
         return {full:full.dataset.beamStyle,compact:compact.dataset.beamStyle,
           secondaryOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-secondary-head")).opacity,
           ringOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-ring")).opacity,
-          glowWidth:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-glow")).strokeWidth};
+          glowWidth:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-glow")).strokeWidth,duration:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).animationDuration};
       }));
     }
     assert.deepEqual(compactBeamStyles.map(x=>x.compact),["1","2","3","4"],"all four compact-notch lighting styles must be independently selectable");
+    assert.deepEqual(compactBeamStyles.map(x=>x.duration),["10s","9s","7s","11s"],"each compact style must match the full-size animation pace");
     assert.ok(compactBeamStyles.every(x=>x.full===x.compact),"large and compact notches must always use the same selected style");
     assert.ok(Number(compactBeamStyles[1].secondaryOpacity)>0,"compact style 2 must show its opposing second comet");
     assert.ok(Number(compactBeamStyles[2].ringOpacity)>0,"compact style 3 must show its breathing perimeter halo");
