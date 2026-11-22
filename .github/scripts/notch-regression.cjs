@@ -21,6 +21,25 @@ const { chromium } = require("playwright");
     await page.goto("http://127.0.0.1:4173/index.html", { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.locator("#eloryGlobalStickyShell").waitFor();
     await page.waitForTimeout(2500);
+    // Header search must behave as a true toggle and preserve the original Prime/Orders actions.
+    const headerSearch = page.locator("#eloryGlobalStickyShell > .elory-reference-nav");
+    const headerSearchButton = page.locator("#eloryHeaderSearchButton");
+    await headerSearchButton.click();
+    await page.waitForTimeout(250);
+    assert.equal(await headerSearch.evaluate(el => el.classList.contains("elory-header-search-open")), true,
+      "full navigation search icon must expand the existing nav into a search field");
+    assert.equal(await page.locator("#primeHeaderBtn").isVisible(), false, "Prime must hide while full-nav search is open");
+    assert.equal(await page.locator("#ordersBtn").isVisible(), false, "Orders must hide while full-nav search is open");
+    assert.equal(await page.locator("#searchInput").isVisible(), true, "full-nav search input must occupy the navigation");
+    await page.locator("#searchInput").fill("اختبار");
+    await headerSearchButton.click();
+    await page.waitForTimeout(250);
+    assert.equal(await headerSearch.evaluate(el => el.classList.contains("elory-header-search-open")), false,
+      "second tap must close search even when text has been entered");
+    assert.equal(await page.locator("#primeHeaderBtn").isVisible(), true, "Prime must return after closing full-nav search");
+    assert.equal(await page.locator("#ordersBtn").isVisible(), true, "Orders must return after closing full-nav search");
+    assert.equal(await page.locator("#searchInput").isVisible(), false, "full-nav search input must collapse");
+
     await page.evaluate(async () => {
       document.documentElement.style.scrollBehavior = "auto";
       document.body.style.scrollBehavior = "auto";
