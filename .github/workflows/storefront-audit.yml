@@ -1,0 +1,63 @@
+name: Elory full storefront browser audit
+
+on:
+  push:
+    branches:
+      - audit/full-storefront-playwright-20261122
+    paths:
+      - index.html
+      - .github/scripts/storefront-audit.cjs
+      - .github/workflows/storefront-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  storefront-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out storefront
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright and Chromium
+        run: |
+          cd "$RUNNER_TEMP"
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Start local storefront server
+        run: |
+          python3 -m http.server 4173 --directory "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/elory-http.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/elory-http.pid"
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/index.html > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/elory-http.log"
+          exit 1
+
+      - name: Audit desktop and mobile storefront
+        env:
+          NODE_PATH: ${{ runner.temp }}/node_modules
+          AUDIT_URL: http://127.0.0.1:4173/index.html
+          PRODUCTION_URL: https://islamilnemrawi.github.io/Elory-store/
+        run: node .github/scripts/storefront-audit.cjs
+
+      - name: Upload screenshots and audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: elory-full-storefront-audit
+          path: reports/storefront-audit/
+          if-no-files-found: warn
+          retention-days: 7
