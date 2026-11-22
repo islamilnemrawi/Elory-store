@@ -76,7 +76,8 @@ const { chromium } = require("playwright");
             d: path.getAttribute("d"),
             dasharray: getComputedStyle(path).strokeDasharray,
             stroke: getComputedStyle(path).stroke,
-            animation: getComputedStyle(path).animationName
+            animation: getComputedStyle(path).animationName,
+            linecap: getComputedStyle(path).strokeLinecap
           } : { exists: false };
         })()
       };
@@ -286,7 +287,8 @@ const { chromium } = require("playwright");
         beamOffset: { left: beamBox.left-navBox.left, top: beamBox.top-navBox.top, width: beamBox.width-navBox.width, height: beamBox.height-navBox.height },
         beamBoxAligned: Math.abs(beamBox.left - navBox.left) <= 1 && Math.abs(beamBox.top - navBox.top) <= 1 &&
           Math.abs(beamBox.width - navBox.width) <= 1 && Math.abs(beamBox.height - navBox.height) <= 1,
-        strokeDasharray: getComputedStyle(beamPath).strokeDasharray
+        strokeDasharray: getComputedStyle(beamPath).strokeDasharray,
+        strokeLinecap: getComputedStyle(beamPath).strokeLinecap
       };
     });
     await page.screenshot({ path: path.join(reportDir, "elory-notch-mobile-390x844.png"), fullPage: false });
@@ -300,6 +302,7 @@ const { chromium } = require("playwright");
     assert.equal(notch.searchLabelHidden, true, "compact notch must show the magnifier icon without a text label");
     assert.equal(notch.beamExists, true, "SVG perimeter beam must exist");
     assert.equal(notch.beamDashOffsetChanged, true, "compact notch beam dash must move along the edge even when reduced motion is requested");
+    assert.equal(notch.strokeLinecap, "round", "compact notch beam must have rounded head and tail");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
 
     const compactSearchButton = page.locator("#eloryNotchSearchButton");
