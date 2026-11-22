@@ -24,7 +24,9 @@ const { chromium } = require("playwright");
     await page.evaluate(async () => {
       document.documentElement.style.scrollBehavior = "auto";
       document.body.style.scrollBehavior = "auto";
-      window.scrollTo(0, 0);
+      history.scrollRestoration = "manual";
+      history.replaceState(history.state, "", location.pathname + location.search);
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     });
 
