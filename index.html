@@ -11381,7 +11381,9 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   };
   const syncCompact=()=>{
     const scrollTop=window.pageYOffset||root.scrollTop||document.body.scrollTop||0;
-    const compact=scrollTop>72;
+    // Separate enter/exit thresholds prevent scroll anchoring and the collapsing
+    // sticky header from repeatedly flipping compact mode near a single threshold.
+    const compact=compactState===true ? scrollTop>48 : scrollTop>88;
     if(compact===compactState)return;
     compactState=compact;
     shell.classList.toggle("elory-notch-compact",compact);
@@ -11547,17 +11549,23 @@ main#home{
   inset:-1px;
   z-index:2;
   border-radius:inherit;
+  box-sizing:border-box;
+  padding:2px;
   background:conic-gradient(from 0deg,
-    transparent 0deg 292deg,
-    rgba(255,105,173,.10) 304deg,
-    rgba(255,220,244,.85) 324deg,
-    #fff6ce 337deg,
-    #ff5eae 347deg,
-    rgba(183,108,255,.9) 355deg,
+    transparent 0deg 318deg,
+    rgba(255,105,173,.25) 326deg,
+    rgba(255,220,244,.98) 337deg,
+    #fff6ce 343deg,
+    #ff4d9d 350deg,
+    rgba(183,108,255,.98) 356deg,
     transparent 360deg);
-  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));
-  mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));
-  animation:eloryNotchRimSpin 2.8s linear infinite;
+  /* Cut out the center explicitly: only the narrow perimeter beam remains visible. */
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  mask-composite:exclude;
+  animation:eloryNotchRimSpin 2.4s linear infinite;
+  will-change:transform;
   filter:drop-shadow(0 0 3px rgba(255,93,174,.8));
   pointer-events:none;
 }
