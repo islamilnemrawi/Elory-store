@@ -12199,8 +12199,8 @@ main#home{margin-top:0!important;padding-top:0!important}
   --elory-header-icon-top:#d58aa5;
   --elory-header-icon-bottom:#c987a0;
   --elory-header-icon-shadow:rgba(139,72,98,.18);
-  --elory-beam-main:#F58AB8;
-  --elory-beam-deep:#D94F91;
+  --elory-beam-main:#F6B8CE;
+  --elory-beam-deep:#E88EAF;
   --elory-beam-core:#FFFFFF;
   --elory-nav-surface:rgba(255,248,250,.98);
   --elory-nav-mid:rgba(246,221,230,.98);
@@ -12212,9 +12212,9 @@ body.prime-mode{
   --elory-header-icon-top:#c9b5e6;
   --elory-header-icon-bottom:#967ebb;
   --elory-header-icon-shadow:rgba(112,82,151,.20);
-  --elory-beam-main:#f3bfd0;
-  --elory-beam-deep:#e79bb6;
-  --elory-beam-core:#fff8fb;
+  --elory-beam-main:#F7C9D9;
+  --elory-beam-deep:#EBA8C0;
+  --elory-beam-core:#FFFFFF;
   --elory-nav-surface:rgba(250,247,254,.99);
   --elory-nav-mid:rgba(233,221,246,.98);
 }
@@ -12303,6 +12303,42 @@ body.prime-mode{
 }
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner{
   border-color:rgba(255,255,255,.94)!important;
+}
+
+
+/* Remove the fixed perimeter stroke that reads as a static colored patch.
+   Keep the moving glint and replace the hard ring with a soft breathing halo. */
+#eloryGlobalStickyShell .elory-reference-nav-beam-ring,
+#eloryGlobalStickyShell .elory-notch-beam-ring{
+  opacity:0!important;
+  animation:none!important;
+  filter:none!important;
+}
+@keyframes elorySoftNotchHalo{
+  0%,100%{
+    box-shadow:inset 0 1px 4px rgba(255,255,255,.96),
+      0 0 0 1px color-mix(in srgb,var(--elory-beam-main) 12%,transparent),
+      0 6px 18px color-mix(in srgb,var(--elory-beam-deep) 12%,transparent);
+  }
+  50%{
+    box-shadow:inset 0 1px 4px rgba(255,255,255,.98),
+      0 0 0 2px color-mix(in srgb,var(--elory-beam-main) 24%,transparent),
+      0 0 24px color-mix(in srgb,var(--elory-beam-deep) 22%,transparent),
+      0 7px 20px color-mix(in srgb,var(--elory-beam-deep) 15%,transparent);
+  }
+}
+#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner,
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
+  animation:elorySoftNotchHalo 7s ease-in-out infinite!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
+  border-color:color-mix(in srgb,var(--elory-beam-main) 46%,white)!important;
+}
+@media(prefers-reduced-motion:reduce){
+  #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner,
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
+    animation:none!important;
+  }
 }
 </style>
 
