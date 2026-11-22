@@ -4989,16 +4989,58 @@ main#home{
 </header>
 <nav aria-label="التنقل الرئيسي" class="elory-reference-nav">
 <div class="elory-reference-nav-inner">
+<svg class="elory-reference-nav-beam" viewBox="0 0 900 60" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="eloryReferenceBeamGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff5ca8" stop-opacity=".08"/>
+      <stop offset=".28" stop-color="#ff5ca8" stop-opacity=".95"/>
+      <stop offset=".52" stop-color="#fff7dc" stop-opacity="1"/>
+      <stop offset=".76" stop-color="#d76aff" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#d76aff" stop-opacity=".05"/>
+    </linearGradient>
+  </defs>
+  <rect class="elory-reference-nav-beam-path" x="2.5" y="2.5" width="895" height="55" rx="27.5" pathLength="1000" stroke="url(#eloryReferenceBeamGradient)"/>
+</svg>
 <button class="nav-prime-btn" id="primeHeaderBtn" title="Elory Prime" type="button">Elory Prime</button>
 <button class="nav-orders-btn header-orders-btn" id="ordersBtn" title="طلباتي" type="button"><span>طلباتي</span><span class="nav-orders-count" id="ordersCount" style="display:none">0</span></button>
 <div class="header-search-line">
 <div class="search-compact-v19">
 <input aria-label="البحث عن منتج" id="searchInput" autocomplete="off" placeholder="ابحث عن منتج أو كلمة قريبة منه" type="text"/>
-<button aria-label="بحث عن المنتجات" class="search-btn" onclick="submitSearch()" type="button"><i class="fa-solid fa-magnifying-glass"></i></button>
+<button aria-label="البحث" class="search-btn" id="eloryHeaderSearchButton" aria-expanded="false" title="البحث" type="button"><span class="elory-search-label">البحث</span><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button><button aria-label="إغلاق البحث" class="elory-search-close" id="eloryHeaderSearchCloseButton" title="إغلاق البحث" type="button"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
 </div>
 </div>
 </div>
+
 </nav>
+<div class="elory-notch-overlay" id="eloryNotchOverlay">
+<div class="elory-mobile-notch" id="eloryMobileNotch" aria-label="اختصارات المتجر">
+  <button type="button" class="elory-notch-action" id="eloryNotchCart" aria-label="السلة" title="السلة">
+    <i class="fa-solid fa-bag-shopping" aria-hidden="true"></i>
+  </button>
+  <button type="button" class="elory-notch-action" id="eloryNotchFavorites" aria-label="المفضلة" title="المفضلة">
+    <i class="fa-regular fa-heart" aria-hidden="true"></i>
+  </button>
+  <div class="elory-notch-search" id="eloryNotchSearch">
+    <input id="eloryNotchSearchInput" type="search" inputmode="search" autocomplete="off" aria-label="ابحث عن منتج" placeholder="ابحث عن منتج"/>
+    <button type="button" class="elory-notch-action elory-notch-search-button" id="eloryNotchSearchButton" aria-label="البحث" title="البحث">
+      <span class="elory-notch-search-label">البحث</span><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="elory-notch-action elory-notch-search-close" id="eloryNotchSearchCloseButton" aria-label="إغلاق البحث" title="إغلاق البحث">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>
+<svg class="elory-notch-beam" viewBox="0 0 224 66" aria-hidden="true" focusable="false">
+  <defs><linearGradient id="eloryNotchBeamGradient" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ff5ca8" stop-opacity=".08"/>
+    <stop offset=".28" stop-color="#ff5ca8" stop-opacity=".95"/>
+    <stop offset=".52" stop-color="#fff7dc" stop-opacity="1"/>
+    <stop offset=".76" stop-color="#d76aff" stop-opacity=".95"/>
+    <stop offset="1" stop-color="#d76aff" stop-opacity=".05"/>
+  </linearGradient></defs>
+  <rect class="elory-notch-beam-path" x="2.5" y="2.5" width="219" height="61" rx="30.5" pathLength="1000" stroke="url(#eloryNotchBeamGradient)"/>
+</svg>
+</div>
 </div>
 <div aria-label="اقتراحات المنتجات" class="product-search-dropdown" id="productSearchDropdown" role="listbox" hidden></div>
 <!-- =========================================================
@@ -6335,6 +6377,13 @@ main#home{
         .replace(/\s+/g," ").trim();
     }
 
+    // Keep legacy product category labels connected to the current category name.
+    function canonicalHomepageCategoryKey(value){
+      const key=normalizeHomepageCategoryName(value);
+      if(/تجميل|مكياج|beauty|makeup/.test(key))return "makeup";
+      return key;
+    }
+
     function homepageCategoryPriority(name){
       const value=normalizeHomepageCategoryName(name);
       if((/مدارس|school/.test(value))&&(/شنط|حقائب|bag/.test(value))) return 5;
@@ -6351,7 +6400,7 @@ main#home{
       const seen=new Set();
       const addCategory=(name,sortOrder=999999)=>{
         const label=String(name||"").trim();
-        const key=normalizeHomepageCategoryName(label);
+        const key=canonicalHomepageCategoryKey(label);
         if(!label||!key||seen.has(key)) return;
         seen.add(key);
         categories.push({name:label,key,sortOrder});
@@ -6409,7 +6458,7 @@ main#home{
 
       const categories=getHomepageFeaturedCategories(homepageProducts);
       const sections=categories.map(category=>{
-        const categoryProducts=homepageProducts.filter(product=>normalizeHomepageCategoryName(product.category)===category.key);
+        const categoryProducts=homepageProducts.filter(product=>canonicalHomepageCategoryKey(product.category)===category.key);
         if(!categoryProducts.length)return "";
         const categoryArg=escapeHtml(JSON.stringify(category.name));
         return `<section class="elory-home-category-section" data-home-category="${escapeHtml(category.name)}"><div class="elory-home-category-heading"><h3><a class="elory-home-category-link" href="#shopPage" onclick="showShopPage(${categoryArg},${categoryArg});return false;">${escapeHtml(category.name)}</a></h3></div><div class="products-grid elory-home-category-grid">${categoryProducts.map(product=>productCardHtml(product)).join("")}</div></section>`;
@@ -10817,9 +10866,9 @@ main#home{
     if(!requested)return false;
     const match=categories().find(c=>norm(c?.name)===norm(requested));
     const name=String(match?.name||requested).trim();
+    const categoryKey=canonicalHomepageCategoryKey(name);
     const list=productList();
-    const exact=list.filter(p=>norm(p?.category)===norm(name));
-    const source=exact.length?exact:list.filter(p=>norm(p?.category).includes(norm(name)));
+    const source=list.filter(p=>canonicalHomepageCategoryKey(p?.category)===categoryKey);
     const home=document.getElementById('home');
     const shop=document.getElementById('shopPage');
     const product=document.getElementById('productDetailsPage');
@@ -11347,28 +11396,173 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
 (()=>{
   const shell=document.getElementById("eloryGlobalStickyShell");
   if(!shell)return;
-  const root=document.documentElement;
-  const update=()=>{
-    const height=Math.ceil(shell.getBoundingClientRect().height||0);
-    root.style.setProperty("--elory-global-sticky-height",height+"px");
+  const overlay=shell.querySelector(":scope > .elory-notch-overlay");
+  const beam=overlay?.querySelector(".elory-notch-beam");
+  const beamPath=beam?.querySelector(".elory-notch-beam-path");
+  let lastBeamWidth=0,lastBeamHeight=0;
+
+  // The full navigation remains in normal flow; only this independent overlay is fixed.
+  const syncBeamGeometry=()=>{
+    if(!overlay||!beam||!beamPath)return;
+    const box=overlay.getBoundingClientRect();
+    const width=Math.round(box.width),height=Math.round(box.height);
+    if(width<1||height<1||(width===lastBeamWidth&&height===lastBeamHeight))return;
+    beam.setAttribute("viewBox","0 0 "+width+" "+height);
+    beamPath.setAttribute("x","0.5");
+    beamPath.setAttribute("y","0.5");
+    beamPath.setAttribute("width",Math.max(1,width-1));
+    beamPath.setAttribute("height",Math.max(1,height-1));
+    beamPath.setAttribute("rx",Math.max(1,(height-1)/2));
+    lastBeamWidth=width;
+    lastBeamHeight=height;
   };
-  update();
-  if("ResizeObserver" in window){
-    const observer=new ResizeObserver(update);
-    observer.observe(shell);
+
+  const syncCompact=()=>{
+    const root=document.documentElement;
+    const scrollTop=Math.max(
+      Number(window.pageYOffset)||0,
+      Number(root.scrollTop)||0,
+      Number(document.body.scrollTop)||0
+    );
+    const current=shell.classList.contains("elory-notch-compact");
+    const next=current?scrollTop>48:scrollTop>88;
+    if(next===current)return;
+    shell.classList.toggle("elory-notch-compact",next);
+    if(!next)shell.classList.remove("elory-notch-search-open");
+    requestAnimationFrame(syncBeamGeometry);
+  };
+
+  const bindNotchAction=(id,selector)=>{
+    const button=document.getElementById(id);
+    if(!button||button.dataset.eloryBound==="true")return;
+    button.dataset.eloryBound="true";
+    button.addEventListener("click",()=>{
+      const original=document.querySelector(selector);
+      if(original)original.click();
+    });
+  };
+  bindNotchAction("eloryNotchCart",".header-cart-btn");
+  bindNotchAction("eloryNotchFavorites",".header-favorite-btn");
+
+  const searchButton=document.getElementById("eloryNotchSearchButton");
+  const searchCloseButton=document.getElementById("eloryNotchSearchCloseButton");
+  const searchInput=document.getElementById("eloryNotchSearchInput");
+  const searchDropdown=document.getElementById("productSearchDropdown");
+  const originalSearchInput=document.getElementById("searchInput");
+  const closeCompactSearch=()=>{
+    shell.classList.remove("elory-notch-search-open");
+    searchButton?.setAttribute("aria-expanded","false");
+    searchInput?.blur();
+    if(searchDropdown)searchDropdown.hidden=true;
+  };
+  const runSearch=()=>{
+    const query=String(searchInput?.value||"").trim();
+    if(!query){searchInput?.focus({preventScroll:true});return;}
+    if(originalSearchInput){
+      originalSearchInput.value=query;
+      originalSearchInput.dispatchEvent(new Event("input",{bubbles:true}));
+    }
+    if(typeof window.submitSearch==="function")window.submitSearch();
+    else document.querySelector(".search-compact-v19 .search-btn")?.click();
+    closeCompactSearch();
+  };
+  if(searchButton&&!searchButton.dataset.eloryBound){
+    searchButton.dataset.eloryBound="true";
+    searchButton.setAttribute("aria-expanded","false");
+    searchButton.addEventListener("click",()=>{
+      if(!shell.classList.contains("elory-notch-search-open")){
+        shell.classList.add("elory-notch-search-open");
+        searchButton.setAttribute("aria-expanded","true");
+        requestAnimationFrame(syncBeamGeometry);
+        window.setTimeout(()=>searchInput?.focus({preventScroll:true}),80);
+        return;
+      }
+      runSearch();
+    });
   }
-  window.addEventListener("resize",update,{passive:true});
+  if(searchCloseButton&&!searchCloseButton.dataset.eloryBound){
+    searchCloseButton.dataset.eloryBound="true";
+    searchCloseButton.addEventListener("click",closeCompactSearch);
+  }
+  if(searchInput&&!searchInput.dataset.eloryBound){
+    searchInput.dataset.eloryBound="true";
+    searchInput.addEventListener("input",()=>{
+      if(!originalSearchInput)return;
+      originalSearchInput.value=searchInput.value;
+      originalSearchInput.dispatchEvent(new Event("input",{bubbles:true}));
+      if(searchDropdown&&!searchDropdown.hidden){
+        const notchBox=overlay?.getBoundingClientRect();
+        if(notchBox)searchDropdown.style.top=Math.round(notchBox.bottom+8)+"px";
+        searchDropdown.style.left="0";
+        searchDropdown.style.right="0";
+        searchDropdown.style.width="100vw";
+      }
+    });
+    searchInput.addEventListener("keydown",event=>{
+      if(event.key==="Enter"){event.preventDefault();runSearch();}
+      if(event.key==="Escape"){event.preventDefault();closeCompactSearch();}
+    });
+  }
+
+  const headerSearch=shell.querySelector(":scope > .elory-reference-nav");
+  const headerSearchButton=document.getElementById("eloryHeaderSearchButton");
+  const headerSearchCloseButton=document.getElementById("eloryHeaderSearchCloseButton");
+  const headerSearchInput=document.getElementById("searchInput");
+  const closeHeaderSearch=()=>{
+    headerSearch?.classList.remove("elory-header-search-open");
+    headerSearchButton?.setAttribute("aria-expanded","false");
+    headerSearchInput?.blur();
+    if(searchDropdown)searchDropdown.hidden=true;
+  };
+  if(headerSearch&&headerSearchButton&&!headerSearchButton.dataset.eloryBound){
+    headerSearchButton.dataset.eloryBound="true";
+    headerSearchButton.setAttribute("aria-expanded","false");
+    headerSearchButton.addEventListener("click",()=>{
+      if(!headerSearch.classList.contains("elory-header-search-open")){
+        headerSearch.classList.add("elory-header-search-open");
+        headerSearchButton.setAttribute("aria-expanded","true");
+        window.setTimeout(()=>headerSearchInput?.focus({preventScroll:true}),80);
+        return;
+      }
+      if(headerSearchInput?.value.trim()&&typeof window.submitSearch==="function"){
+        window.submitSearch();
+        closeHeaderSearch();
+      }else headerSearchInput?.focus({preventScroll:true});
+    });
+  }
+  if(headerSearchCloseButton&&!headerSearchCloseButton.dataset.eloryBound){
+    headerSearchCloseButton.dataset.eloryBound="true";
+    headerSearchCloseButton.addEventListener("click",closeHeaderSearch);
+  }
+  if(headerSearchInput&&!headerSearchInput.dataset.eloryHeaderKeysBound){
+    headerSearchInput.dataset.eloryHeaderKeysBound="true";
+    headerSearchInput.addEventListener("keydown",event=>{
+      if(event.key==="Enter"){
+        event.preventDefault();
+        if(typeof window.submitSearch==="function")window.submitSearch();
+        closeHeaderSearch();
+      }else if(event.key==="Escape"){
+        event.preventDefault();
+        closeHeaderSearch();
+      }
+    });
+  }
+
+  syncCompact();
+  window.addEventListener("scroll",syncCompact,{passive:true});
+  window.addEventListener("resize",()=>{syncCompact();syncBeamGeometry();},{passive:true});
+  window.addEventListener("orientationchange",()=>{syncCompact();syncBeamGeometry();},{passive:true});
+  if("ResizeObserver" in window&&overlay){
+    const observer=new ResizeObserver(syncBeamGeometry);
+    observer.observe(overlay);
+  }
 })();
 </script>
 <style id="elory-global-sticky-header">
-/* Keep the complete announcement, identity header and primary navigation
-   together as one sticky surface across every storefront view. */
-html{
-  scroll-padding-top:calc(var(--elory-global-sticky-height, 0px) + 12px);
-}
+/* Full header and full navigation always keep their natural document dimensions. */
 #eloryGlobalStickyShell{
-  position:sticky!important;
-  top:0!important;
+  position:relative!important;
+  top:auto!important;
   z-index:900!important;
   display:block!important;
   width:100%!important;
@@ -11381,29 +11575,472 @@ html{
 }
 #eloryGlobalStickyShell>.announcement,
 #eloryGlobalStickyShell>.header,
-#eloryGlobalStickyShell>.elory-reference-nav{
-  flex:none!important;
-}
-#eloryGlobalStickyShell>.header{
-  position:relative!important;
-  top:auto!important;
-}
+#eloryGlobalStickyShell>.elory-reference-nav{flex:none!important}
+#eloryGlobalStickyShell>.header{position:relative!important;top:auto!important}
 #eloryGlobalStickyShell>.elory-reference-nav{
   position:relative!important;
   top:auto!important;
   margin-bottom:0!important;
 }
-main#home{
-  margin-top:0!important;
-  padding-top:0!important;
+#eloryGlobalStickyShell>.elory-reference-nav-inner{
+  opacity:1;
+  visibility:visible;
 }
+main#home{margin-top:0!important;padding-top:0!important}
 @media(max-width:760px){
-  #eloryGlobalStickyShell{top:0!important}
   main#home{margin-top:0!important;padding-top:0!important}
   #eloryGlobalStickyShell>.elory-reference-nav{margin-bottom:0!important}
 }
+@media(max-width:380px){main#home{margin-top:0!important;padding-top:0!important}}
+
+/* Compact mode never resizes or repositions the original header/navigation. */
+#eloryGlobalStickyShell.elory-notch-compact{
+  pointer-events:none!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.announcement,
+#eloryGlobalStickyShell.elory-notch-compact>.header,
+#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  /* Their dimensions and positions are intentionally unchanged. */
+}
+#eloryGlobalStickyShell>.elory-notch-overlay{display:none}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
+  position:fixed!important;
+  top:0!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  z-index:905!important;
+  isolation:isolate!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:min(224px,calc(100vw - 24px))!important;
+  height:66px!important;
+  min-height:66px!important;
+  max-height:66px!important;
+  margin:0!important;
+  padding:3px!important;
+  box-sizing:border-box!important;
+  overflow:visible!important;
+  border:1px solid rgba(255,143,190,.5)!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  box-shadow:0 9px 28px rgba(167,48,102,.18)!important;
+  backdrop-filter:none!important;
+  pointer-events:auto!important;
+  transition:width .20s ease,box-shadow .20s ease!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay::after{
+  content:"";
+  position:absolute;
+  inset:3px;
+  z-index:1;
+  border:1px solid rgba(255,255,255,.92);
+  border-radius:inherit;
+  background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98));
+  box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12);
+  pointer-events:none;
+}
+
+/* A single luminous dash follows the actual rounded-rectangle perimeter path. */
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam{
+  position:absolute;
+  inset:-1px;
+  z-index:2;
+  display:block!important;
+  width:auto;
+  height:auto;
+  overflow:visible;
+  pointer-events:none;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-path{
+  fill:none;
+  stroke-dasharray:92 908;
+  stroke-dashoffset:0;
+  stroke-linecap:round;
+  stroke-width:3;
+  filter:drop-shadow(0 0 3px rgba(255,67,160,.92)) drop-shadow(0 0 7px rgba(186,91,255,.55));
+  animation:eloryNotchBeamTravel 2.7s linear infinite;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-mobile-notch{
+  position:relative;
+  z-index:3;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:16px!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  padding:0 12px!important;
+  direction:rtl!important;
+  box-sizing:border-box!important;
+  pointer-events:auto!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action{
+  position:relative!important;
+  display:flex!important;
+  flex:0 0 42px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:42px!important;
+  min-width:42px!important;
+  max-width:42px!important;
+  height:42px!important;
+  min-height:42px!important;
+  max-height:42px!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.95)!important;
+  border-radius:50%!important;
+  background:linear-gradient(145deg,#e85f9c 0%,#d33d82 55%,#b92d70 100%)!important;
+  color:#fff!important;
+  font-size:18px!important;
+  line-height:1!important;
+  box-shadow:0 4px 11px rgba(174,47,103,.23),inset 0 1px 2px rgba(255,255,255,.32)!important;
+  cursor:pointer!important;
+  -webkit-tap-highlight-color:transparent;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action i{
+  display:block!important;
+  font-size:18px!important;
+  line-height:1!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action:active{transform:scale(.93)}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search{
+  display:flex!important;flex:0 0 42px!important;align-items:center!important;justify-content:center!important;
+  width:42px!important;min-width:42px!important;height:42px!important;overflow:hidden!important;
+  border-radius:999px!important;background:transparent!important;
+  transition:width .22s ease,background .2s ease,box-shadow .2s ease;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search-button{
+  display:flex!important;flex:0 0 42px!important;align-items:center!important;justify-content:center!important;
+  gap:0!important;width:42px!important;min-width:42px!important;height:42px!important;padding:0!important;
+  font-family:inherit!important;font-size:18px!important;font-weight:800!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search-label{display:none!important}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search-close{display:none!important}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input{
+  display:block!important;
+  flex:1 1 auto!important;
+  width:0!important;
+  min-width:0!important;
+  height:38px!important;
+  margin:0!important;
+  padding:0!important;
+  opacity:0!important;
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  color:#71364f!important;
+  font-family:inherit!important;
+  font-size:13px!important;
+  text-align:right!important;
+  pointer-events:none!important;
+  transition:width .22s ease,opacity .18s ease,padding .22s ease;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input::placeholder{color:#a36e86!important}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open>.elory-notch-overlay{
+  width:min(342px,calc(100vw - 20px))!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-mobile-notch{
+  gap:0!important;
+  padding:0 9px!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open #eloryNotchCart,
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open #eloryNotchFavorites{display:none!important}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search{
+  display:flex!important;flex:1 1 100%!important;align-items:center!important;gap:4px!important;
+  width:100%!important;min-width:0!important;padding:0 4px!important;
+  background:rgba(255,255,255,.96)!important;box-shadow:inset 0 1px 4px rgba(128,61,89,.10)!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search-label{display:none!important}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search-button{
+  flex:0 0 34px!important;width:34px!important;min-width:34px!important;padding:0!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search-close{
+  display:flex!important;flex:0 0 34px!important;width:34px!important;min-width:34px!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search input{
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  padding:0 11px!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search .elory-notch-search-button{margin:0 2px!important}
+/* Full navigation is a single, centered capsule notch with a side-and-bottom white beam. */
+#eloryGlobalStickyShell>.elory-reference-nav{
+  position:relative!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  height:72px!important;
+  min-height:72px!important;
+  margin:0!important;
+  padding:7px 8px!important;
+  box-sizing:border-box!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner{
+  position:relative!important;
+  isolation:isolate!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:center!important;
+  justify-items:stretch!important;
+  direction:rtl!important;
+  width:min(640px,calc(100% - 12px))!important;
+  height:58px!important;
+  min-height:58px!important;
+  margin:0 auto!important;
+  padding:4px 10px!important;
+  gap:2px!important;
+  box-sizing:border-box!important;
+  border:1px solid rgba(255,255,255,.92)!important;
+  border-radius:999px!important;
+  background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98))!important;
+  box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12)!important;
+  overflow:visible!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.elory-reference-nav-beam{
+  position:absolute!important;
+  inset:0!important;
+  z-index:2!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path{
+  fill:none!important;
+  stroke-width:3!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+  stroke-dasharray:92 908!important;
+  stroke-dashoffset:0!important;
+  filter:drop-shadow(0 0 3px rgba(255,67,160,.92)) drop-shadow(0 0 7px rgba(186,91,255,.55))!important;
+  animation:eloryReferenceBeamTravel 2.7s linear infinite!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>button,
+#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.header-search-line{
+  position:relative!important;
+  z-index:3!important;
+  width:100%!important;
+  min-width:0!important;
+  justify-self:stretch!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
+#eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:4px!important;
+  height:36px!important;
+  min-height:36px!important;
+  margin:0!important;
+  padding:0 4px!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  color:#b92d70!important;
+  font-family:inherit!important;
+  font-size:11px!important;
+  font-weight:800!important;
+  line-height:1.2!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  box-shadow:none!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{justify-self:center!important;text-align:center!important}
+#eloryGlobalStickyShell>.elory-reference-nav .nav-orders-count{
+  color:#74143f!important;
+  background:#fff!important;
+  font-size:9px!important;
+  min-width:15px!important;
+  padding:2px 4px!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .header-search-line{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  max-width:none!important;
+  height:36px!important;
+  min-width:0!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  max-width:none!important;
+  height:36px!important;
+  min-width:0!important;
+  gap:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav #searchInput{display:none!important}
+#eloryGlobalStickyShell>.elory-reference-nav .search-btn{
+  display:flex!important;
+  flex:1 1 auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:6px!important;
+  width:100%!important;
+  min-width:0!important;
+  height:36px!important;
+  margin:0!important;
+  padding:0 4px!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  color:#fff!important;
+  font-family:inherit!important;
+  font-size:11px!important;
+  font-weight:800!important;
+  white-space:nowrap!important;
+  box-shadow:none!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .search-btn i{
+  display:inline-block!important;
+  color:#fff!important;
+  font-size:14px!important;
+  line-height:1!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label{
+  display:inline!important;
+  color:#fff!important;
+  font-family:inherit!important;
+  font-size:11px!important;
+  font-weight:800!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-search-close{
+  display:none!important;
+  flex:0 0 30px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:30px!important;
+  min-width:30px!important;
+  height:30px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:transparent!important;
+  color:#fff!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open>.elory-reference-nav-inner{
+  grid-template-columns:minmax(0,1fr)!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #primeHeaderBtn,
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #ordersBtn{display:none!important}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .header-search-line{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  height:38px!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-compact-v19{
+  justify-content:space-between!important;
+  width:100%!important;
+  height:38px!important;
+  padding:0 5px!important;
+  gap:4px!important;
+  border:1px solid rgba(255,255,255,.38)!important;
+  border-radius:999px!important;
+  background:rgba(255,255,255,.10)!important;
+  box-shadow:inset 0 1px 5px rgba(25,3,14,.16)!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #searchInput{
+  display:block!important;
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  height:32px!important;
+  margin:0!important;
+  padding:0 9px!important;
+  opacity:1!important;
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  color:#fff!important;
+  caret-color:#fff!important;
+  pointer-events:auto!important;
+  text-align:right!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #searchInput::placeholder{color:rgba(255,255,255,.72)!important}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-btn{
+  flex:0 0 30px!important;
+  width:30px!important;
+  min-width:30px!important;
+  height:30px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:#fff!important;
+  color:#8b194c!important;
+  box-shadow:0 2px 8px rgba(42,4,22,.18)!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-btn i{color:#8b194c!important}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-btn .elory-search-label{display:none!important}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .elory-search-close{
+  display:flex!important;
+  flex:0 0 30px!important;
+  color:#fff!important;
+}
+@media(max-width:760px){
+  #eloryGlobalStickyShell>.elory-reference-nav{
+    height:70px!important;
+    min-height:70px!important;
+    padding:6px 6px!important;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner{
+    width:min(640px,calc(100% - 8px))!important;
+    height:56px!important;
+    min-height:56px!important;
+    padding:3px 7px!important;
+    gap:1px!important;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
+  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{
+    height:34px!important;
+    min-height:34px!important;
+    padding:0 3px!important;
+    font-size:10.5px!important;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav .header-search-line,
+  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19,
+  #eloryGlobalStickyShell>.elory-reference-nav .search-btn{height:34px!important}
+  #eloryGlobalStickyShell>.elory-reference-nav .search-btn{gap:4px!important;font-size:10.5px!important}
+  #eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label{font-size:10.5px!important}
+}
 @media(max-width:380px){
-  main#home{margin-top:0!important;padding-top:0!important}
+  #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner{padding-inline:4px!important}
+  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
+  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{font-size:10px!important}
+  #eloryGlobalStickyShell>.elory-reference-nav .search-btn{gap:3px!important;font-size:10px!important}
+  #eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label{font-size:10px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19{transition:none!important}
+}
+
+@keyframes eloryNotchBeamTravel{to{stroke-dashoffset:-1000}}
+@keyframes eloryReferenceBeamTravel{to{stroke-dashoffset:-1000}}
+@media(prefers-reduced-motion:reduce){
+  #eloryGlobalStickyShell .elory-notch-search,#eloryGlobalStickyShell .elory-notch-search input{transition:none!important}
 }
 </style>
 </body>
