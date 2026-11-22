@@ -4999,7 +4999,11 @@ main#home{
       <stop offset="1" stop-color="#d76aff" stop-opacity=".05"/>
     </linearGradient>
   </defs>
-  <rect class="elory-reference-nav-beam-path" x="2.5" y="2.5" width="895" height="55" rx="27.5" pathLength="1000" stroke="url(#eloryReferenceBeamGradient)"/>
+  <rect class="elory-reference-nav-beam-path" x="2.5" y="2.5" width="895" height="55" rx="27.5" pathLength="1000" stroke="transparent"/>
+  <path class="elory-reference-nav-beam-motion-track" d="M30 1 H870 A29 29 0 0 1 899 30 V30 A29 29 0 0 1 870 59 H30 A29 29 0 0 1 1 30 V30 A29 29 0 0 1 30 1 Z" fill="none"/>
+  <polygon class="elory-reference-nav-beam-wedge" points="-32,0 14,-5.5 14,5.5" fill="#111">
+    <animateMotion class="elory-reference-nav-beam-motion" dur="5.2s" repeatCount="indefinite" rotate="auto" path="M30 1 H870 A29 29 0 0 1 899 30 V30 A29 29 0 0 1 870 59 H30 A29 29 0 0 1 1 30 V30 A29 29 0 0 1 30 1 Z"/>
+  </polygon>
 </svg>
 <button class="nav-prime-btn" id="primeHeaderBtn" title="Elory Prime" type="button">Elory Prime</button>
 <button class="nav-orders-btn header-orders-btn" id="ordersBtn" title="طلباتي" type="button"><span>طلباتي</span><span class="nav-orders-count" id="ordersCount" style="display:none">0</span></button>
@@ -5038,7 +5042,11 @@ main#home{
     <stop offset=".76" stop-color="#d76aff" stop-opacity=".95"/>
     <stop offset="1" stop-color="#d76aff" stop-opacity=".05"/>
   </linearGradient></defs>
-  <rect class="elory-notch-beam-path" x="2.5" y="2.5" width="219" height="61" rx="30.5" pathLength="1000" stroke="url(#eloryNotchBeamGradient)"/>
+  <rect class="elory-notch-beam-path" x="2.5" y="2.5" width="219" height="61" rx="30.5" pathLength="1000" stroke="transparent"/>
+  <path class="elory-notch-beam-motion-track" d="M33 1 H191 A32 32 0 0 1 223 33 V33 A32 32 0 0 1 191 65 H33 A32 32 0 0 1 1 33 V33 A32 32 0 0 1 33 1 Z" fill="none"/>
+  <polygon class="elory-notch-beam-wedge" points="-32,0 14,-5.5 14,5.5" fill="#111">
+    <animateMotion class="elory-notch-beam-motion" dur="5.2s" repeatCount="indefinite" rotate="auto" path="M33 1 H191 A32 32 0 0 1 223 33 V33 A32 32 0 0 1 191 65 H33 A32 32 0 0 1 1 33 V33 A32 32 0 0 1 33 1 Z"/>
+  </polygon>
 </svg>
 </div>
 </div>
@@ -11399,6 +11407,7 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   const overlay=shell.querySelector(":scope > .elory-notch-overlay");
   const beam=overlay?.querySelector(".elory-notch-beam");
   const beamPath=beam?.querySelector(".elory-notch-beam-path");
+  const beamMotion=beam?.querySelector(".elory-notch-beam-motion");
   let lastBeamWidth=0,lastBeamHeight=0;
 
   // The full navigation remains in normal flow; only this independent overlay is fixed.
@@ -11413,6 +11422,16 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
     beamPath.setAttribute("width",Math.max(1,width-1));
     beamPath.setAttribute("height",Math.max(1,height-1));
     beamPath.setAttribute("rx",Math.max(1,(height-1)/2));
+    if(beamMotion){
+      const radius=Math.max(1,(height-2)/2);
+      const right=width-1,bottom=height-1;
+      const track="M "+radius+" 1 H "+(right-radius)+
+        " A "+radius+" "+radius+" 0 0 1 "+right+" "+(1+radius)+
+        " V "+(bottom-radius)+" A "+radius+" "+radius+" 0 0 1 "+(right-radius)+" "+bottom+
+        " H "+radius+" A "+radius+" "+radius+" 0 0 1 1 "+(bottom-radius)+
+        " V "+(1+radius)+" A "+radius+" "+radius+" 0 0 1 "+radius+" 1 Z";
+      beamMotion.setAttribute("path",track);
+    }
     lastBeamWidth=width;
     lastBeamHeight=height;
   };
@@ -11657,13 +11676,17 @@ main#home{margin-top:0!important;padding-top:0!important}
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-path{
   fill:none;
+  stroke:transparent;
   stroke-dasharray:110 890;
   stroke-dashoffset:0;
   stroke-linecap:round;
   stroke-linejoin:round;
   stroke-width:3.5;
-  filter:drop-shadow(0 0 4px color-mix(in srgb,var(--pink) 85%,transparent)) drop-shadow(0 0 9px color-mix(in srgb,var(--pink-dark) 55%,transparent));
   animation:eloryNotchBeamTravel 2.35s linear infinite;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-wedge{
+  fill:#111!important;
+  filter:drop-shadow(0 0 2px rgba(0,0,0,.45))!important;
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-mobile-notch{
   position:relative;
@@ -11822,12 +11845,14 @@ main#home{margin-top:0!important;padding-top:0!important}
 }
 #eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path{
   fill:none!important;
+  stroke:transparent!important;
   stroke-width:3.5!important;
-  stroke-linecap:round!important;
-  stroke-linejoin:round!important;
   stroke-dasharray:118 882!important;
-  filter:drop-shadow(0 0 4px rgba(255,67,160,.98)) drop-shadow(0 0 9px rgba(186,91,255,.72))!important;
   animation:eloryReferenceBeamTravel 2.35s linear infinite!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-wedge{
+  fill:#111!important;
+  filter:drop-shadow(0 0 2px rgba(0,0,0,.45))!important;
 }
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>button,
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.header-search-line{
@@ -12116,18 +12141,14 @@ body.prime-mode{
 #eloryNotchBeamGradient stop:nth-child(4){stop-color:var(--elory-beam-deep)!important}
 #eloryReferenceBeamGradient stop:nth-child(5),
 #eloryNotchBeamGradient stop:nth-child(5){stop-color:var(--elory-beam-deep)!important}
-#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path{
-  filter:drop-shadow(0 0 4px color-mix(in srgb,var(--elory-beam-main) 94%,transparent))
-         drop-shadow(0 0 9px color-mix(in srgb,var(--elory-beam-deep) 72%,transparent))!important;
-}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path{stroke:transparent!important;filter:none!important}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-wedge{fill:#111!important;filter:drop-shadow(0 0 2px rgba(0,0,0,.45))!important}
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
   border-color:color-mix(in srgb,var(--elory-beam-main) 54%,white)!important;
   box-shadow:0 9px 28px color-mix(in srgb,var(--elory-beam-deep) 22%,transparent)!important;
 }
-#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-path{
-  filter:drop-shadow(0 0 4px color-mix(in srgb,var(--elory-beam-main) 90%,transparent))
-         drop-shadow(0 0 9px color-mix(in srgb,var(--elory-beam-deep) 70%,transparent))!important;
-}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-path{stroke:transparent!important;filter:none!important}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-wedge{fill:#111!important;filter:drop-shadow(0 0 2px rgba(0,0,0,.45))!important}
 #eloryGlobalStickyShell.elory-notch-compact .elory-notch-action{
   background:linear-gradient(145deg,var(--elory-header-icon-top),var(--elory-header-icon-bottom))!important;
   box-shadow:0 4px 11px var(--elory-header-icon-shadow),inset 0 1px 2px rgba(255,255,255,.32)!important;
