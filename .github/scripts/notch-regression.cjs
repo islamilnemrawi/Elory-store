@@ -122,7 +122,7 @@ const { chromium } = require("playwright");
     assert.notEqual(start.beam.animation, "none", "large notch beam must remain animated even when reduced motion is requested");
     assert.ok(start.beam.dasharray.includes("118") && start.beam.dasharray.includes("882"), "large notch retains its invisible perimeter timing track");
     assert.equal(start.beam.wedgeExists, true, "large notch must render its luminous tapered comet");
-    assert.equal(start.beam.wedgeDuration, "5.2s", "large notch comet must travel at the slower speed");
+    assert.equal(start.beam.wedgeDuration, "8.5s", "large notch comet must travel at the slower speed");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
