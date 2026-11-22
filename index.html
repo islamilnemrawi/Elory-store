@@ -3145,7 +3145,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
 .hero-dot.active{width:28px;height:10px;border-radius:10px;background:var(--pink,#d96b91);opacity:1;box-shadow:0 2px 8px rgba(166,47,94,.24)}
 #heroSlider>.hero-slide.elory-hero-fullbleed{background:#111 !important;isolation:isolate !important;}
 /* Avoid showing the baked-in starter hero while the published CMS campaign is still loading. */
-#heroSlider:not([data-hero-cms-ready="true"]){opacity:0 !important;pointer-events:none !important;}
 #heroSlider[data-hero-cms-ready="true"]{opacity:1 !important;pointer-events:auto !important;}
 #heroSlider .elory-hero-fullbleed-picture,#heroSlider .elory-hero-fullbleed-video{position:absolute !important;inset:0 !important;display:block !important;width:100% !important;height:100% !important;z-index:6 !important;overflow:hidden !important;}
 #heroSlider .elory-hero-fullbleed-picture img,#heroSlider .elory-hero-fullbleed-video{display:block !important;width:100% !important;height:100% !important;max-width:none !important;max-height:none !important;object-fit:contain !important;object-position:center center !important;border:0 !important;border-radius:0 !important;}
@@ -4989,7 +4988,7 @@ main#home{
 </header>
 <nav aria-label="التنقل الرئيسي" class="elory-reference-nav">
 <div class="elory-reference-nav-inner">
-<svg class="elory-reference-nav-beam" viewBox="0 0 900 60" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+<svg class="elory-reference-nav-beam elory-beam-style-3" viewBox="0 0 900 60" preserveAspectRatio="none" aria-hidden="true" focusable="false">
   <rect class="elory-reference-nav-beam-path" x="4.5" y="4.5" width="891" height="51" rx="25.5" pathLength="1000" stroke="transparent"/>
   <path class="elory-reference-nav-beam-motion-track" d="M30 1 H870 A29 29 0 0 1 899 30 V30 A29 29 0 0 1 870 59 H30 A29 29 0 0 1 1 30 V30 A29 29 0 0 1 30 1 Z" fill="none"/>
   <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-glow" x="4.5" y="4.5" width="891" height="51" rx="25.5" pathLength="1000"/>
@@ -5031,7 +5030,7 @@ main#home{
     </button>
   </div>
 </div>
-<svg class="elory-notch-beam" viewBox="0 0 224 66" aria-hidden="true" focusable="false">
+<svg class="elory-notch-beam elory-beam-style-3" viewBox="0 0 224 66" aria-hidden="true" focusable="false">
   <rect class="elory-notch-beam-path" x="4.5" y="4.5" width="215" height="57" rx="28.5" pathLength="700" stroke="transparent"/>
   <path class="elory-notch-beam-motion-track" d="M33 1 H191 A32 32 0 0 1 223 33 V33 A32 32 0 0 1 191 65 H33 A32 32 0 0 1 1 33 V33 A32 32 0 0 1 33 1 Z" fill="none"/>
   <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-glow" x="4.5" y="4.5" width="215" height="57" rx="28.5" pathLength="700"/>
@@ -5082,7 +5081,7 @@ main#home{
 <main id="home">
 <!-- HERO -->
 <section class="hero">
-<div class="hero-slider elory-code-hero" id="heroSlider" style="opacity:0;pointer-events:none">
+<div class="hero-slider elory-code-hero" id="heroSlider">
 <div class="hero-slide active elory-code-slide">
 <div class="hero-wave-top"></div>
 <div class="hero-decor hero-decor-left"></div>
@@ -11754,54 +11753,23 @@ main#home{margin-top:0!important;padding-top:0!important}
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-reference-nav-beam-secondary-mid,
 #eloryGlobalStickyShell .elory-beam-style-2 .elory-notch-beam-secondary-mid{opacity:.78}
 
-/* 3 — one canonical blush halo with a slow double heartbeat and a separate moving glint. */
+/* 3 — single blush-pink moving glint + one soft perimeter heartbeat. */
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-layer,
-#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-layer{stroke-dasharray:12 988;animation-duration:18s}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-layer{animation-duration:18s}
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-glow,
-#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-glow{
-  stroke:var(--elory-beam-deep);stroke-width:15;stroke-dasharray:48 952;opacity:.96;
-  filter:blur(4px) drop-shadow(0 0 7px var(--elory-beam-main)) drop-shadow(0 0 15px var(--elory-beam-deep));
-  animation:eloryBeamGlowPulse 6.8s ease-in-out infinite;
-}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-glow,
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-mid,
-#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-mid{
-  stroke:var(--elory-beam-main);stroke-width:6.5;stroke-dasharray:48 952;opacity:1;
-  filter:blur(1.1px) drop-shadow(0 0 5px var(--elory-beam-deep));
-  animation:eloryBeamGlowPulse 6.8s ease-in-out infinite;
-}
-#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-head,
-#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-head{
-  stroke:var(--elory-beam-core);stroke-width:3.2;stroke-dasharray:18 982;opacity:1;
-  filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px var(--elory-beam-deep));
-}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-mid,
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-core,
-#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-core{opacity:0}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-core{display:none!important;opacity:0!important;animation:none!important;filter:none!important}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-head,
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-head{stroke:var(--elory-beam-main);stroke-width:3.5;stroke-dasharray:24 976;opacity:1;filter:drop-shadow(0 0 3px var(--elory-beam-main)) drop-shadow(0 0 8px var(--elory-beam-main))}
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-ring,
-#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-ring{
-  stroke:var(--elory-beam-deep);stroke-width:3.8;stroke-dasharray:1000 0;opacity:.9;
-  filter:drop-shadow(0 0 6px var(--elory-beam-main)) drop-shadow(0 0 15px var(--elory-beam-deep)) drop-shadow(0 0 24px color-mix(in srgb,var(--elory-beam-deep) 55%,transparent));
-  animation:eloryHeartbeatHalo 6.8s ease-in-out infinite;
-}
-@keyframes eloryBeamGlowPulse{0%,100%{opacity:.72}50%{opacity:1}}
-@keyframes eloryHeartbeatHalo{
-  0%,100%{opacity:.68;stroke-width:3.4}
-  7%{opacity:1;stroke-width:4.1}
-  14%{opacity:.72;stroke-width:3.5}
-  23%{opacity:.96;stroke-width:3.9}
-  34%,88%{opacity:.7;stroke-width:3.4}
-}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-ring{stroke:var(--elory-beam-main);stroke-width:2.8;stroke-dasharray:1000 0;opacity:.82;filter:drop-shadow(0 0 3px var(--elory-beam-main)) drop-shadow(0 0 9px color-mix(in srgb,var(--elory-beam-main) 80%,transparent));animation:eloryHeartbeatHalo 6.8s ease-in-out infinite}
+@keyframes eloryHeartbeatHalo{0%,100%{opacity:.72;stroke-width:2.6}7%{opacity:.98;stroke-width:3.2}14%{opacity:.76;stroke-width:2.7}23%{opacity:.93;stroke-width:3}34%,88%{opacity:.72;stroke-width:2.6}}
 @media(prefers-reduced-motion:reduce){
-  #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-ring,
-  #eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-ring{
-    animation:none!important;opacity:.96!important;stroke-width:3.8!important;
-  }
-  /* Frozen dash segments sit at the SVG path origin (upper-left); hide them instead. */
-  #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-glow,
-  #eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-glow,
-  #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-mid,
-  #eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-mid{
-    animation:none!important;opacity:0!important;
-  }
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-ring,#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-ring{animation:none!important;opacity:.9!important;stroke-width:2.8!important}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-layer,#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-layer{animation:none!important;opacity:0!important;filter:none!important}
 }
 
 /* 4 — soft aurora sweep: a wider, silky light ribbon with a crisp inner line. */
