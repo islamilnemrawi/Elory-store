@@ -10794,7 +10794,6 @@ body.prime-mode{
 <script id="elory-site-customizations">
 (async function () {
   'use strict';
-  window.__eloryCmsTrace=['script-start'];
   try {
     const ensureDb = () => {
       if (window.elorySupabase) return window.elorySupabase;
@@ -10816,10 +10815,8 @@ body.prime-mode{
       window.addEventListener('elory-supabase-ready', onReady, {once:true});
       const waitTimer = setTimeout(onReady, 10000);
     });
-    window.__eloryCmsTrace.push(db?'db-ready':'db-missing');
     if (!db) return;
     const { data, error } = await db.from('site_customizations').select('config').eq('id', 1).maybeSingle();
-    window.__eloryCmsTrace.push('config-query:'+JSON.stringify({error:!!error,data:!!data,config:!!data?.config}));
     if (error || !data || !data.config) return;
     const c = data.config, $ = (s, root=document) => { try { return root.querySelector(s); } catch (_) { return null; } };
 
@@ -10883,11 +10880,9 @@ body.prime-mode{
     };
 
     // Hero: legacy slides remain unchanged; full-bleed campaigns use dedicated media fields.
-    window.__eloryCmsTrace.push('hero-enter');
     const slides=(Array.isArray(c.hero?.slides)?c.hero.slides:[])
       .filter(x=>x && x.isActive!==false && (mediaUrl(x.mediaUrl) || imageUrl(x.imageUrl) || imageUrl(x.mobileMediaUrl)))
       .sort((a,b)=>(+a.sortOrder||0)-(+b.sortOrder||0));
-    window.__eloryCmsTrace.push('hero-slides:'+slides.length);
     const requestedHeroId=new URLSearchParams(location.search).get('hero');
     const campaignIndex=requestedHeroId?slides.findIndex(x=>String(x.id)===requestedHeroId):-1;
     window.__eloryCampaignHeroLocked=campaignIndex>=0;
@@ -10902,7 +10897,6 @@ body.prime-mode{
     if(c.hero && c.hero.isVisible===false) visible('.hero',false);
     if(old && slides.length){
       const templates=$('.hero-slide',old), dotsTemplate=$('.hero-dots',old);
-      window.__eloryCmsTrace.push('hero-templates:'+templates.length);
       if(templates.length){
         const slider=old.cloneNode(false); slider.removeAttribute('data-hero-ready');
         slides.forEach((item,i)=>{
@@ -11027,7 +11021,6 @@ body.prime-mode{
           }
         };
         const firstMedia=slider.querySelector('.hero-slide.active .elory-hero-fullbleed-picture img,.hero-slide.active .elory-hero-fullbleed-video');
-        window.__eloryCmsTrace.push('hero-media:'+(firstMedia?.tagName||'none')+':'+(firstMedia?.src||''));
         if(firstMedia?.tagName==='IMG'){
           if(firstMedia.complete && firstMedia.naturalWidth>0) activateCmsHero();
           else {
@@ -11454,7 +11447,7 @@ body.prime-mode{
     }catch(realtimeError){
       console.warn('Elory live website updates are unavailable; refresh the storefront to load the latest settings.',realtimeError);
     }
-  } catch (e) { window.__eloryCmsTrace.push('error:'+String(e?.stack||e)); console.warn('Elory CMS settings were not applied; storefront remains available.',e); }
+  } catch (e) { console.warn('Elory CMS settings were not applied; storefront remains available.',e); }
 })();
 </script>
 <script id="elory-v12-live-category-images">
