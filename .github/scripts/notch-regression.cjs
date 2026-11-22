@@ -21,32 +21,6 @@ const { chromium } = require("playwright");
     await page.goto("http://127.0.0.1:4173/index.html", { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.locator("#eloryGlobalStickyShell").waitFor();
     await page.waitForTimeout(2500);
-    // Header search must behave as a true toggle and preserve the original Prime/Orders actions.
-    const headerSearch = page.locator("#eloryGlobalStickyShell > .elory-reference-nav");
-    const headerSearchButton = page.locator("#eloryHeaderSearchButton");
-    console.log("HEADER_SEARCH_INITIAL " + JSON.stringify(await headerSearchButton.evaluate(el => ({
-      button: { display:getComputedStyle(el).display, visibility:getComputedStyle(el).visibility, opacity:getComputedStyle(el).opacity, rect:el.getBoundingClientRect().toJSON() },
-      parent: { display:getComputedStyle(el.parentElement).display, visibility:getComputedStyle(el.parentElement).visibility, rect:el.parentElement.getBoundingClientRect().toJSON() },
-      line: { display:getComputedStyle(el.closest(".header-search-line")).display, visibility:getComputedStyle(el.closest(".header-search-line")).visibility, rect:el.closest(".header-search-line").getBoundingClientRect().toJSON() },
-      nav: { display:getComputedStyle(el.closest(".elory-reference-nav")).display, visibility:getComputedStyle(el.closest(".elory-reference-nav")).visibility, rect:el.closest(".elory-reference-nav").getBoundingClientRect().toJSON() },
-      shell: { className:el.closest("#eloryGlobalStickyShell").className }
-    }))));
-    await headerSearchButton.click();
-    await page.waitForTimeout(250);
-    assert.equal(await headerSearch.evaluate(el => el.classList.contains("elory-header-search-open")), true,
-      "full navigation search icon must expand the existing nav into a search field");
-    assert.equal(await page.locator("#primeHeaderBtn").isVisible(), false, "Prime must hide while full-nav search is open");
-    assert.equal(await page.locator("#ordersBtn").isVisible(), false, "Orders must hide while full-nav search is open");
-    assert.equal(await page.locator("#searchInput").isVisible(), true, "full-nav search input must occupy the navigation");
-    await page.locator("#searchInput").fill("اختبار");
-    await headerSearchButton.click();
-    await page.waitForTimeout(250);
-    assert.equal(await headerSearch.evaluate(el => el.classList.contains("elory-header-search-open")), false,
-      "second tap must close search even when text has been entered");
-    assert.equal(await page.locator("#primeHeaderBtn").isVisible(), true, "Prime must return after closing full-nav search");
-    assert.equal(await page.locator("#ordersBtn").isVisible(), true, "Orders must return after closing full-nav search");
-    assert.equal(await page.locator("#searchInput").isVisible(), false, "full-nav search input must collapse");
-
     await page.evaluate(async () => {
       document.documentElement.style.scrollBehavior = "auto";
       document.body.style.scrollBehavior = "auto";
@@ -83,6 +57,33 @@ const { chromium } = require("playwright");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
+
+    // Header search must behave as a true toggle and preserve the original Prime/Orders actions.
+    const headerSearch = page.locator("#eloryGlobalStickyShell > .elory-reference-nav");
+    const headerSearchButton = page.locator("#eloryHeaderSearchButton");
+    console.log("HEADER_SEARCH_INITIAL " + JSON.stringify(await headerSearchButton.evaluate(el => ({
+      button: { display:getComputedStyle(el).display, visibility:getComputedStyle(el).visibility, opacity:getComputedStyle(el).opacity, rect:el.getBoundingClientRect().toJSON() },
+      parent: { display:getComputedStyle(el.parentElement).display, visibility:getComputedStyle(el.parentElement).visibility, rect:el.parentElement.getBoundingClientRect().toJSON() },
+      line: { display:getComputedStyle(el.closest(".header-search-line")).display, visibility:getComputedStyle(el.closest(".header-search-line")).visibility, rect:el.closest(".header-search-line").getBoundingClientRect().toJSON() },
+      nav: { display:getComputedStyle(el.closest(".elory-reference-nav")).display, visibility:getComputedStyle(el.closest(".elory-reference-nav")).visibility, rect:el.closest(".elory-reference-nav").getBoundingClientRect().toJSON() },
+      shell: { className:el.closest("#eloryGlobalStickyShell").className }
+    }))));
+    await headerSearchButton.click();
+    await page.waitForTimeout(250);
+    assert.equal(await headerSearch.evaluate(el => el.classList.contains("elory-header-search-open")), true,
+      "full navigation search icon must expand the existing nav into a search field");
+    assert.equal(await page.locator("#primeHeaderBtn").isVisible(), false, "Prime must hide while full-nav search is open");
+    assert.equal(await page.locator("#ordersBtn").isVisible(), false, "Orders must hide while full-nav search is open");
+    assert.equal(await page.locator("#searchInput").isVisible(), true, "full-nav search input must occupy the navigation");
+    await page.locator("#searchInput").fill("اختبار");
+    await headerSearchButton.click();
+    await page.waitForTimeout(250);
+    assert.equal(await headerSearch.evaluate(el => el.classList.contains("elory-header-search-open")), false,
+      "second tap must close search even when text has been entered");
+    assert.equal(await page.locator("#primeHeaderBtn").isVisible(), true, "Prime must return after closing full-nav search");
+    assert.equal(await page.locator("#ordersBtn").isVisible(), true, "Orders must return after closing full-nav search");
+    assert.equal(await page.locator("#searchInput").isVisible(), false, "full-nav search input must collapse");
+
 
     await page.evaluate(() => {
       const shell = document.getElementById("eloryGlobalStickyShell");
