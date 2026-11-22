@@ -8,6 +8,13 @@ on:
       - index.html
       - .github/scripts/notch-regression.cjs
       - .github/workflows/notch-regression.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - index.html
+      - .github/scripts/notch-regression.cjs
+      - .github/workflows/notch-regression.yml
   workflow_dispatch:
 
 permissions:
