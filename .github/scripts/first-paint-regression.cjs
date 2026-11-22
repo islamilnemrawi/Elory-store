@@ -20,6 +20,13 @@ async function sample(page, label) {
     const heroVisible = !hero.hidden && hs.display !== "none" && hs.visibility !== "hidden" &&
       hero.getBoundingClientRect().width > 0 && hero.getBoundingClientRect().height > 0;
     const ready = slider.dataset.heroCmsReady === "true";
+    const activeSlide = slider.querySelector(":scope > .hero-slide.active") || slider.querySelector(":scope > .hero-slide");
+    const activeImage = activeSlide?.querySelector(".elory-hero-fullbleed-picture img, img.hero-product-image");
+    const activeVideo = activeSlide?.querySelector(".elory-hero-fullbleed-video");
+    const activeSlideMediaReady = !ready ||
+      (!activeImage && !activeVideo) ||
+      (!!activeImage && activeImage.complete && activeImage.naturalWidth > 0) ||
+      (!!activeVideo && activeVideo.readyState >= 2);
     const visibleSlides = [...slider.querySelectorAll(":scope > .hero-slide")].filter(el => {
       const style = getComputedStyle(el);
       const box = el.getBoundingClientRect();
@@ -38,6 +45,7 @@ async function sample(page, label) {
       backgroundColor: ss.backgroundColor,
       backgroundImage: ss.backgroundImage,
       ready,
+      activeSlideMediaReady,
       visibleSlides,
       totalSlides: slider.querySelectorAll(":scope > .hero-slide").length,
       scrollY: Math.round(scrollY),
@@ -53,6 +61,8 @@ function assertPainted(state, viewportName) {
   assert.notEqual(state.sliderVisibility, "hidden", viewportName + " " + state.label + ": hero region must remain visible");
   assert.ok(state.visibleSlides >= 1,
     viewportName + " " + state.label + ": a real fallback or CMS campaign slide must remain visible during loading");
+  assert.ok(state.activeSlideMediaReady,
+    viewportName + " " + state.label + ": CMS must not replace the fallback before active campaign media is ready");
 }
 
 async function runViewport(browser, viewport) {
