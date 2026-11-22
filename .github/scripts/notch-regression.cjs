@@ -66,6 +66,7 @@ const { chromium } = require("playwright");
         })(),
         ordersColor: getComputedStyle(document.getElementById("ordersBtn")).color,
         primeColor: getComputedStyle(document.getElementById("primeHeaderBtn")).color,
+        searchLabelColor: getComputedStyle(document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label")).color,
         beam: (() => {
           const svg = fullNav.querySelector(".elory-reference-nav-beam");
           const path = svg?.querySelector(".elory-reference-nav-beam-path");
@@ -98,6 +99,7 @@ const { chromium } = require("playwright");
     assert.match(start.navInner.background, /255, 224, 239/i, "large notch background must retain the compact notch's middle pink tone");
     assert.equal(start.ordersColor, "rgb(185, 45, 112)", "Orders text must use the compact notch pink accent for contrast");
     assert.equal(start.primeColor, "rgb(185, 45, 112)", "Prime text must use the compact notch pink accent for contrast");
+    assert.equal(start.searchLabelColor, "rgb(185, 45, 112)", "large notch search label must use the same rose text accent");
     assert.equal(start.beam.exists, true, "large notch must have its own perimeter beam");
     assert.equal(start.beam.tagName, "rect", "large notch beam must trace the complete capsule perimeter like the compact notch");
     assert.ok(Number(start.beam.rx) >= 24, "large notch beam must follow a fully rounded capsule edge");
