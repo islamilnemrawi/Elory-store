@@ -4991,17 +4991,15 @@ main#home{
 <div class="elory-reference-nav-inner">
 <svg class="elory-reference-nav-beam" viewBox="0 0 900 60" preserveAspectRatio="none" aria-hidden="true" focusable="false">
   <defs>
-    <linearGradient id="eloryReferenceBeamGradient" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#fff" stop-opacity="0.02"/>
-      <stop offset="0.16" stop-color="#fff" stop-opacity="0.30"/>
-      <stop offset="0.36" stop-color="#fff" stop-opacity="0.88"/>
-      <stop offset="0.50" stop-color="#fff" stop-opacity="1"/>
-      <stop offset="0.66" stop-color="#fff" stop-opacity="0.78"/>
-      <stop offset="0.86" stop-color="#fff" stop-opacity="0.24"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0.02"/>
+    <linearGradient id="eloryReferenceBeamGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff5ca8" stop-opacity=".08"/>
+      <stop offset=".28" stop-color="#ff5ca8" stop-opacity=".95"/>
+      <stop offset=".52" stop-color="#fff7dc" stop-opacity="1"/>
+      <stop offset=".76" stop-color="#d76aff" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#d76aff" stop-opacity=".05"/>
     </linearGradient>
   </defs>
-  <path class="elory-reference-nav-beam-path" d="M 870 3 C 887 3 897 14 897 28 L 897 32 C 897 48 886 57 870 57 L 30 57 C 14 57 3 48 3 32 L 3 28 C 3 15 12 6 25 4" pathLength="1000" />
+  <rect class="elory-reference-nav-beam-path" x="2.5" y="2.5" width="895" height="55" rx="27.5" pathLength="1000" stroke="url(#eloryReferenceBeamGradient)"/>
 </svg>
 <button class="nav-prime-btn" id="primeHeaderBtn" title="Elory Prime" type="button">Elory Prime</button>
 <button class="nav-orders-btn header-orders-btn" id="ordersBtn" title="طلباتي" type="button"><span>طلباتي</span><span class="nav-orders-count" id="ordersCount" style="display:none">0</span></button>
@@ -11805,10 +11803,10 @@ main#home{margin-top:0!important;padding-top:0!important}
   padding:4px 10px!important;
   gap:2px!important;
   box-sizing:border-box!important;
-  border:1px solid rgba(83,8,38,.62)!important;
+  border:1px solid rgba(255,255,255,.92)!important;
   border-radius:999px!important;
-  background:linear-gradient(118deg,#74143f 0%,#a52259 48%,#761540 100%)!important;
-  box-shadow:0 9px 24px rgba(91,12,48,.24),inset 0 1px 0 rgba(255,255,255,.08),inset 0 -2px 8px rgba(45,4,25,.20)!important;
+  background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98))!important;
+  box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12)!important;
   overflow:visible!important;
 }
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.elory-reference-nav-beam{
@@ -11823,14 +11821,13 @@ main#home{margin-top:0!important;padding-top:0!important}
 }
 #eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path{
   fill:none!important;
-  stroke:url(#eloryReferenceBeamGradient)!important;
-  stroke-width:2.6!important;
+  stroke-width:3!important;
   stroke-linecap:round!important;
   stroke-linejoin:round!important;
-  stroke-dasharray:220 780!important;
+  stroke-dasharray:92 908!important;
   stroke-dashoffset:0!important;
-  filter:drop-shadow(0 0 2px rgba(255,255,255,.95)) drop-shadow(0 0 6px rgba(255,255,255,.72))!important;
-  animation:eloryReferenceBeamTravel 3.5s linear infinite!important;
+  filter:drop-shadow(0 0 3px rgba(255,67,160,.92)) drop-shadow(0 0 7px rgba(186,91,255,.55))!important;
+  animation:eloryReferenceBeamTravel 2.7s linear infinite!important;
 }
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>button,
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.header-search-line{
