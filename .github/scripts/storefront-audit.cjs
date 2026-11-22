@@ -34,6 +34,12 @@ async function inspectTarget(browser, target, viewport) {
     const response = await page.goto(target.url, { waitUntil: "domcontentloaded", timeout: 60000 });
     result.httpStatus = response?.status() ?? null;
     await wait(5000);
+    await page.evaluate(async () => {
+      history.scrollRestoration = "manual";
+      document.documentElement.style.scrollBehavior = "auto";
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
     result.loaded = !!response && response.status() < 400;
     result.title = await page.title();
     result.finalUrl = page.url();
@@ -41,7 +47,7 @@ async function inspectTarget(browser, target, viewport) {
       const doc = document.documentElement, body = document.body;
       const visible = el => { const s = getComputedStyle(el), r = el.getBoundingClientRect(); return s.display !== "none" && s.visibility !== "hidden" && r.width > 0 && r.height > 0; };
       const images = [...document.images].map(img => ({
-        src: img.currentSrc || img.src, alt: img.alt || "", loaded: img.complete && img.naturalWidth > 0,
+        src: img.currentSrc || img.src, alt: img.alt || "", complete: img.complete, loaded: img.complete && img.naturalWidth > 0, broken: img.complete && img.naturalWidth === 0,
         naturalWidth: img.naturalWidth, width: Math.round(img.getBoundingClientRect().width), height: Math.round(img.getBoundingClientRect().height)
       }));
       const links = [...document.querySelectorAll("a[href]")].map(a => ({
@@ -50,6 +56,7 @@ async function inspectTarget(browser, target, viewport) {
       }));
       return {
         viewport: { width: innerWidth, height: innerHeight },
+        scrollY: Math.round(scrollY),
         document: { width: doc.scrollWidth, height: doc.scrollHeight, bodyWidth: body.scrollWidth },
         horizontalOverflow: doc.scrollWidth > innerWidth + 2 || body.scrollWidth > innerWidth + 2,
         visibleButtons: [...document.querySelectorAll("button,[role=button]")].filter(visible).length,
@@ -63,7 +70,8 @@ async function inspectTarget(browser, target, viewport) {
       };
     });
     result.counts = { buttons: result.layout.allButtons, inputs: result.layout.allInputs, anchors: result.layout.allAnchors, sections: result.layout.visibleSections.length };
-    result.images = result.layout.images.filter(x => !x.loaded && x.src && !x.src.startsWith("data:"));
+    result.images = result.layout.images.filter(x => x.broken && x.src && !x.src.startsWith("data:"));
+    result.pendingImages = result.layout.images.filter(x => !x.complete && x.src && !x.src.startsWith("data:"));
     result.internalLinks = result.layout.links.filter(x => { try { return new URL(x.href).origin === new URL(target.url).origin; } catch { return false; } });
     await page.screenshot({ path: path.join(OUT, target.name + "-" + viewport.name + "-top.png"), fullPage: false });
     await page.screenshot({ path: path.join(OUT, target.name + "-" + viewport.name + "-full.png"), fullPage: true, animations: "disabled" });
@@ -118,7 +126,7 @@ async function inspectTarget(browser, target, viewport) {
     runs: results.map(r => ({
       target: r.target, viewport: r.viewport, loaded: r.loaded, httpStatus: r.httpStatus,
       horizontalOverflow: r.layout?.horizontalOverflow, counts: r.counts,
-      brokenImages: r.images?.length || 0, pageErrors: r.errors?.page?.length || 0,
+      brokenImages: r.images?.length || 0, pendingImages: r.pendingImages?.length || 0, pageErrors: r.errors?.page?.length || 0,
       consoleErrors: r.errors?.console?.length || 0, failedRequests: r.errors?.failedRequests?.length || 0,
       badResponses: r.errors?.badResponses?.length || 0, testedButtons: r.testedButtons?.length || 0,
       failedButtonClicks: r.testedButtons?.filter(x => x.result === "failed").length || 0,
