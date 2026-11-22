@@ -142,7 +142,7 @@ const { chromium } = require("playwright");
       }));
     }
     assert.deepEqual(fullBeamStyles.map(x=>x.style),["1","2","3","4"],"all four full-size lighting styles must be independently selectable");
-    assert.deepEqual(fullBeamStyles.map(x=>x.duration),["18s","18s","18s","18s"],"all four full-size styles must share one continuous animation pace");
+    assert.deepEqual(fullBeamStyles.map(x=>x.duration),["24s","24s","24s","24s"],"all four full-size styles must share one continuous animation pace");
     assert.ok(Number(fullBeamStyles[1].secondaryOpacity)>0,"style 2 must show its opposing second comet");
     assert.ok(Number(fullBeamStyles[2].ringOpacity)>0,"style 3 must show one visible perimeter halo");
     assert.equal(Number(fullBeamStyles[2].glowOpacity),0,"style 3 must not stack a second glow dash");
@@ -363,11 +363,16 @@ const { chromium } = require("playwright");
       const wedgeMoved = Number.isFinite(beforeWedgeOffset) && Number.isFinite(afterWedgeOffset) && Math.abs(afterWedgeOffset-beforeWedgeOffset)>5;
       const navBox = nav.getBoundingClientRect();
       const beamBox = beam.getBoundingClientRect();
+      const navStyle = getComputedStyle(nav);
+      const beamRadius = Number(beamPath.getAttribute("rx"));
       return {
         compact: shell.classList.contains("elory-notch-compact"),
         navPosition: getComputedStyle(nav).position,
         navWidth: navBox.width,
         navHeight: navBox.height,
+        navRadius: parseFloat(navStyle.borderTopLeftRadius),
+        beamRadius,
+        capsuleRatio: navBox.width / navBox.height,
         fullNavVisibility: getComputedStyle(fullNav).visibility,
         fullNavWidth: fullNavBox.width,
         fullNavHeight: fullNavBox.height,
@@ -395,6 +400,9 @@ const { chromium } = require("playwright");
     console.log("NOTCH_GEOMETRY " + JSON.stringify(notch));
     assert.equal(notch.compact, true, "notch must be visible when scrolling");
     assert.equal(notch.navPosition, "fixed", "the independent notch overlay must be fixed");
+    assert.ok(notch.navHeight >= 70 && notch.navHeight <= 74, "compact notch must keep its taller, softer capsule proportions");
+    assert.ok(notch.navRadius >= 35 && notch.beamRadius >= 31, "compact notch outer edge and SVG beam must share fully rounded capsule corners");
+    assert.ok(notch.capsuleRatio <= 3.25, "compact notch must not look like a flat rectangular strip");
     assert.equal(notch.fullNavVisibility, "hidden", "the original navigation must hide without leaving normal flow");
     assert.equal(notch.fullNavSizeStable, true, "the original navigation dimensions must remain unchanged");
     assert.equal(notch.buttonCount, 3, "notch must retain exactly three visible actions");
@@ -436,7 +444,7 @@ const { chromium } = require("playwright");
       }));
     }
     assert.deepEqual(compactBeamStyles.map(x=>x.compact),["1","2","3","4"],"all four compact-notch lighting styles must be independently selectable");
-    assert.deepEqual(compactBeamStyles.map(x=>x.duration),["18s","18s","18s","18s"],"all four compact styles must share one continuous animation pace");
+    assert.deepEqual(compactBeamStyles.map(x=>x.duration),["24s","24s","24s","24s"],"all four compact styles must share one continuous animation pace");
     assert.ok(compactBeamStyles.every(x=>x.full===x.compact),"large and compact notches must always use the same selected style");
     assert.ok(Number(compactBeamStyles[1].secondaryOpacity)>0,"compact style 2 must show its opposing second comet");
     assert.ok(Number(compactBeamStyles[2].ringOpacity)>0,"compact style 3 must show one visible perimeter halo");
