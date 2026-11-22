@@ -10335,6 +10335,40 @@ main#home{
           const dot=document.createElement('button'); dot.type='button'; dot.className='hero-dot'+(i===0?' active':'');
           dot.dataset.label=txt(item.buttonText||item.title||('الشريحة '+(i+1))); dot.setAttribute('aria-label',dot.dataset.label); dots.appendChild(dot);
         });
+        /* Keep the currently painted fallback until the first CMS slide media is actually usable. */
+        const firstCampaignSlide=slider.querySelector(':scope > .hero-slide');
+        const firstCampaignImage=firstCampaignSlide?.querySelector('.elory-hero-fullbleed-picture img, img.hero-product-image');
+        if(firstCampaignImage && firstCampaignImage.getAttribute('src')){
+          const imageReady=firstCampaignImage.complete
+            ? firstCampaignImage.naturalWidth>0
+            : await new Promise(resolve=>{
+                let settled=false;
+                const finish=ready=>{if(settled)return;settled=true;resolve(ready);};
+                firstCampaignImage.addEventListener('load',()=>finish(firstCampaignImage.naturalWidth>0),{once:true});
+                firstCampaignImage.addEventListener('error',()=>finish(false),{once:true});
+                window.setTimeout(()=>finish(false),3500);
+              });
+          if(!imageReady){
+            console.warn('Elory hero campaign media is not ready; keeping the visible fallback slide.');
+            return;
+          }
+        }
+        const firstCampaignVideo=firstCampaignSlide?.querySelector('.elory-hero-fullbleed-video');
+        if(firstCampaignVideo){
+          const videoReady=firstCampaignVideo.readyState>=2
+            ? true
+            : await new Promise(resolve=>{
+                let settled=false;
+                const finish=ready=>{if(settled)return;settled=true;resolve(ready);};
+                firstCampaignVideo.addEventListener('loadeddata',()=>finish(true),{once:true});
+                firstCampaignVideo.addEventListener('error',()=>finish(false),{once:true});
+                window.setTimeout(()=>finish(!!firstCampaignVideo.poster),3500);
+              });
+          if(!videoReady){
+            console.warn('Elory hero campaign video is not ready; keeping the visible fallback slide.');
+            return;
+          }
+        }
         slider.appendChild(dots); slider.dataset.heroCmsReady='true'; slider.style.visibility='visible'; slider.style.opacity='1'; slider.style.pointerEvents='auto'; old.replaceWith(slider); window.heroIndex=0;
         if(typeof window.startHero==='function') window.startHero();
         else if(slides.length){
@@ -11237,6 +11271,23 @@ main#home{
       });
       dots.appendChild(dot);
     });
+    /* Do not replace the fallback until the first campaign image can be painted. */
+    const firstRecoveryImage=cards[0]?.querySelector('.elory-hero-fullbleed-picture img');
+    if(firstRecoveryImage){
+      const imageReady=firstRecoveryImage.complete
+        ? firstRecoveryImage.naturalWidth>0
+        : await new Promise(resolve=>{
+            let settled=false;
+            const finish=ready=>{if(settled)return;settled=true;resolve(ready);};
+            firstRecoveryImage.addEventListener('load',()=>finish(firstRecoveryImage.naturalWidth>0),{once:true});
+            firstRecoveryImage.addEventListener('error',()=>finish(false),{once:true});
+            window.setTimeout(()=>finish(false),3500);
+          });
+      if(!imageReady){
+        console.warn('Elory recovery campaign media is not ready; keeping the visible fallback slide.');
+        return;
+      }
+    }
     slider.replaceChildren(...cards, dots);
     slider.dataset.heroReady = 'true';
     slider.dataset.heroCmsReady = 'true';
