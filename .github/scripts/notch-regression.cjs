@@ -88,6 +88,8 @@ const { chromium } = require("playwright");
     assert.ok(start.navInner.gap <= 8, "large notch actions must have compact spacing");
     assert.ok(start.navInner.borderRadius.includes("px") && parseFloat(start.navInner.borderRadius) >= 24,
       "large notch must have a true rounded capsule edge");
+    assert.ok(!start.navInner.borderColor.includes("255, 255, 255"),
+      "large notch must not have a static white outline; white is reserved for the moving beam");
     assert.equal(start.ordersColor, "rgb(255, 255, 255)", "Orders text must use the notch's white contrast color");
     assert.equal(start.primeColor, "rgb(255, 255, 255)", "Prime text must use the notch's white contrast color");
     assert.equal(start.beam.exists, true, "large notch must have its own perimeter beam");
