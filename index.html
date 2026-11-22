@@ -4998,6 +4998,20 @@ main#home{
 </div>
 </div>
 </div>
+<div class="elory-mobile-notch" id="eloryMobileNotch" aria-label="اختصارات المتجر">
+  <button type="button" class="elory-notch-action" id="eloryNotchCart" aria-label="السلة" title="السلة">
+    <i class="fa-solid fa-bag-shopping" aria-hidden="true"></i>
+  </button>
+  <button type="button" class="elory-notch-action" id="eloryNotchFavorites" aria-label="المفضلة" title="المفضلة">
+    <i class="fa-regular fa-heart" aria-hidden="true"></i>
+  </button>
+  <div class="elory-notch-search" id="eloryNotchSearch">
+    <input id="eloryNotchSearchInput" type="search" inputmode="search" autocomplete="off" aria-label="ابحث عن منتج" placeholder="ابحثي عن منتج"/>
+    <button type="button" class="elory-notch-action elory-notch-search-button" id="eloryNotchSearchButton" aria-label="البحث" title="البحث">
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>
 </nav>
 </div>
 <div aria-label="اقتراحات المنتجات" class="product-search-dropdown" id="productSearchDropdown" role="listbox" hidden></div>
@@ -11361,9 +11375,55 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   };
   const syncCompact=()=>{
     const scrollTop=window.pageYOffset||root.scrollTop||document.body.scrollTop||0;
-    shell.classList.toggle("elory-notch-compact",scrollTop>72);
+    const compact=scrollTop>72;
+    shell.classList.toggle("elory-notch-compact",compact);
+    if(!compact)shell.classList.remove("elory-notch-search-open");
     update();
   };
+  const bindNotchAction=(id,selector)=>{
+    const button=document.getElementById(id);
+    if(!button||button.dataset.eloryBound==="true")return;
+    button.dataset.eloryBound="true";
+    button.addEventListener("click",()=>{
+      const original=document.querySelector(selector);
+      if(original)original.click();
+    });
+  };
+  bindNotchAction("eloryNotchCart",".header-cart-btn");
+  bindNotchAction("eloryNotchFavorites",".header-favorite-btn");
+
+  const notchSearchButton=document.getElementById("eloryNotchSearchButton");
+  const notchSearchInput=document.getElementById("eloryNotchSearchInput");
+  const runNotchSearch=()=>{
+    const query=String(notchSearchInput?.value||"").trim();
+    if(!query){notchSearchInput?.focus({preventScroll:true});return;}
+    const originalInput=document.getElementById("searchInput");
+    if(originalInput){
+      originalInput.value=query;
+      originalInput.dispatchEvent(new Event("input",{bubbles:true}));
+    }
+    if(typeof window.submitSearch==="function")window.submitSearch();
+    else document.querySelector(".search-compact-v19 .search-btn")?.click();
+    shell.classList.remove("elory-notch-search-open");
+  };
+  if(notchSearchButton&&!notchSearchButton.dataset.eloryBound){
+    notchSearchButton.dataset.eloryBound="true";
+    notchSearchButton.addEventListener("click",()=>{
+      if(shell.classList.contains("elory-notch-search-open")&&String(notchSearchInput?.value||"").trim()){
+        runNotchSearch();
+        return;
+      }
+      shell.classList.add("elory-notch-search-open");
+      window.setTimeout(()=>notchSearchInput?.focus({preventScroll:true}),80);
+    });
+  }
+  if(notchSearchInput&&!notchSearchInput.dataset.eloryBound){
+    notchSearchInput.dataset.eloryBound="true";
+    notchSearchInput.addEventListener("keydown",event=>{
+      if(event.key==="Enter"){event.preventDefault();runNotchSearch();}
+      if(event.key==="Escape"){event.preventDefault();shell.classList.remove("elory-notch-search-open");notchSearchInput.blur();}
+    });
+  }
   update();
   syncCompact();
   window.addEventListener("scroll",syncCompact,{passive:true});
@@ -11371,7 +11431,7 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   window.addEventListener("resize",syncCompact,{passive:true});
   window.addEventListener("orientationchange",syncCompact,{passive:true});
   if("ResizeObserver" in window){
-    const observer=new ResizeObserver(syncCompact);
+    const observer=new ResizeObserver(update);
     observer.observe(shell);
   }
 })();
@@ -11422,55 +11482,192 @@ main#home{
   main#home{margin-top:0!important;padding-top:0!important}
 }
 
-/* Mobile notch header: compact actions appear only after the user scrolls. */
-@media(max-width:760px){
-  #eloryGlobalStickyShell>.announcement,
-  #eloryGlobalStickyShell>.header{
-    max-height:180px;opacity:1;overflow:hidden;
-    transition:max-height .24s ease,opacity .18s ease,margin .24s ease;
-  }
-  #eloryGlobalStickyShell>.elory-reference-nav{
-    transition:min-height .24s ease,padding .24s ease,box-shadow .24s ease;
-  }
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav{
-    min-height:62px!important;padding:7px 12px!important;
-    border:1px solid rgba(222,160,187,.34)!important;border-radius:0 0 24px 24px!important;
-    background:rgba(255,239,246,.96)!important;box-shadow:0 7px 22px rgba(130,57,88,.14)!important;
-    backdrop-filter:blur(14px);
-  }
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-reference-nav-inner{
-    display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
-    align-items:center!important;gap:10px!important;width:min(100%,430px)!important;margin:0 auto!important;
-  }
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #primeHeaderBtn,
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #ordersBtn,
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .header-search-line{
-    display:flex!important;align-items:center!important;justify-content:center!important;
-    justify-self:center!important;width:46px!important;min-width:46px!important;
-    height:46px!important;min-height:46px!important;padding:0!important;
-    border-radius:50%!important;box-sizing:border-box!important;
-  }
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #primeHeaderBtn,
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #ordersBtn{font-size:0!important}
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #primeHeaderBtn::before{content:"♛";font-size:21px;line-height:1}
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav #ordersBtn::before{content:"▤";font-size:21px;line-height:1}
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .header-search-line{max-width:none!important;margin:0!important}
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .search-compact-v19{
-    display:flex!important;align-items:center!important;justify-content:center!important;
-    width:46px!important;height:46px!important;min-height:46px!important;padding:0!important;border-radius:50%!important;
-  }
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .search-compact-v19 input{
-    position:absolute!important;width:1px!important;height:1px!important;padding:0!important;
-    opacity:0!important;pointer-events:none!important;
-  }
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .search-compact-v19 .search-btn{
-    display:flex!important;align-items:center!important;justify-content:center!important;
-    width:100%!important;height:100%!important;flex:0 0 100%!important;border-radius:50%!important;
-  }
-  #eloryGlobalStickyShell.elory-notch-compact>.announcement,
-  #eloryGlobalStickyShell.elory-notch-compact>.header{
-    max-height:0!important;opacity:0!important;margin:0!important;pointer-events:none!important;
-  }
-}</style>
+/* True compact notch: three small shortcut icons, centered, with a moving luminous rim. */
+#eloryGlobalStickyShell.elory-notch-compact{
+  width:min(224px,calc(100vw - 24px))!important;
+  max-width:calc(100vw - 24px)!important;
+  min-width:0!important;
+  margin:0 auto!important;
+  padding:0!important;
+  overflow:visible!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  transition:width .28s cubic-bezier(.2,.8,.2,1),max-width .28s ease,margin .28s ease;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.announcement,
+#eloryGlobalStickyShell.elory-notch-compact>.header{
+  height:0!important;
+  min-height:0!important;
+  max-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  overflow:hidden!important;
+  pointer-events:none!important;
+  transition:height .22s ease,max-height .22s ease,opacity .16s ease;
+}
+#eloryGlobalStickyShell>.elory-reference-nav{
+  position:relative!important;
+  box-sizing:border-box!important;
+  transition:width .28s cubic-bezier(.2,.8,.2,1),height .28s ease,min-height .28s ease,border-radius .28s ease;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-mobile-notch{display:none}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav{
+  position:relative!important;
+  isolation:isolate!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  height:66px!important;
+  min-height:66px!important;
+  max-height:66px!important;
+  margin:0!important;
+  padding:3px!important;
+  overflow:visible!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  box-shadow:0 9px 28px rgba(167,48,102,.18)!important;
+  backdrop-filter:none!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav::before{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  z-index:0;
+  border-radius:inherit;
+  background:conic-gradient(from 0deg,#ffe7a8 0deg,#ff69ad 52deg,#f8d8ff 105deg,#b76cff 158deg,#ff8dc2 220deg,#fff2bd 278deg,#e64a99 330deg,#ffe7a8 360deg);
+  animation:eloryNotchRimSpin 3.2s linear infinite;
+  filter:saturate(1.15);
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav::after{
+  content:"";
+  position:absolute;
+  inset:2px;
+  z-index:0;
+  border:1px solid rgba(255,255,255,.88);
+  border-radius:inherit;
+  background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98));
+  box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12);
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-reference-nav-inner{
+  display:none!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-mobile-notch{
+  position:relative;
+  z-index:2;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:16px!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  padding:0 12px!important;
+  direction:ltr!important;
+  box-sizing:border-box!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action{
+  position:relative!important;
+  display:flex!important;
+  flex:0 0 42px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:42px!important;
+  min-width:42px!important;
+  max-width:42px!important;
+  height:42px!important;
+  min-height:42px!important;
+  max-height:42px!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.95)!important;
+  border-radius:50%!important;
+  background:linear-gradient(145deg,#e85f9c 0%,#d33d82 55%,#b92d70 100%)!important;
+  color:#fff!important;
+  font-size:18px!important;
+  line-height:1!important;
+  box-shadow:0 4px 11px rgba(174,47,103,.23),inset 0 1px 2px rgba(255,255,255,.32)!important;
+  cursor:pointer!important;
+  -webkit-tap-highlight-color:transparent;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action i{
+  display:block!important;
+  font-size:18px!important;
+  line-height:1!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action:active{
+  transform:scale(.93);
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search{
+  display:flex!important;
+  flex:0 0 42px!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  width:42px!important;
+  min-width:42px!important;
+  height:42px!important;
+  overflow:hidden!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  transition:width .25s ease,background .2s ease,box-shadow .2s ease;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input{
+  display:block!important;
+  flex:1 1 auto!important;
+  width:0!important;
+  min-width:0!important;
+  height:38px!important;
+  margin:0!important;
+  padding:0!important;
+  opacity:0!important;
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  color:#71364f!important;
+  font-family:inherit!important;
+  font-size:13px!important;
+  text-align:right!important;
+  pointer-events:none!important;
+  transition:width .25s ease,opacity .18s ease,padding .25s ease;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input::placeholder{color:#a36e86!important}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open{
+  width:min(342px,calc(100vw - 20px))!important;
+  max-width:calc(100vw - 20px)!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open>.elory-reference-nav{
+  width:100%!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-mobile-notch{
+  gap:9px!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search{
+  flex:1 1 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  background:rgba(255,255,255,.94)!important;
+  box-shadow:inset 0 1px 4px rgba(128,61,89,.10)!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search input{
+  width:100%!important;
+  min-width:0!important;
+  padding:0 11px!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search .elory-notch-search-button{
+  margin:0 2px!important;
+}
+@keyframes eloryNotchRimSpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav::before{animation:none!important}
+  #eloryGlobalStickyShell,#eloryGlobalStickyShell>.elory-reference-nav,
+  #eloryGlobalStickyShell .elory-notch-search,#eloryGlobalStickyShell .elory-notch-search input{transition:none!important}
+}
+</style>
 </body>
 </html>
