@@ -316,7 +316,8 @@ const { chromium } = require("playwright");
         beamBoxAligned: Math.abs(beamBox.left - navBox.left) <= 1 && Math.abs(beamBox.top - navBox.top) <= 1 &&
           Math.abs(beamBox.width - navBox.width) <= 1 && Math.abs(beamBox.height - navBox.height) <= 1,
         strokeDasharray: getComputedStyle(beamPath).strokeDasharray,
-        strokeLinecap: getComputedStyle(beamPath).strokeLinecap
+        strokeLinecap: getComputedStyle(beamPath).strokeLinecap,
+        cometStyles: Array.from(cometLayers).map(layer => { const s=getComputedStyle(layer); const r=layer.getBoundingClientRect(); return {className:layer.getAttribute("class"),stroke:s.stroke,strokeWidth:s.strokeWidth,strokeDasharray:s.strokeDasharray,strokeDashoffset:s.strokeDashoffset,animationName:s.animationName,animationDuration:s.animationDuration,opacity:s.opacity,filter:s.filter,box:{x:r.x,y:r.y,width:r.width,height:r.height}}; })
       };
     });
     await page.screenshot({ path: path.join(reportDir, "elory-notch-mobile-390x844.png"), fullPage: false });
