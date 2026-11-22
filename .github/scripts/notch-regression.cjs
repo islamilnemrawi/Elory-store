@@ -90,14 +90,14 @@ const { chromium } = require("playwright");
       "large notch must have a true rounded capsule edge");
     assert.ok(!start.navInner.borderColor.includes("255, 255, 255"),
       "large notch must not have a static white outline; white is reserved for the moving beam");
-    assert.equal(start.ordersColor, "rgb(255, 255, 255)", "Orders text must use the notch's white contrast color");
-    assert.equal(start.primeColor, "rgb(255, 255, 255)", "Prime text must use the notch's white contrast color");
+    assert.match(start.navInner.background, /255, 246, 251/i, "large notch background must match the compact notch's pale pink gradient");
+    assert.match(start.navInner.background, /255, 224, 239/i, "large notch background must retain the compact notch's middle pink tone");
+    assert.equal(start.ordersColor, "rgb(255, 255, 255)", "Orders text must match the compact notch action-icon color");
+    assert.equal(start.primeColor, "rgb(255, 255, 255)", "Prime text must match the compact notch action-icon color");
     assert.equal(start.beam.exists, true, "large notch must have its own perimeter beam");
-    assert.match(start.beam.d, /M\s*\d+(?:\.\d+)?\s+\d+(?:\.\d+)?/i, "large notch beam must use an explicit side-and-bottom path");
-    assert.ok(!/M\s*\d+(?:\.\d+)?\s+\d+(?:\.\d+)?\s+H\s*\d+/i.test(start.beam.d),
-      "large notch beam must not draw a horizontal top edge");
-    assert.equal(start.beam.animation, "eloryReferenceBeamTravel", "large notch beam must animate as a moving head and tail");
-    assert.ok(start.beam.dasharray !== "none", "large notch beam must have a finite luminous streak");
+    assert.match(start.beam.d, /<rect-not-used>/i, "large notch beam must trace the complete capsule perimeter");
+    assert.equal(start.beam.animation, "eloryReferenceBeamTravel", "large notch beam must animate continuously");
+    assert.match(start.beam.dasharray, /92px?,\\s*908px?/i, "large notch beam must use the same short moving streak as the compact notch");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
