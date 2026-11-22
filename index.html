@@ -9235,6 +9235,13 @@ main#home{margin-top:0!important;padding-top:0!important}
           clone.setAttribute("aria-hidden", "true");
           clone.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
           clone.querySelectorAll("button,a,input,[tabindex]").forEach(el => el.setAttribute("tabindex", "-1"));
+          // The visual repeats must not start lazy-loading/decoding images as they enter
+          // the viewport. That work can interrupt the compositor-driven rail animation.
+          clone.querySelectorAll("img").forEach(img => {
+            img.loading = "eager";
+            img.decoding = "async";
+            img.setAttribute("fetchpriority", "low");
+          });
           track.appendChild(clone);
         }
 
