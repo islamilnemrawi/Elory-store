@@ -31,6 +31,7 @@ const { chromium } = require("playwright");
         shellHeight: shell.getBoundingClientRect().height,
         documentHeight: document.documentElement.scrollHeight,
         compact: shell.classList.contains("elory-notch-compact"),
+        shellPosition: getComputedStyle(shell).position,
         headerVisibility: getComputedStyle(shell.querySelector(".header")).visibility,
         navCount: shell.querySelectorAll(":scope > .elory-reference-nav").length,
         maxScroll: Math.max(0, document.documentElement.scrollHeight - innerHeight)
@@ -38,6 +39,7 @@ const { chromium } = require("playwright");
     });
     assert.deepEqual(start.viewport, { width: 390, height: 844 }, "must run at a real 390x844 CSS viewport");
     assert.equal(start.compact, false, "page must start in full-header state");
+    assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
 
     await page.evaluate(() => {
@@ -106,10 +108,12 @@ const { chromium } = require("playwright");
       const heights = [shell.getBoundingClientRect().height, ...audit.toggles.map(x => x.shellHeight), ...audit.samples.map(x => x.shellHeight)];
       const minHeight = Math.min(...heights);
       const maxHeight = Math.max(...heights);
+      const documentHeights = [...audit.toggles.map(x => x.documentHeight), ...audit.samples.map(x => x.documentHeight)];
       return {
         toggles: audit.toggles,
         samples: audit.samples,
         shellHeightDelta: maxHeight - minHeight,
+        documentHeightDelta: documentHeights.length ? Math.max(...documentHeights) - Math.min(...documentHeights) : 0,
         cls: audit.cls,
         frameGapCountOver34ms: audit.frameGaps.length,
         maxFrameGapMs: audit.frameGaps.length ? Math.max(...audit.frameGaps) : 0,
@@ -118,6 +122,7 @@ const { chromium } = require("playwright");
       };
     });
 
+    console.log("SLOW_SCROLL_AUDIT " + JSON.stringify(scrollAudit));
     assert.equal(scrollAudit.toggles.length, 4, "two slow down/up cycles should produce exactly four compact-state transitions");
     assert.ok(scrollAudit.shellHeightDelta <= 1, "sticky shell height must not change when compact mode toggles");
     assert.ok(scrollAudit.toggles.filter(x => x.compact).every(x => x.scrollY >= 88), "compact mode must engage only after its enter threshold");
@@ -155,13 +160,12 @@ const { chromium } = require("playwright");
     await page.screenshot({ path: path.join(reportDir, "elory-notch-mobile-390x844.png"), fullPage: false });
     console.log("NOTCH_GEOMETRY " + JSON.stringify(notch));
     assert.equal(notch.compact, true, "notch must be visible when scrolling");
-    assert.equal(notch.navPosition, "absolute", "notch must overlay the stable header footprint");
+    assert.equal(notch.navPosition, "fixed", "notch must remain fixed independently of the normal-flow header");
     assert.equal(notch.buttonCount, 3, "notch must retain exactly three actions");
     assert.equal(notch.beamExists, true, "SVG perimeter beam must exist");
     assert.equal(notch.beamDashOffsetChanged, true, "beam dash must move along the edge");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
 
-    await page.screenshot({ path: path.join(reportDir, "elory-notch-mobile-390x844.png"), fullPage: false });
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(300);
     await page.screenshot({ path: path.join(reportDir, "elory-header-mobile-390x844.png"), fullPage: false });
