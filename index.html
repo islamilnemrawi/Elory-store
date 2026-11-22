@@ -11547,14 +11547,21 @@ main#home{
 #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav::after{
   content:"";
   position:absolute;
-  inset:2px;
-  z-index:0;
-  border:1px solid rgba(255,255,255,.88);
+  inset:4px;
+  z-index:1;
+  border:1px solid rgba(255,255,255,.92);
   border-radius:inherit;
   background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98));
   box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12);
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-reference-nav-inner{
+  display:none!important;
+}
+/* Hide the four original header shortcuts while compact; their full-header versions remain untouched at page top. */
+#eloryGlobalStickyShell.elory-notch-compact .header-menu-btn,
+#eloryGlobalStickyShell.elory-notch-compact .header-account-btn,
+#eloryGlobalStickyShell.elory-notch-compact .header-cart-btn,
+#eloryGlobalStickyShell.elory-notch-compact .header-favorite-btn{
   display:none!important;
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-mobile-notch{
@@ -11568,7 +11575,7 @@ main#home{
   height:100%!important;
   min-width:0!important;
   padding:0 12px!important;
-  direction:ltr!important;
+  direction:rtl!important;
   box-sizing:border-box!important;
 }
 #eloryGlobalStickyShell.elory-notch-compact .elory-notch-action{
