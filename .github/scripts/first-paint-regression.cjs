@@ -20,6 +20,13 @@ async function sample(page, label) {
     const heroVisible = !hero.hidden && hs.display !== "none" && hs.visibility !== "hidden" &&
       hero.getBoundingClientRect().width > 0 && hero.getBoundingClientRect().height > 0;
     const ready = slider.dataset.heroCmsReady === "true";
+    const heroLoading = slider.dataset.heroLoading === "true";
+    const fallbackCopy = slider.querySelector(":scope > .hero-slide.elory-code-slide .hero-copy");
+    const fallbackCopyVisible = !!fallbackCopy && getComputedStyle(fallbackCopy).visibility !== "hidden" &&
+      Number(getComputedStyle(fallbackCopy).opacity) > 0.01;
+    const loadingPlaceholderVisible = heroLoading &&
+      !!slider.querySelector(":scope > .hero-slide.elory-code-slide") &&
+      getComputedStyle(slider.querySelector(":scope > .hero-slide.elory-code-slide"), "::after").content !== "none";
     const activeSlide = slider.querySelector(":scope > .hero-slide.active") || slider.querySelector(":scope > .hero-slide");
     const activeImage = activeSlide?.querySelector(".elory-hero-fullbleed-picture img, img.hero-product-image");
     const activeVideo = activeSlide?.querySelector(".elory-hero-fullbleed-video");
@@ -45,6 +52,9 @@ async function sample(page, label) {
       backgroundColor: ss.backgroundColor,
       backgroundImage: ss.backgroundImage,
       ready,
+      heroLoading,
+      fallbackCopyVisible,
+      loadingPlaceholderVisible,
       activeSlideMediaReady,
       visibleSlides,
       totalSlides: slider.querySelectorAll(":scope > .hero-slide").length,
@@ -63,6 +73,12 @@ function assertPainted(state, viewportName) {
     viewportName + " " + state.label + ": a real fallback or CMS campaign slide must remain visible during loading");
   assert.ok(state.activeSlideMediaReady,
     viewportName + " " + state.label + ": CMS must not replace the fallback before active campaign media is ready");
+  if (state.heroLoading) {
+    assert.equal(state.fallbackCopyVisible, false,
+      viewportName + " " + state.label + ": stale starter hero copy must stay hidden while campaigns load");
+    assert.equal(state.loadingPlaceholderVisible, true,
+      viewportName + " " + state.label + ": a branded hero loading placeholder must be visible");
+  }
 }
 
 async function runViewport(browser, viewport) {
@@ -114,6 +130,12 @@ async function runViewport(browser, viewport) {
     const response = await page.goto(BASE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
     results.httpStatus = response ? response.status() : null;
     assert.ok(response && response.status() < 400, viewport.name + ": storefront must return HTTP < 400");
+    const criticalStyleInHead = await page.evaluate(() => {
+      const style = document.getElementById("elory-global-sticky-header");
+      return !!style && style.parentElement === document.head;
+    });
+    assert.ok(criticalStyleInHead,
+      viewport.name + ": sticky header geometry styles must be available in <head> before first paint");
 
     await page.evaluate(() => {
       history.scrollRestoration = "manual";
@@ -146,6 +168,9 @@ async function runViewport(browser, viewport) {
       heroReady: document.getElementById("heroSlider")?.dataset.heroCmsReady === "true",
       audit: window.__eloryFirstPaintAudit || { cls: null, shifts: [] }
     }));
+    assert.ok(results.final.audit.cls <= 0.1,
+      viewport.name + ": cumulative layout shift must remain at or below 0.1 (actual " +
+      results.final.audit.cls + ")");
 
     // Exercise a real refresh from a scrolled position and inspect the first rendered frame.
     await page.evaluate(() => {

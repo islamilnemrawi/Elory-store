@@ -8,6 +8,7 @@ on:
       - fix/mobile-notch-header-category-rename-20261122
       - fix/storefront-first-paint-20261122
       - fix/storefront-loading-first-paint-20261122
+      - fix/elory-initial-layout-shift-20261122
     paths:
       - index.html
       - .github/scripts/storefront-audit.cjs
