@@ -5012,6 +5012,16 @@ main#home{
     </button>
   </div>
 </div>
+<svg class="elory-notch-beam" viewBox="0 0 224 66" aria-hidden="true" focusable="false">
+  <defs><linearGradient id="eloryNotchBeamGradient" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ff5ca8" stop-opacity=".08"/>
+    <stop offset=".28" stop-color="#ff5ca8" stop-opacity=".95"/>
+    <stop offset=".52" stop-color="#fff7dc" stop-opacity="1"/>
+    <stop offset=".76" stop-color="#d76aff" stop-opacity=".95"/>
+    <stop offset="1" stop-color="#d76aff" stop-opacity=".05"/>
+  </linearGradient></defs>
+  <rect class="elory-notch-beam-path" x="2.5" y="2.5" width="219" height="61" rx="30.5" pathLength="1000" stroke="url(#eloryNotchBeamGradient)"/>
+</svg>
 </nav>
 </div>
 <div aria-label="اقتراحات المنتجات" class="product-search-dropdown" id="productSearchDropdown" role="listbox" hidden></div>
@@ -11365,338 +11375,184 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
 }
 </style>
 <script id="elory-global-sticky-measurement">
-(()=>{
+(()=> {
   const shell=document.getElementById("eloryGlobalStickyShell");
   if(!shell)return;
-  const root=document.documentElement;
-
-  let compactState=null;
-  let lastMeasuredHeight=-1;
-  const update=()=>{
+  const root=document.documentElement,nav=shell.querySelector(":scope > .elory-reference-nav");
+  const beam=nav?.querySelector(".elory-notch-beam"),beamPath=beam?.querySelector(".elory-notch-beam-path");
+  let lastMeasuredHeight=-1,lastBeamWidth=0,lastBeamHeight=0;
+  const measureFullHeaderHeight=()=>{
+    if(shell.classList.contains("elory-notch-compact"))return;
     const height=Math.ceil(shell.getBoundingClientRect().height||0);
-    if(height!==lastMeasuredHeight){
-      root.style.setProperty("--elory-global-sticky-height",height+"px");
-      lastMeasuredHeight=height;
+    if(height>0&&height!==lastMeasuredHeight){
+      root.style.setProperty("--elory-global-sticky-height",height+"px");lastMeasuredHeight=height;
     }
   };
+  const syncBeamGeometry=()=>{
+    if(!beam||!beamPath||!nav)return;
+    const box=nav.getBoundingClientRect(),width=Math.round(box.width),height=Math.round(box.height);
+    if(width<1||height<1||(width===lastBeamWidth&&height===lastBeamHeight))return;
+    beam.setAttribute("viewBox","0 0 "+width+" "+height);
+    beamPath.setAttribute("x","2.5");beamPath.setAttribute("y","2.5");
+    beamPath.setAttribute("width",Math.max(1,width-5));beamPath.setAttribute("height",Math.max(1,height-5));
+    beamPath.setAttribute("rx",Math.max(1,(height-5)/2));lastBeamWidth=width;lastBeamHeight=height;
+  };
   const syncCompact=()=>{
-    const scrollTop=window.pageYOffset||root.scrollTop||document.body.scrollTop||0;
-    // Separate enter/exit thresholds prevent scroll anchoring and the collapsing
-    // sticky header from repeatedly flipping compact mode near a single threshold.
-    const compact=compactState===true ? scrollTop>48 : scrollTop>88;
-    if(compact===compactState)return;
-    compactState=compact;
-    shell.classList.toggle("elory-notch-compact",compact);
-    if(!compact)shell.classList.remove("elory-notch-search-open");
-    requestAnimationFrame(update);
+    const scrollTop=Math.max(Number(window.pageYOffset)||0,Number(root.scrollTop)||0,Number(document.body.scrollTop)||0);
+    const current=shell.classList.contains("elory-notch-compact"),next=current?scrollTop>48:scrollTop>88;
+    if(next===current)return;
+    shell.classList.toggle("elory-notch-compact",next);
+    if(!next)shell.classList.remove("elory-notch-search-open");
   };
   const bindNotchAction=(id,selector)=>{
     const button=document.getElementById(id);
     if(!button||button.dataset.eloryBound==="true")return;
     button.dataset.eloryBound="true";
-    button.addEventListener("click",()=>{
-      const original=document.querySelector(selector);
-      if(original)original.click();
-    });
+    button.addEventListener("click",()=>{const original=document.querySelector(selector);if(original)original.click();});
   };
   bindNotchAction("eloryNotchCart",".header-cart-btn");
   bindNotchAction("eloryNotchFavorites",".header-favorite-btn");
-
-  const notchSearchButton=document.getElementById("eloryNotchSearchButton");
-  const notchSearchInput=document.getElementById("eloryNotchSearchInput");
-  const runNotchSearch=()=>{
-    const query=String(notchSearchInput?.value||"").trim();
-    if(!query){notchSearchInput?.focus({preventScroll:true});return;}
-    const originalInput=document.getElementById("searchInput");
-    if(originalInput){
-      originalInput.value=query;
-      originalInput.dispatchEvent(new Event("input",{bubbles:true}));
-    }
+  const searchButton=document.getElementById("eloryNotchSearchButton"),searchInput=document.getElementById("eloryNotchSearchInput");
+  const runSearch=()=>{
+    const query=String(searchInput?.value||"").trim();
+    if(!query){searchInput?.focus({preventScroll:true});return;}
+    const original=document.getElementById("searchInput");
+    if(original){original.value=query;original.dispatchEvent(new Event("input",{bubbles:true}));}
     if(typeof window.submitSearch==="function")window.submitSearch();
     else document.querySelector(".search-compact-v19 .search-btn")?.click();
     shell.classList.remove("elory-notch-search-open");
   };
-  if(notchSearchButton&&!notchSearchButton.dataset.eloryBound){
-    notchSearchButton.dataset.eloryBound="true";
-    notchSearchButton.addEventListener("click",()=>{
-      if(shell.classList.contains("elory-notch-search-open")&&String(notchSearchInput?.value||"").trim()){
-        runNotchSearch();
-        return;
-      }
+  if(searchButton&&!searchButton.dataset.eloryBound){
+    searchButton.dataset.eloryBound="true";
+    searchButton.addEventListener("click",()=>{
+      if(shell.classList.contains("elory-notch-search-open")&&String(searchInput?.value||"").trim()){runSearch();return;}
       shell.classList.add("elory-notch-search-open");
-      window.setTimeout(()=>notchSearchInput?.focus({preventScroll:true}),80);
+      window.setTimeout(()=>searchInput?.focus({preventScroll:true}),80);
     });
   }
-  if(notchSearchInput&&!notchSearchInput.dataset.eloryBound){
-    notchSearchInput.dataset.eloryBound="true";
-    notchSearchInput.addEventListener("keydown",event=>{
-      if(event.key==="Enter"){event.preventDefault();runNotchSearch();}
-      if(event.key==="Escape"){event.preventDefault();shell.classList.remove("elory-notch-search-open");notchSearchInput.blur();}
+  if(searchInput&&!searchInput.dataset.eloryBound){
+    searchInput.dataset.eloryBound="true";
+    searchInput.addEventListener("keydown",event=>{
+      if(event.key==="Enter"){event.preventDefault();runSearch();}
+      if(event.key==="Escape"){event.preventDefault();shell.classList.remove("elory-notch-search-open");searchInput.blur();}
     });
   }
-  update();
-  syncCompact();
+  measureFullHeaderHeight();syncBeamGeometry();syncCompact();
   window.addEventListener("scroll",syncCompact,{passive:true});
-  window.addEventListener("resize",syncCompact,{passive:true});
-  window.addEventListener("orientationchange",syncCompact,{passive:true});
+  const onViewportChange=()=>{measureFullHeaderHeight();syncBeamGeometry();syncCompact();};
+  window.addEventListener("resize",onViewportChange,{passive:true});
+  window.addEventListener("orientationchange",onViewportChange,{passive:true});
   if("ResizeObserver" in window){
-    const observer=new ResizeObserver(()=>requestAnimationFrame(update));
-    observer.observe(shell);
+    const observer=new ResizeObserver(()=>{measureFullHeaderHeight();syncBeamGeometry();});
+    observer.observe(shell);if(nav)observer.observe(nav);
   }
 })();
 </script>
 <style id="elory-global-sticky-header">
-/* Keep the complete announcement, identity header and primary navigation
-   together as one sticky surface across every storefront view. */
-html{
-  scroll-padding-top:calc(var(--elory-global-sticky-height, 0px) + 12px);
-}
+/* Preserve the full header's flow footprint while changing only its visible presentation. */
+html{scroll-padding-top:calc(var(--elory-global-sticky-height,0px) + 12px)}
 #eloryGlobalStickyShell{
-  position:sticky!important;
-  top:0!important;
-  z-index:900!important;
-  display:block!important;
-  width:100%!important;
-  max-width:100%!important;
-  margin:0!important;
-  padding:0!important;
-  isolation:isolate!important;
-  background:#fff8fb;
-  box-shadow:0 5px 18px rgba(119,45,75,.12);
+  position:sticky!important;top:0!important;z-index:900!important;display:block!important;
+  width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;
+  isolation:isolate!important;background:#fff8fb;box-shadow:0 5px 18px rgba(119,45,75,.12);
 }
 #eloryGlobalStickyShell>.announcement,
 #eloryGlobalStickyShell>.header,
-#eloryGlobalStickyShell>.elory-reference-nav{
-  flex:none!important;
-}
-#eloryGlobalStickyShell>.header{
-  position:relative!important;
-  top:auto!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav{
-  position:relative!important;
-  top:auto!important;
-  margin-bottom:0!important;
-}
-main#home{
-  margin-top:0!important;
-  padding-top:0!important;
-}
+#eloryGlobalStickyShell>.elory-reference-nav{flex:none!important}
+#eloryGlobalStickyShell>.header{position:relative!important;top:auto!important}
+#eloryGlobalStickyShell>.elory-reference-nav{position:relative!important;top:auto!important;margin-bottom:0!important}
+main#home{margin-top:0!important;padding-top:0!important}
 @media(max-width:760px){
   #eloryGlobalStickyShell{top:0!important}
   main#home{margin-top:0!important;padding-top:0!important}
   #eloryGlobalStickyShell>.elory-reference-nav{margin-bottom:0!important}
 }
-@media(max-width:380px){
-  main#home{margin-top:0!important;padding-top:0!important}
-}
+@media(max-width:380px){main#home{margin-top:0!important;padding-top:0!important}}
 
-/* True compact notch: three small shortcut icons, centered, with a moving luminous rim. */
+/* The parent remains full-width and full-height; only the nav becomes an overlay. */
 #eloryGlobalStickyShell.elory-notch-compact{
-  width:min(224px,calc(100vw - 24px))!important;
-  max-width:calc(100vw - 24px)!important;
-  min-width:0!important;
-  margin:0 auto!important;
-  padding:0!important;
-  overflow:visible!important;
-  border-radius:999px!important;
-  background:transparent!important;
-  box-shadow:none!important;
-  transition:width .28s cubic-bezier(.2,.8,.2,1),max-width .28s ease,margin .28s ease;
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  min-height:var(--elory-global-sticky-height,0px)!important;
+  margin:0!important;padding:0!important;overflow:visible!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;pointer-events:none!important;
+  transition:none!important;
 }
 #eloryGlobalStickyShell.elory-notch-compact>.announcement,
 #eloryGlobalStickyShell.elory-notch-compact>.header{
-  height:0!important;
-  min-height:0!important;
-  max-height:0!important;
-  margin:0!important;
-  padding:0!important;
-  border:0!important;
-  opacity:0!important;
-  visibility:hidden!important;
-  overflow:hidden!important;
-  pointer-events:none!important;
-  transition:height .22s ease,max-height .22s ease,opacity .16s ease;
+  opacity:0!important;visibility:hidden!important;pointer-events:none!important;
+  /* Do not alter height, max-height, margin, padding, borders, or display. */
 }
-#eloryGlobalStickyShell>.elory-reference-nav{
-  position:relative!important;
-  box-sizing:border-box!important;
-  transition:width .28s cubic-bezier(.2,.8,.2,1),height .28s ease,min-height .28s ease,border-radius .28s ease;
-}
+#eloryGlobalStickyShell>.elory-reference-nav{position:relative!important;box-sizing:border-box!important}
 #eloryGlobalStickyShell>.elory-reference-nav .elory-mobile-notch{display:none}
 #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav{
-  position:relative!important;
-  isolation:isolate!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:100%!important;
-  height:66px!important;
-  min-height:66px!important;
-  max-height:66px!important;
-  margin:0!important;
-  padding:3px!important;
-  overflow:visible!important;
-  border:0!important;
-  border-radius:999px!important;
-  background:transparent!important;
-  box-shadow:0 9px 28px rgba(167,48,102,.18)!important;
-  backdrop-filter:none!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav::before{
-  content:"";
-  position:absolute;
-  inset:-1px;
-  z-index:2;
-  border-radius:inherit;
-  box-sizing:border-box;
-  padding:2px;
-  background:conic-gradient(from 0deg,
-    transparent 0deg 318deg,
-    rgba(255,105,173,.25) 326deg,
-    rgba(255,220,244,.98) 337deg,
-    #fff6ce 343deg,
-    #ff4d9d 350deg,
-    rgba(183,108,255,.98) 356deg,
-    transparent 360deg);
-  /* Cut out the center explicitly: only the narrow perimeter beam remains visible. */
-  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
-  -webkit-mask-composite:xor;
-  mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
-  mask-composite:exclude;
-  animation:eloryNotchRimSpin 2.4s linear infinite;
-  will-change:transform;
-  filter:drop-shadow(0 0 3px rgba(255,93,174,.8));
-  pointer-events:none;
+  position:absolute!important;top:0!important;left:50%!important;transform:translateX(-50%)!important;
+  isolation:isolate!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  width:min(224px,calc(100vw - 24px))!important;height:66px!important;min-height:66px!important;max-height:66px!important;
+  margin:0!important;padding:3px!important;overflow:visible!important;box-sizing:border-box!important;
+  border:1px solid rgba(255,143,190,.5)!important;border-radius:999px!important;background:transparent!important;
+  box-shadow:0 9px 28px rgba(167,48,102,.18)!important;backdrop-filter:none!important;
+  pointer-events:auto!important;transition:width .18s ease,box-shadow .18s ease!important;
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav::after{
-  content:"";
-  position:absolute;
-  inset:4px;
-  z-index:1;
-  border:1px solid rgba(255,255,255,.92);
-  border-radius:inherit;
-  background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98));
+  content:"";position:absolute;inset:3px;z-index:1;border:1px solid rgba(255,255,255,.92);
+  border-radius:inherit;background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98));
   box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12);
+  pointer-events:none;
 }
-#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-reference-nav-inner{
-  display:none!important;
+/* The moving highlight is an SVG dash on the capsule border, not a rotating gradient. */
+#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-notch-beam{
+  position:absolute;inset:0;z-index:2;display:block!important;width:100%;height:100%;overflow:visible;pointer-events:none;
 }
-/* Hide the four original header shortcuts while compact; their full-header versions remain untouched at page top. */
-#eloryGlobalStickyShell.elory-notch-compact .header-menu-btn,
-#eloryGlobalStickyShell.elory-notch-compact .header-account-btn,
-#eloryGlobalStickyShell.elory-notch-compact .header-cart-btn,
-#eloryGlobalStickyShell.elory-notch-compact .header-favorite-btn{
-  display:none!important;
+#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-notch-beam-path{
+  fill:none;stroke-dasharray:92 908;stroke-dashoffset:0;stroke-linecap:round;stroke-width:3;
+  filter:drop-shadow(0 0 3px rgba(255,67,160,.88)) drop-shadow(0 0 6px rgba(186,91,255,.45));
+  animation:eloryNotchBeamTravel 2.7s linear infinite;
 }
+#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-reference-nav-inner{display:none!important}
 #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-mobile-notch{
-  position:relative;
-  z-index:3;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  gap:16px!important;
-  width:100%!important;
-  height:100%!important;
-  min-width:0!important;
-  padding:0 12px!important;
-  direction:rtl!important;
-  box-sizing:border-box!important;
+  position:relative;z-index:3;display:flex!important;align-items:center!important;justify-content:center!important;
+  gap:16px!important;width:100%!important;height:100%!important;min-width:0!important;padding:0 12px!important;
+  direction:rtl!important;box-sizing:border-box!important;pointer-events:auto!important;
 }
 #eloryGlobalStickyShell.elory-notch-compact .elory-notch-action{
-  position:relative!important;
-  display:flex!important;
-  flex:0 0 42px!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:42px!important;
-  min-width:42px!important;
-  max-width:42px!important;
-  height:42px!important;
-  min-height:42px!important;
-  max-height:42px!important;
-  padding:0!important;
-  border:1px solid rgba(255,255,255,.95)!important;
-  border-radius:50%!important;
-  background:linear-gradient(145deg,#e85f9c 0%,#d33d82 55%,#b92d70 100%)!important;
-  color:#fff!important;
-  font-size:18px!important;
-  line-height:1!important;
+  position:relative!important;display:flex!important;flex:0 0 42px!important;align-items:center!important;
+  justify-content:center!important;width:42px!important;min-width:42px!important;max-width:42px!important;
+  height:42px!important;min-height:42px!important;max-height:42px!important;padding:0!important;
+  border:1px solid rgba(255,255,255,.95)!important;border-radius:50%!important;
+  background:linear-gradient(145deg,#e85f9c 0%,#d33d82 55%,#b92d70 100%)!important;color:#fff!important;
+  font-size:18px!important;line-height:1!important;
   box-shadow:0 4px 11px rgba(174,47,103,.23),inset 0 1px 2px rgba(255,255,255,.32)!important;
-  cursor:pointer!important;
-  -webkit-tap-highlight-color:transparent;
+  cursor:pointer!important;-webkit-tap-highlight-color:transparent;
 }
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action i{
-  display:block!important;
-  font-size:18px!important;
-  line-height:1!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action:active{
-  transform:scale(.93);
-}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action i{display:block!important;font-size:18px!important;line-height:1!important}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action:active{transform:scale(.93)}
 #eloryGlobalStickyShell.elory-notch-compact .elory-notch-search{
-  display:flex!important;
-  flex:0 0 42px!important;
-  align-items:center!important;
-  justify-content:flex-end!important;
-  width:42px!important;
-  min-width:42px!important;
-  height:42px!important;
-  overflow:hidden!important;
-  border-radius:999px!important;
-  background:transparent!important;
-  transition:width .25s ease,background .2s ease,box-shadow .2s ease;
+  display:flex!important;flex:0 0 42px!important;align-items:center!important;justify-content:flex-end!important;
+  width:42px!important;min-width:42px!important;height:42px!important;overflow:hidden!important;
+  border-radius:999px!important;background:transparent!important;transition:width .22s ease,background .2s ease,box-shadow .2s ease;
 }
 #eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input{
-  display:block!important;
-  flex:1 1 auto!important;
-  width:0!important;
-  min-width:0!important;
-  height:38px!important;
-  margin:0!important;
-  padding:0!important;
-  opacity:0!important;
-  border:0!important;
-  outline:0!important;
-  background:transparent!important;
-  color:#71364f!important;
-  font-family:inherit!important;
-  font-size:13px!important;
-  text-align:right!important;
-  pointer-events:none!important;
-  transition:width .25s ease,opacity .18s ease,padding .25s ease;
+  display:block!important;flex:1 1 auto!important;width:0!important;min-width:0!important;height:38px!important;
+  margin:0!important;padding:0!important;opacity:0!important;border:0!important;outline:0!important;
+  background:transparent!important;color:#71364f!important;font-family:inherit!important;font-size:13px!important;
+  text-align:right!important;pointer-events:none!important;transition:width .22s ease,opacity .18s ease,padding .22s ease;
 }
 #eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input::placeholder{color:#a36e86!important}
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open{
-  width:min(342px,calc(100vw - 20px))!important;
-  max-width:calc(100vw - 20px)!important;
-}
 #eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open>.elory-reference-nav{
-  width:100%!important;
+  width:min(342px,calc(100vw - 20px))!important;
 }
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-mobile-notch{
-  gap:9px!important;
-}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-mobile-notch{gap:9px!important}
 #eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search{
-  flex:1 1 auto!important;
-  width:auto!important;
-  min-width:0!important;
-  background:rgba(255,255,255,.94)!important;
+  flex:1 1 auto!important;width:auto!important;min-width:0!important;background:rgba(255,255,255,.94)!important;
   box-shadow:inset 0 1px 4px rgba(128,61,89,.10)!important;
 }
 #eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search input{
-  width:100%!important;
-  min-width:0!important;
-  padding:0 11px!important;
-  opacity:1!important;
-  pointer-events:auto!important;
+  width:100%!important;min-width:0!important;padding:0 11px!important;opacity:1!important;pointer-events:auto!important;
 }
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search .elory-notch-search-button{
-  margin:0 2px!important;
-}
-@keyframes eloryNotchRimSpin{to{transform:rotate(360deg)}}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search .elory-notch-search-button{margin:0 2px!important}
+@keyframes eloryNotchBeamTravel{to{stroke-dashoffset:-1000}}
 @media(prefers-reduced-motion:reduce){
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav::before{animation:none!important}
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-notch-beam-path{animation:none!important}
   #eloryGlobalStickyShell,#eloryGlobalStickyShell>.elory-reference-nav,
   #eloryGlobalStickyShell .elory-notch-search,#eloryGlobalStickyShell .elory-notch-search input{transition:none!important}
 }
