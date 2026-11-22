@@ -114,6 +114,12 @@ async function runViewport(browser, viewport) {
     const response = await page.goto(BASE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
     results.httpStatus = response ? response.status() : null;
     assert.ok(response && response.status() < 400, viewport.name + ": storefront must return HTTP < 400");
+    const criticalStyleInHead = await page.evaluate(() => {
+      const style = document.getElementById("elory-global-sticky-header");
+      return !!style && style.parentElement === document.head;
+    });
+    assert.ok(criticalStyleInHead,
+      viewport.name + ": sticky header geometry styles must be available in <head> before first paint");
 
     await page.evaluate(() => {
       history.scrollRestoration = "manual";
