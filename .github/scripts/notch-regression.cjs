@@ -290,8 +290,19 @@ const { chromium } = require("playwright");
     assert.ok(scrollAudit.toggles.filter(x => x.compact).every(x => x.scrollY >= 88), "compact mode must engage only after its enter threshold");
     assert.ok(scrollAudit.toggles.filter(x => !x.compact).every(x => x.scrollY <= 48), "full header must return only after the exit threshold");
 
+    const styleBeforeDirectionChange = await page.evaluate(() =>
+      document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam").dataset.beamStyle
+    );
     await page.evaluate(() => window.scrollTo(0, 180));
     await page.waitForTimeout(350);
+    const randomStyleChange = await page.evaluate(() => {
+      const shell=document.getElementById("eloryGlobalStickyShell");
+      const full=shell.querySelector(".elory-reference-nav-beam");
+      const compact=shell.querySelector(".elory-notch-beam");
+      return {full:full.dataset.beamStyle,compact:compact.dataset.beamStyle};
+    });
+    assert.notEqual(randomStyleChange.full,styleBeforeDirectionChange,"reversing scroll direction must randomly select a different lighting style");
+    assert.equal(randomStyleChange.full,randomStyleChange.compact,"the large and compact notches must change style together");
     const notch = await page.evaluate(async () => {
       const shell = document.getElementById("eloryGlobalStickyShell");
       const fullNav = shell.querySelector(":scope > .elory-reference-nav");
@@ -421,7 +432,7 @@ const { chromium } = require("playwright");
     await page.screenshot({ path: path.join(reportDir, "elory-header-mobile-390x844.png"), fullPage: false });
 
     const report = {
-      beamStyles: { full: fullBeamStyles, compact: compactBeamStyles },
+      beamStyles: { full: fullBeamStyles, compact: compactBeamStyles, randomDirectionChange: randomStyleChange },
       status: "passed",
       viewport: start.viewport,
       start,
