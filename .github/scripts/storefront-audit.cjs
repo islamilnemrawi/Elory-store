@@ -20,6 +20,19 @@ async function inspectTarget(browser, target, viewport) {
   });
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
+  await page.addInitScript(() => {
+    window.__eloryVitals = { cls: 0, lcp: 0 };
+    try {
+      new PerformanceObserver(list => {
+        for (const entry of list.getEntries()) if (!entry.hadRecentInput) window.__eloryVitals.cls += entry.value;
+      }).observe({ type: "layout-shift", buffered: true });
+    } catch (_) {}
+    try {
+      new PerformanceObserver(list => {
+        for (const entry of list.getEntries()) window.__eloryVitals.lcp = entry.startTime;
+      }).observe({ type: "largest-contentful-paint", buffered: true });
+    } catch (_) {}
+  });
   const errors = { page: [], console: [], failedRequests: [], badResponses: [] };
   page.on("pageerror", e => errors.page.push({ message: e.message, stack: e.stack }));
   page.on("console", msg => { if (msg.type() === "error") errors.console.push({ text: msg.text().slice(0, 600) }); });
@@ -33,7 +46,33 @@ async function inspectTarget(browser, target, viewport) {
   try {
     const response = await page.goto(target.url, { waitUntil: "domcontentloaded", timeout: 60000 });
     result.httpStatus = response?.status() ?? null;
+    result.firstPaint = await page.evaluate(() => {
+      const hero = document.getElementById("heroSlider");
+      const style = hero ? getComputedStyle(hero) : null;
+      return { heroVisible: !!hero && !hero.hidden && style.visibility !== "hidden" && Number(style.opacity) > 0,
+        heroOpacity: style?.opacity ?? null, heroHeight: Math.round(hero?.getBoundingClientRect().height || 0) };
+    });
     await wait(5000);
+    result.performance = await page.evaluate(() => {
+      const nav = performance.getEntriesByType("navigation")[0];
+      const paints = performance.getEntriesByType("paint");
+      const resources = performance.getEntriesByType("resource");
+      const largest = resources.slice().sort((a,b) => (b.transferSize||b.encodedBodySize||b.duration)-(a.transferSize||a.encodedBodySize||a.duration)).slice(0,8).map(x => ({
+        name: x.name.split("?")[0].slice(0,180), type: x.initiatorType, durationMs: Math.round(x.duration),
+        transferBytes: x.transferSize || 0, encodedBytes: x.encodedBodySize || 0
+      }));
+      return {
+        ttfbMs: nav ? Math.round(nav.responseStart - nav.requestStart) : null,
+        domContentLoadedMs: nav ? Math.round(nav.domContentLoadedEventEnd) : null,
+        loadEventMs: nav && nav.loadEventEnd ? Math.round(nav.loadEventEnd) : null,
+        fcpMs: Math.round(paints.find(x => x.name === "first-contentful-paint")?.startTime || 0) || null,
+        lcpMs: Math.round(window.__eloryVitals?.lcp || 0) || null,
+        cls: Number((window.__eloryVitals?.cls || 0).toFixed(4)),
+        resourceCount: resources.length,
+        totalTransferBytes: resources.reduce((sum,x)=>sum+(x.transferSize||0),0),
+        largestResources: largest
+      };
+    });
     await page.evaluate(async () => {
       history.scrollRestoration = "manual";
       document.documentElement.style.scrollBehavior = "auto";
@@ -125,6 +164,7 @@ async function inspectTarget(browser, target, viewport) {
     targets: targets.map(t => ({ name: t.name, url: t.url })),
     runs: results.map(r => ({
       target: r.target, viewport: r.viewport, loaded: r.loaded, httpStatus: r.httpStatus,
+      firstPaint: r.firstPaint, performance: r.performance,
       horizontalOverflow: r.layout?.horizontalOverflow, counts: r.counts,
       brokenImages: r.images?.length || 0, pendingImages: r.pendingImages?.length || 0, pageErrors: r.errors?.page?.length || 0,
       consoleErrors: r.errors?.console?.length || 0, failedRequests: r.errors?.failedRequests?.length || 0,
