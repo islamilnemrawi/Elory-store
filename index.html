@@ -4994,7 +4994,7 @@ main#home{
 <div class="header-search-line">
 <div class="search-compact-v19">
 <input aria-label="البحث عن منتج" id="searchInput" autocomplete="off" placeholder="ابحث عن منتج أو كلمة قريبة منه" type="text"/>
-<button aria-label="بحث عن المنتجات" class="search-btn" onclick="submitSearch()" type="button"><i class="fa-solid fa-magnifying-glass"></i></button>
+<button aria-label="البحث" class="search-btn" id="eloryHeaderSearchButton" aria-expanded="false" title="البحث" type="button"><i class="fa-solid fa-magnifying-glass"></i></button>
 </div>
 </div>
 </div>
@@ -11445,14 +11445,15 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   };
   if(searchButton&&!searchButton.dataset.eloryBound){
     searchButton.dataset.eloryBound="true";
+    searchButton.setAttribute("aria-expanded","false");
     searchButton.addEventListener("click",()=>{
-      if(shell.classList.contains("elory-notch-search-open")&&String(searchInput?.value||"").trim()){
-        runSearch();
-        return;
-      }
-      shell.classList.add("elory-notch-search-open");
-      requestAnimationFrame(syncBeamGeometry);
-      window.setTimeout(()=>searchInput?.focus({preventScroll:true}),80);
+      const opening=!shell.classList.contains("elory-notch-search-open");
+      shell.classList.toggle("elory-notch-search-open",opening);
+      searchButton.setAttribute("aria-expanded",String(opening));
+      if(opening){
+        requestAnimationFrame(syncBeamGeometry);
+        window.setTimeout(()=>searchInput?.focus({preventScroll:true}),80);
+      }else searchInput?.blur();
     });
   }
   if(searchInput&&!searchInput.dataset.eloryBound){
@@ -11462,7 +11463,41 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
       if(event.key==="Escape"){
         event.preventDefault();
         shell.classList.remove("elory-notch-search-open");
+        searchButton?.setAttribute("aria-expanded","false");
         searchInput.blur();
+      }
+    });
+  }
+
+  const headerSearch=shell.querySelector(":scope > .elory-reference-nav");
+  const headerSearchButton=document.getElementById("eloryHeaderSearchButton");
+  const headerSearchInput=document.getElementById("searchInput");
+  const closeHeaderSearch=()=>{
+    headerSearch?.classList.remove("elory-header-search-open");
+    headerSearchButton?.setAttribute("aria-expanded","false");
+    headerSearchInput?.blur();
+  };
+  if(headerSearch&&headerSearchButton&&!headerSearchButton.dataset.eloryBound){
+    headerSearchButton.dataset.eloryBound="true";
+    headerSearchButton.setAttribute("aria-expanded","false");
+    headerSearchButton.addEventListener("click",()=>{
+      const opening=!headerSearch.classList.contains("elory-header-search-open");
+      headerSearch.classList.toggle("elory-header-search-open",opening);
+      headerSearchButton.setAttribute("aria-expanded",String(opening));
+      if(opening)window.setTimeout(()=>headerSearchInput?.focus({preventScroll:true}),80);
+      else headerSearchInput?.blur();
+    });
+  }
+  if(headerSearchInput&&!headerSearchInput.dataset.eloryBound){
+    headerSearchInput.dataset.eloryBound="true";
+    headerSearchInput.addEventListener("keydown",event=>{
+      if(event.key==="Enter"){
+        event.preventDefault();
+        if(typeof window.submitSearch==="function")window.submitSearch();
+        closeHeaderSearch();
+      }else if(event.key==="Escape"){
+        event.preventDefault();
+        closeHeaderSearch();
       }
     });
   }
@@ -11663,15 +11698,21 @@ main#home{margin-top:0!important;padding-top:0!important}
 #eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open>.elory-notch-overlay{
   width:min(342px,calc(100vw - 20px))!important;
 }
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-mobile-notch{gap:9px!important}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-mobile-notch{
+  gap:0!important;
+  padding:0 9px!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open #eloryNotchCart,
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open #eloryNotchFavorites{display:none!important}
 #eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search{
-  flex:1 1 auto!important;
-  width:auto!important;
+  flex:1 1 100%!important;
+  width:100%!important;
   min-width:0!important;
-  background:rgba(255,255,255,.94)!important;
+  background:rgba(255,255,255,.96)!important;
   box-shadow:inset 0 1px 4px rgba(128,61,89,.10)!important;
 }
 #eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search input{
+  flex:1 1 auto!important;
   width:100%!important;
   min-width:0!important;
   padding:0 11px!important;
@@ -11679,6 +11720,41 @@ main#home{margin-top:0!important;padding-top:0!important}
   pointer-events:auto!important;
 }
 #eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search .elory-notch-search-button{margin:0 2px!important}
+/* Full-size Prime / Orders strip: icon-only search when closed, full-width search when open. */
+#eloryGlobalStickyShell>.elory-reference-nav .header-search-line{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:min(100%,250px)!important;height:32px!important;min-width:0!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:100%!important;height:32px!important;min-width:0!important;gap:0!important;padding:0!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav #searchInput{display:none!important}
+#eloryGlobalStickyShell>.elory-reference-nav .search-btn{
+  display:flex!important;flex:0 0 32px!important;align-items:center!important;justify-content:center!important;
+  width:32px!important;height:32px!important;margin:0!important;border-radius:50%!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .elory-reference-nav-inner{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;justify-items:stretch!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #primeHeaderBtn,
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #ordersBtn{display:none!important}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .header-search-line{
+  width:100%!important;max-width:none!important;min-width:0!important;height:32px!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-compact-v19{
+  justify-content:space-between!important;width:100%!important;max-width:none!important;
+  padding:0 8px!important;gap:6px!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #searchInput{
+  display:block!important;flex:1 1 auto!important;width:100%!important;min-width:0!important;
+  height:30px!important;margin:0!important;padding:0 8px!important;opacity:1!important;
+  pointer-events:auto!important;text-align:right!important;
+}
+@media(prefers-reduced-motion:reduce){
+  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19{transition:none!important}
+}
+
 @keyframes eloryNotchBeamTravel{to{stroke-dashoffset:-1000}}
 @media(prefers-reduced-motion:reduce){
   #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-path{animation:none!important}
