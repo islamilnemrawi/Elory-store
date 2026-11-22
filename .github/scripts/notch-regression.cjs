@@ -206,7 +206,13 @@ const { chromium } = require("playwright");
       const fullNavBox = fullNav.getBoundingClientRect();
       const beam = nav.querySelector(".elory-notch-beam");
       const beamPath = nav.querySelector(".elory-notch-beam-path");
-      const buttons = nav.querySelectorAll(".elory-mobile-notch .elory-notch-action");
+      const buttons = nav.querySelectorAll(".elory-mobile-notch .elory-notch-action:not(.elory-notch-search-close)");
+      const cartCenter = document.getElementById("eloryNotchCart").getBoundingClientRect().left +
+        document.getElementById("eloryNotchCart").getBoundingClientRect().width / 2;
+      const favoriteCenter = document.getElementById("eloryNotchFavorites").getBoundingClientRect().left +
+        document.getElementById("eloryNotchFavorites").getBoundingClientRect().width / 2;
+      const searchCenter = document.getElementById("eloryNotchSearchButton").getBoundingClientRect().left +
+        document.getElementById("eloryNotchSearchButton").getBoundingClientRect().width / 2;
       const before = parseFloat(getComputedStyle(beamPath).strokeDashoffset);
       await new Promise(resolve => setTimeout(resolve, 450));
       const after = parseFloat(getComputedStyle(beamPath).strokeDashoffset);
@@ -223,6 +229,8 @@ const { chromium } = require("playwright");
         fullNavSizeStable: Math.abs(fullNavBox.width - window.__eloryStartNavSize.width) <= 1 &&
           Math.abs(fullNavBox.height - window.__eloryStartNavSize.height) <= 1,
         buttonCount: buttons.length,
+        actionOrderCorrect: cartCenter > favoriteCenter && favoriteCenter > searchCenter,
+        searchLabelHidden: getComputedStyle(document.querySelector(".elory-notch-search-label")).display === "none",
         beamExists: !!beamPath,
         beamDashOffsetChanged: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5,
         beamBox: { left: beamBox.left, top: beamBox.top, width: beamBox.width, height: beamBox.height },
@@ -239,7 +247,9 @@ const { chromium } = require("playwright");
     assert.equal(notch.navPosition, "fixed", "the independent notch overlay must be fixed");
     assert.equal(notch.fullNavVisibility, "hidden", "the original navigation must hide without leaving normal flow");
     assert.equal(notch.fullNavSizeStable, true, "the original navigation dimensions must remain unchanged");
-    assert.equal(notch.buttonCount, 3, "notch must retain exactly three actions");
+    assert.equal(notch.buttonCount, 3, "notch must retain exactly three visible actions");
+    assert.equal(notch.actionOrderCorrect, true, "notch actions must be ordered cart right, favorites center, search left");
+    assert.equal(notch.searchLabelHidden, true, "compact notch must show the magnifier icon without a text label");
     assert.equal(notch.beamExists, true, "SVG perimeter beam must exist");
     assert.equal(notch.beamDashOffsetChanged, true, "beam dash must move along the edge");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
