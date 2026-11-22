@@ -13,6 +13,14 @@ on:
       - index.html
       - .github/scripts/storefront-audit.cjs
       - .github/scripts/first-paint-regression.cjs
+      - .github/scripts/category-motion-regression.cjs
+      - .github/workflows/storefront-audit.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - index.html
+      - .github/scripts/category-motion-regression.cjs
       - .github/workflows/storefront-audit.yml
   workflow_dispatch:
 
@@ -30,7 +38,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install Playwright and Chromium
         run: |
@@ -57,6 +65,12 @@ jobs:
           NODE_PATH: ${{ runner.temp }}/node_modules
           FIRST_PAINT_URL: http://127.0.0.1:4173/index.html
         run: node .github/scripts/first-paint-regression.cjs
+
+      - name: Measure automatic category rail motion on mobile and desktop
+        env:
+          NODE_PATH: ${{ runner.temp }}/node_modules
+          CATEGORY_MOTION_URL: http://127.0.0.1:4173/index.html
+        run: node .github/scripts/category-motion-regression.cjs
 
       - name: Audit desktop and mobile storefront
         env:
