@@ -6,9 +6,11 @@ on:
       - audit/full-storefront-playwright-20261122
       - fix/notch-beams-and-audit-20261122
       - fix/mobile-notch-header-category-rename-20261122
+      - fix/storefront-first-paint-20261122
     paths:
       - index.html
       - .github/scripts/storefront-audit.cjs
+      - .github/scripts/first-paint-regression.cjs
       - .github/workflows/storefront-audit.yml
   workflow_dispatch:
 
@@ -48,6 +50,12 @@ jobs:
           cat "$RUNNER_TEMP/elory-http.log"
           exit 1
 
+      - name: Verify first paint and reload stability
+        env:
+          NODE_PATH: ${{ runner.temp }}/node_modules
+          FIRST_PAINT_URL: http://127.0.0.1:4173/index.html
+        run: node .github/scripts/first-paint-regression.cjs
+
       - name: Audit desktop and mobile storefront
         env:
           NODE_PATH: ${{ runner.temp }}/node_modules
@@ -60,6 +68,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: elory-full-storefront-audit
-          path: reports/storefront-audit/
+          path: |
+            reports/storefront-audit/
+            reports/first-paint/
           if-no-files-found: warn
           retention-days: 7
