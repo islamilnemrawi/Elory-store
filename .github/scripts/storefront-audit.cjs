@@ -20,6 +20,35 @@ async function inspectTarget(browser, target, viewport) {
   });
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
+  await page.addInitScript(() => {
+    window.__eloryVitals = { cls: 0, lcp: 0, shifts: [] };
+    const describe = node => {
+      if (!node || !node.tagName) return null;
+      const tag = node.tagName.toLowerCase();
+      return tag + (node.id ? "#" + node.id : "") +
+        (typeof node.className === "string" && node.className.trim() ? "." + node.className.trim().split(/\\s+/).slice(0,4).join(".") : "");
+    };
+    try {
+      new PerformanceObserver(list => {
+        for (const entry of list.getEntries()) if (!entry.hadRecentInput) {
+          window.__eloryVitals.cls += entry.value;
+          if (window.__eloryVitals.shifts.length < 12) window.__eloryVitals.shifts.push({
+            value: Number(entry.value.toFixed(4)),
+            sources: (entry.sources || []).slice(0,5).map(source => ({
+              node: describe(source.node),
+              previousRect: source.previousRect ? { x:Math.round(source.previousRect.x), y:Math.round(source.previousRect.y), width:Math.round(source.previousRect.width), height:Math.round(source.previousRect.height) } : null,
+              currentRect: source.currentRect ? { x:Math.round(source.currentRect.x), y:Math.round(source.currentRect.y), width:Math.round(source.currentRect.width), height:Math.round(source.currentRect.height) } : null
+            }))
+          });
+        }
+      }).observe({ type: "layout-shift", buffered: true });
+    } catch (_) {}
+    try {
+      new PerformanceObserver(list => {
+        for (const entry of list.getEntries()) window.__eloryVitals.lcp = entry.startTime;
+      }).observe({ type: "largest-contentful-paint", buffered: true });
+    } catch (_) {}
+  });
   const errors = { page: [], console: [], failedRequests: [], badResponses: [] };
   page.on("pageerror", e => errors.page.push({ message: e.message, stack: e.stack }));
   page.on("console", msg => { if (msg.type() === "error") errors.console.push({ text: msg.text().slice(0, 600) }); });
@@ -33,7 +62,49 @@ async function inspectTarget(browser, target, viewport) {
   try {
     const response = await page.goto(target.url, { waitUntil: "domcontentloaded", timeout: 60000 });
     result.httpStatus = response?.status() ?? null;
+    result.firstPaint = await page.evaluate(() => {
+      const rect = selector => {
+        const el = document.querySelector(selector);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { x:Math.round(r.x), y:Math.round(r.y), width:Math.round(r.width), height:Math.round(r.height), display:getComputedStyle(el).display };
+      };
+      const hero = document.getElementById("heroSlider");
+      const style = hero ? getComputedStyle(hero) : null;
+      return { heroVisible: !!hero && !hero.hidden && style.visibility !== "hidden" && Number(style.opacity) > 0,
+        heroOpacity: style?.opacity ?? null, heroHeight: Math.round(hero?.getBoundingClientRect().height || 0),
+        layout: Object.fromEntries(["#eloryGlobalStickyShell",".elory-reference-nav-inner","main#home",".hero","#heroSlider","#categoriesSection","#categoryWrapper","#categories","#categorySet","#featured","#productsGrid"].map(selector=>[selector,rect(selector)])) };
+    });
     await wait(5000);
+    result.finalLayout = await page.evaluate(() => Object.fromEntries(
+      ["#eloryGlobalStickyShell",".elory-reference-nav-inner","main#home",".hero","#heroSlider","#categoriesSection","#categoryWrapper","#categories","#categorySet","#featured","#productsGrid"].map(selector=>{
+        const el=document.querySelector(selector);
+        if(!el)return [selector,null];
+        const r=el.getBoundingClientRect();
+        return [selector,{x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height),display:getComputedStyle(el).display}];
+      })
+    ));
+    result.performance = await page.evaluate(() => {
+      const nav = performance.getEntriesByType("navigation")[0];
+      const paints = performance.getEntriesByType("paint");
+      const resources = performance.getEntriesByType("resource");
+      const largest = resources.slice().sort((a,b) => (b.transferSize||b.encodedBodySize||b.duration)-(a.transferSize||a.encodedBodySize||a.duration)).slice(0,8).map(x => ({
+        name: x.name.split("?")[0].slice(0,180), type: x.initiatorType, durationMs: Math.round(x.duration),
+        transferBytes: x.transferSize || 0, encodedBytes: x.encodedBodySize || 0
+      }));
+      return {
+        ttfbMs: nav ? Math.round(nav.responseStart - nav.requestStart) : null,
+        domContentLoadedMs: nav ? Math.round(nav.domContentLoadedEventEnd) : null,
+        loadEventMs: nav && nav.loadEventEnd ? Math.round(nav.loadEventEnd) : null,
+        fcpMs: Math.round(paints.find(x => x.name === "first-contentful-paint")?.startTime || 0) || null,
+        lcpMs: Math.round(window.__eloryVitals?.lcp || 0) || null,
+        cls: Number((window.__eloryVitals?.cls || 0).toFixed(4)),
+        layoutShiftSources: window.__eloryVitals?.shifts || [],
+        resourceCount: resources.length,
+        totalTransferBytes: resources.reduce((sum,x)=>sum+(x.transferSize||0),0),
+        largestResources: largest
+      };
+    });
     await page.evaluate(async () => {
       history.scrollRestoration = "manual";
       document.documentElement.style.scrollBehavior = "auto";
@@ -125,6 +196,7 @@ async function inspectTarget(browser, target, viewport) {
     targets: targets.map(t => ({ name: t.name, url: t.url })),
     runs: results.map(r => ({
       target: r.target, viewport: r.viewport, loaded: r.loaded, httpStatus: r.httpStatus,
+      firstPaint: r.firstPaint, performance: r.performance,
       horizontalOverflow: r.layout?.horizontalOverflow, counts: r.counts,
       brokenImages: r.images?.length || 0, pendingImages: r.pendingImages?.length || 0, pageErrors: r.errors?.page?.length || 0,
       consoleErrors: r.errors?.console?.length || 0, failedRequests: r.errors?.failedRequests?.length || 0,

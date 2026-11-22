@@ -12,7 +12,7 @@ const { chromium } = require("playwright");
     deviceScaleFactor: 1,
     isMobile: true,
     hasTouch: true,
-    reducedMotion: "reduce"
+    reducedMotion: "no-preference"
   });
   page.setDefaultTimeout(20000);
   const pageErrors = [];
@@ -21,6 +21,16 @@ const { chromium } = require("playwright");
   try {
     await page.goto("http://127.0.0.1:4173/index.html", { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.locator("#eloryGlobalStickyShell").waitFor();
+    const firstPaintHero = await page.evaluate(() => {
+      const hero = document.getElementById("heroSlider");
+      const style = hero ? getComputedStyle(hero) : null;
+      return { exists: !!hero, opacity: style?.opacity, visibility: style?.visibility, pointerEvents: style?.pointerEvents, height: hero?.getBoundingClientRect().height || 0 };
+    });
+    assert.equal(firstPaintHero.exists, true, "hero fallback must exist at first paint");
+    assert.equal(Number(firstPaintHero.opacity), 1, "hero fallback must not remain hidden while CMS data loads");
+    assert.equal(firstPaintHero.visibility, "visible", "hero fallback must be visible before campaign data resolves");
+    assert.ok(firstPaintHero.height >= 240, "hero must reserve its normal layout height during first paint");
+    console.log("FIRST_PAINT_HERO " + JSON.stringify(firstPaintHero));
     await page.waitForTimeout(2500);
     await page.evaluate(async () => {
       document.documentElement.style.scrollBehavior = "auto";
@@ -69,6 +79,7 @@ const { chromium } = require("playwright");
         searchLabelColor: getComputedStyle(document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label")).color,
         beam: (() => {
           const svg = fullNav.querySelector(".elory-reference-nav-beam");
+          const compactSvg = shell.querySelector(".elory-notch-beam");
           const path = svg?.querySelector(".elory-reference-nav-beam-path");
           return path ? {
             exists: true,
@@ -78,7 +89,11 @@ const { chromium } = require("playwright");
             dasharray: getComputedStyle(path).strokeDasharray,
             stroke: getComputedStyle(path).stroke,
             animation: getComputedStyle(path).animationName,
-            linecap: getComputedStyle(path).strokeLinecap
+            linecap: getComputedStyle(path).strokeLinecap,
+            wedgeExists: svg?.querySelectorAll(".elory-reference-nav-beam-comet-layer").length === 4,
+            wedgeDuration: svg ? getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDuration : null,
+            wedgeDelay: svg ? getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDelay : null,
+            bothStartStyle3: !!svg?.classList.contains("elory-beam-style-3") && !!compactSvg?.classList.contains("elory-beam-style-3")
           } : { exists: false };
         })()
       };
@@ -86,6 +101,8 @@ const { chromium } = require("playwright");
     console.log("START_STATE " + JSON.stringify(start));
     assert.deepEqual(start.viewport, { width: 390, height: 844 }, "must run at a real 390x844 CSS viewport");
     assert.equal(start.scrollY, 0, "regression test must begin at page top");
+    assert.equal(start.beam.bothStartStyle3, true, "both notch SVGs must start in the approved style before first paint");
+    assert.equal(start.beam.wedgeDelay, "-4s", "large notch moving glint must begin away from the upper-left SVG origin");
     assert.equal(start.compact, false, "page must start in full-header state");
     assert.ok(start.navInner.width < start.viewport.width - 12, "large navigation must render as a separate centered notch, not a full-width strip");
     assert.ok(start.navInner.height >= 50, "large navigation notch must have a substantial capsule height");
@@ -93,27 +110,74 @@ const { chromium } = require("playwright");
     assert.ok(start.navInner.gap <= 8, "large notch actions must have compact spacing");
     assert.ok(start.navInner.borderRadius.includes("px") && parseFloat(start.navInner.borderRadius) >= 24,
       "large notch must have a true rounded capsule edge");
-    assert.ok(start.navInner.borderColor.includes("255, 255, 255"),
-      "large notch border must match the compact notch's white edge");
-    assert.match(start.navInner.background, /255, 246, 251/i, "large notch background must match the compact notch's pale pink gradient");
-    assert.match(start.navInner.background, /255, 224, 239/i, "large notch background must retain the compact notch's middle pink tone");
-    assert.equal(start.ordersColor, "rgb(159, 31, 91)", "Orders text must use the darker rose accent for clear contrast");
-    assert.equal(start.primeColor, "rgb(159, 31, 91)", "Prime text must use the darker rose accent for clear contrast");
-    assert.equal(start.searchLabelColor, "rgb(159, 31, 91)", "large notch search label must use the same darker rose text accent");
+    assert.notEqual(start.navInner.borderColor, "rgba(0, 0, 0, 0)",
+      "large notch border must remain visible with a soft blush edge");
+    assert.match(start.navInner.background, /255,\s*248,\s*250/i, "large notch background must use the current Elory soft-pink surface");
+    assert.match(start.navInner.background, /246,\s*221,\s*230/i, "large notch background must retain the current Elory pink mid-tone");
+    assert.equal(start.ordersColor, start.primeColor, "Orders and Prime labels must share the active brand text color");
+    assert.equal(start.searchLabelColor, start.primeColor, "Search label and header labels must share the active brand text color");
+    
+    const fullBeamStyles = [];
+    for (let style = 1; style <= 4; style++) {
+      await page.evaluate(styleNumber => {
+        const shell = document.getElementById("eloryGlobalStickyShell");
+        shell.querySelectorAll(".elory-reference-nav-beam,.elory-notch-beam").forEach(svg => {
+          svg.classList.remove("elory-beam-style-1","elory-beam-style-2","elory-beam-style-3","elory-beam-style-4");
+          svg.classList.add("elory-beam-style-" + styleNumber);
+          svg.dataset.beamStyle = String(styleNumber);
+        });
+      }, style);
+      await page.waitForTimeout(180);
+      await page.screenshot({path:path.join(reportDir,"elory-beam-style-"+style+"-full.png"),fullPage:false});
+      fullBeamStyles.push(await page.evaluate(() => {
+        const svg=document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam");
+        return {style:svg.dataset.beamStyle,secondaryOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-secondary-head")).opacity,
+          ringOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-ring")).opacity,
+          glowOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-glow")).opacity,
+          midOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-mid")).opacity,
+          headOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).opacity,
+          headDelay:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDelay,
+          headStroke:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).stroke,
+          glowWidth:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-glow")).strokeWidth,duration:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDuration};
+      }));
+    }
+    assert.deepEqual(fullBeamStyles.map(x=>x.style),["1","2","3","4"],"all four full-size lighting styles must be independently selectable");
+    assert.deepEqual(fullBeamStyles.map(x=>x.duration),["24s","24s","24s","24s"],"all four full-size styles must share one continuous animation pace");
+    assert.ok(Number(fullBeamStyles[1].secondaryOpacity)>0,"style 2 must show its opposing second comet");
+    assert.ok(Number(fullBeamStyles[2].ringOpacity)>0,"style 3 must show one visible perimeter halo");
+    assert.equal(Number(fullBeamStyles[2].glowOpacity),0,"style 3 must not stack a second glow dash");
+    assert.equal(Number(fullBeamStyles[2].midOpacity),0,"style 3 must not stack a second mid dash");
+    assert.match(fullBeamStyles[2].headStroke,/246, 184, 206/,"style 3 moving glint must remain Elory blush pink");
+    assert.equal(fullBeamStyles[2].headDelay,"-4s","large notch glint must not start at the upper-left path origin");
+    await page.evaluate(() => document.querySelectorAll(".elory-reference-nav-beam,.elory-notch-beam").forEach(svg=>svg.classList.add("elory-beam-style-3")));
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const reducedFull = await page.evaluate(() => ({ring:getComputedStyle(document.querySelector(".elory-reference-nav-beam-ring")).opacity,head:getComputedStyle(document.querySelector(".elory-reference-nav-beam-comet-head")).opacity}));
+    assert.ok(Number(reducedFull.ring)>=.9,"large notch halo must remain visible with reduced motion");
+    assert.equal(Number(reducedFull.head),0,"large notch must not freeze a glint at the upper-left path origin");
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    assert.ok(parseFloat(fullBeamStyles[3].glowWidth)>parseFloat(fullBeamStyles[0].glowWidth),"style 4 must have a visibly broader aurora ribbon");
+
     const largeBeamMotion = await page.evaluate(async () => {
       const path = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path");
+      const head = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet-head");
       const before = parseFloat(getComputedStyle(path).strokeDashoffset);
+      const beforeHead = parseFloat(getComputedStyle(head).strokeDashoffset);
       await new Promise(resolve => setTimeout(resolve, 450));
       const after = parseFloat(getComputedStyle(path).strokeDashoffset);
-      return { before, after, changed: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5 };
+      const afterHead = parseFloat(getComputedStyle(head).strokeDashoffset);
+      const wedgeMoved = Number.isFinite(beforeHead) && Number.isFinite(afterHead) && Math.abs(afterHead-beforeHead)>5;
+      return { before, after, changed: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5, wedgeMoved };
     });
     console.log("LARGE_BEAM_MOTION " + JSON.stringify(largeBeamMotion));
-    assert.equal(largeBeamMotion.changed, true, "large notch perimeter beam must visibly travel around the capsule");
+    assert.equal(largeBeamMotion.changed, true, "large notch perimeter timing track must advance");
+    assert.equal(largeBeamMotion.wedgeMoved, true, "large luminous comet must visibly move along the capsule perimeter");
     assert.equal(start.beam.exists, true, "large notch must have its own perimeter beam");
     assert.equal(start.beam.tagName, "rect", "large notch beam must trace the complete capsule perimeter like the compact notch");
     assert.ok(Number(start.beam.rx) >= 24, "large notch beam must follow a fully rounded capsule edge");
     assert.notEqual(start.beam.animation, "none", "large notch beam must remain animated even when reduced motion is requested");
-    assert.ok(start.beam.dasharray.includes("118") && start.beam.dasharray.includes("882"), "large notch beam must use the strengthened moving streak");
+    assert.ok(start.beam.dasharray.includes("118") && start.beam.dasharray.includes("882"), "large notch retains its invisible perimeter timing track");
+    assert.equal(start.beam.wedgeExists, true, "large notch must render its luminous tapered comet");
+
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
@@ -173,7 +237,7 @@ const { chromium } = require("playwright");
                 audit.cls += entry.value;
                 const sources = Array.from(entry.sources || []).map(source => {
                   const node = source.node;
-                  const name = node ? node.tagName.toLowerCase() +
+                  const name = node && node.tagName ? node.tagName.toLowerCase() +
                     (node.id ? "#" + node.id : "") +
                     (typeof node.className === "string" && node.className.trim() ? "." + node.className.trim().split(/\s+/).join(".") : "") : "unknown";
                   return { node: name, previousRect: source.previousRect, currentRect: source.currentRect };
@@ -257,8 +321,24 @@ const { chromium } = require("playwright");
     assert.ok(scrollAudit.toggles.filter(x => x.compact).every(x => x.scrollY >= 88), "compact mode must engage only after its enter threshold");
     assert.ok(scrollAudit.toggles.filter(x => !x.compact).every(x => x.scrollY <= 48), "full header must return only after the exit threshold");
 
+    await page.evaluate(() => {
+      const shell=document.getElementById("eloryGlobalStickyShell");
+      shell.querySelectorAll(".elory-reference-nav-beam,.elory-notch-beam").forEach(svg=>{
+        svg.classList.remove("elory-beam-style-1","elory-beam-style-2","elory-beam-style-4");
+        svg.classList.add("elory-beam-style-3");
+        svg.dataset.beamStyle="3";
+      });
+    });
     await page.evaluate(() => window.scrollTo(0, 180));
     await page.waitForTimeout(350);
+    const fixedStyleAfterScroll = await page.evaluate(() => {
+      const shell=document.getElementById("eloryGlobalStickyShell");
+      const full=shell.querySelector(".elory-reference-nav-beam");
+      const compact=shell.querySelector(".elory-notch-beam");
+      return {full:full.dataset.beamStyle,compact:compact.dataset.beamStyle};
+    });
+    assert.equal(fixedStyleAfterScroll.full,"3","the approved breathing-halo style must remain fixed during scrolling");
+    assert.equal(fixedStyleAfterScroll.compact,"3","the compact notch must retain the same approved style");
     const notch = await page.evaluate(async () => {
       const shell = document.getElementById("eloryGlobalStickyShell");
       const fullNav = shell.querySelector(":scope > .elory-reference-nav");
@@ -266,6 +346,8 @@ const { chromium } = require("playwright");
       const fullNavBox = fullNav.getBoundingClientRect();
       const beam = nav.querySelector(".elory-notch-beam");
       const beamPath = nav.querySelector(".elory-notch-beam-path");
+      const beamWedge = nav.querySelector(".elory-notch-beam-comet-head");
+      const cometLayers = nav.querySelectorAll(".elory-notch-beam-comet-layer");
       const buttons = nav.querySelectorAll(".elory-mobile-notch .elory-notch-action:not(.elory-notch-search-close)");
       const cartCenter = document.getElementById("eloryNotchCart").getBoundingClientRect().left +
         document.getElementById("eloryNotchCart").getBoundingClientRect().width / 2;
@@ -274,15 +356,23 @@ const { chromium } = require("playwright");
       const searchCenter = document.getElementById("eloryNotchSearchButton").getBoundingClientRect().left +
         document.getElementById("eloryNotchSearchButton").getBoundingClientRect().width / 2;
       const before = parseFloat(getComputedStyle(beamPath).strokeDashoffset);
+      const beforeWedgeOffset = parseFloat(getComputedStyle(beamWedge).strokeDashoffset);
       await new Promise(resolve => setTimeout(resolve, 450));
       const after = parseFloat(getComputedStyle(beamPath).strokeDashoffset);
+      const afterWedgeOffset = parseFloat(getComputedStyle(beamWedge).strokeDashoffset);
+      const wedgeMoved = Number.isFinite(beforeWedgeOffset) && Number.isFinite(afterWedgeOffset) && Math.abs(afterWedgeOffset-beforeWedgeOffset)>5;
       const navBox = nav.getBoundingClientRect();
       const beamBox = beam.getBoundingClientRect();
+      const navStyle = getComputedStyle(nav);
+      const beamRadius = Number(beamPath.getAttribute("rx"));
       return {
         compact: shell.classList.contains("elory-notch-compact"),
         navPosition: getComputedStyle(nav).position,
         navWidth: navBox.width,
         navHeight: navBox.height,
+        navRadius: parseFloat(navStyle.borderTopLeftRadius),
+        beamRadius,
+        capsuleRatio: navBox.width / navBox.height,
         fullNavVisibility: getComputedStyle(fullNav).visibility,
         fullNavWidth: fullNavBox.width,
         fullNavHeight: fullNavBox.height,
@@ -293,28 +383,82 @@ const { chromium } = require("playwright");
         searchLabelHidden: getComputedStyle(document.querySelector(".elory-notch-search-label")).display === "none",
         beamExists: !!beamPath,
         beamDashOffsetChanged: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5,
+        wedgeExists: cometLayers.length === 4,
+        wedgeDuration: getComputedStyle(beamWedge).animationDuration,
+        wedgeMoved,
         beamBox: { left: beamBox.left, top: beamBox.top, width: beamBox.width, height: beamBox.height },
         navBox: { left: navBox.left, top: navBox.top, width: navBox.width, height: navBox.height },
         beamOffset: { left: beamBox.left-navBox.left, top: beamBox.top-navBox.top, width: beamBox.width-navBox.width, height: beamBox.height-navBox.height },
         beamBoxAligned: Math.abs(beamBox.left - navBox.left) <= 1 && Math.abs(beamBox.top - navBox.top) <= 1 &&
           Math.abs(beamBox.width - navBox.width) <= 1 && Math.abs(beamBox.height - navBox.height) <= 1,
         strokeDasharray: getComputedStyle(beamPath).strokeDasharray,
-        strokeLinecap: getComputedStyle(beamPath).strokeLinecap
+        strokeLinecap: getComputedStyle(beamPath).strokeLinecap,
+        cometStyles: Array.from(cometLayers).map(layer => { const s=getComputedStyle(layer); const r=layer.getBoundingClientRect(); return {className:layer.getAttribute("class"),stroke:s.stroke,strokeWidth:s.strokeWidth,strokeDasharray:s.strokeDasharray,strokeDashoffset:s.strokeDashoffset,animationName:s.animationName,animationDuration:s.animationDuration,opacity:s.opacity,filter:s.filter,box:{x:r.x,y:r.y,width:r.width,height:r.height}}; })
       };
     });
     await page.screenshot({ path: path.join(reportDir, "elory-notch-mobile-390x844.png"), fullPage: false });
     console.log("NOTCH_GEOMETRY " + JSON.stringify(notch));
     assert.equal(notch.compact, true, "notch must be visible when scrolling");
     assert.equal(notch.navPosition, "fixed", "the independent notch overlay must be fixed");
+    assert.ok(notch.navHeight >= 70 && notch.navHeight <= 74, "compact notch must keep its taller, softer capsule proportions");
+    assert.ok(notch.navRadius >= 35 && notch.beamRadius >= 31, "compact notch outer edge and SVG beam must share fully rounded capsule corners");
+    assert.ok(notch.capsuleRatio <= 3.25, "compact notch must not look like a flat rectangular strip");
     assert.equal(notch.fullNavVisibility, "hidden", "the original navigation must hide without leaving normal flow");
     assert.equal(notch.fullNavSizeStable, true, "the original navigation dimensions must remain unchanged");
     assert.equal(notch.buttonCount, 3, "notch must retain exactly three visible actions");
     assert.equal(notch.actionOrderCorrect, true, "notch actions must be ordered cart right, favorites center, search left");
     assert.equal(notch.searchLabelHidden, true, "compact notch must show the magnifier icon without a text label");
     assert.equal(notch.beamExists, true, "SVG perimeter beam must exist");
-    assert.equal(notch.beamDashOffsetChanged, true, "compact notch beam dash must move along the edge even when reduced motion is requested");
+    assert.equal(notch.beamDashOffsetChanged, true, "compact notch timing track must move even when reduced motion is requested");
+    assert.equal(notch.wedgeExists, true, "compact notch must render its luminous tapered comet");
+
+    assert.equal(notch.wedgeMoved, true, "compact luminous comet must visibly move along the capsule perimeter");
     assert.equal(notch.strokeLinecap, "round", "compact notch beam must have rounded head and tail");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
+
+    const compactBeamStyles = [];
+    for (let style = 1; style <= 4; style++) {
+      await page.evaluate(styleNumber => {
+        const shell = document.getElementById("eloryGlobalStickyShell");
+        shell.querySelectorAll(".elory-reference-nav-beam,.elory-notch-beam").forEach(svg => {
+          svg.classList.remove("elory-beam-style-1","elory-beam-style-2","elory-beam-style-3","elory-beam-style-4");
+          svg.classList.add("elory-beam-style-" + styleNumber);
+          svg.dataset.beamStyle = String(styleNumber);
+        });
+      }, style);
+      await page.waitForTimeout(180);
+      await page.screenshot({path:path.join(reportDir,"elory-beam-style-"+style+"-compact.png"),fullPage:false});
+      compactBeamStyles.push(await page.evaluate(() => {
+        const shell=document.getElementById("eloryGlobalStickyShell");
+        const full=shell.querySelector(".elory-reference-nav-beam");
+        const compact=shell.querySelector(".elory-notch-beam");
+        return {full:full.dataset.beamStyle,compact:compact.dataset.beamStyle,
+          secondaryOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-secondary-head")).opacity,
+          ringOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-ring")).opacity,
+          glowOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-glow")).opacity,
+          midOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-mid")).opacity,
+          headOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).opacity,
+          headDelay:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).animationDelay,
+          headStroke:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).stroke,
+          glowWidth:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-glow")).strokeWidth,duration:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).animationDuration};
+      }));
+    }
+    assert.deepEqual(compactBeamStyles.map(x=>x.compact),["1","2","3","4"],"all four compact-notch lighting styles must be independently selectable");
+    assert.deepEqual(compactBeamStyles.map(x=>x.duration),["24s","24s","24s","24s"],"all four compact styles must share one continuous animation pace");
+    assert.ok(compactBeamStyles.every(x=>x.full===x.compact),"large and compact notches must always use the same selected style");
+    assert.ok(Number(compactBeamStyles[1].secondaryOpacity)>0,"compact style 2 must show its opposing second comet");
+    assert.ok(Number(compactBeamStyles[2].ringOpacity)>0,"compact style 3 must show one visible perimeter halo");
+    assert.equal(Number(compactBeamStyles[2].glowOpacity),0,"compact style 3 must not stack a second glow dash");
+    assert.equal(Number(compactBeamStyles[2].midOpacity),0,"compact style 3 must not stack a second mid dash");
+    assert.match(compactBeamStyles[2].headStroke,/246, 184, 206/,"compact style 3 moving glint must remain Elory blush pink");
+    assert.equal(compactBeamStyles[2].headDelay,"-4s","compact notch glint must not start at the upper-left path origin");
+    await page.evaluate(() => document.querySelectorAll(".elory-reference-nav-beam,.elory-notch-beam").forEach(svg=>svg.classList.add("elory-beam-style-3")));
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const reducedCompact = await page.evaluate(() => ({ring:getComputedStyle(document.querySelector(".elory-notch-beam-ring")).opacity,head:getComputedStyle(document.querySelector(".elory-notch-beam-comet-head")).opacity}));
+    assert.ok(Number(reducedCompact.ring)>=.9,"compact notch halo must remain visible with reduced motion");
+    assert.equal(Number(reducedCompact.head),0,"compact notch must not freeze a glint at the upper-left path origin");
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    assert.ok(parseFloat(compactBeamStyles[3].glowWidth)>parseFloat(compactBeamStyles[0].glowWidth),"compact style 4 must have a visibly broader aurora ribbon");
 
     const compactSearchButton = page.locator("#eloryNotchSearchButton");
     const compactSearchClose = page.locator("#eloryNotchSearchCloseButton");
@@ -348,6 +492,7 @@ const { chromium } = require("playwright");
     await page.screenshot({ path: path.join(reportDir, "elory-header-mobile-390x844.png"), fullPage: false });
 
     const report = {
+      beamStyles: { full: fullBeamStyles, compact: compactBeamStyles, fixedStyleAfterScroll },
       status: "passed",
       viewport: start.viewport,
       start,
