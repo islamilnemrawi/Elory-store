@@ -122,7 +122,7 @@ const { chromium } = require("playwright");
       }));
     }
     assert.deepEqual(fullBeamStyles.map(x=>x.style),["1","2","3","4"],"all four full-size lighting styles must be independently selectable");
-    assert.deepEqual(fullBeamStyles.map(x=>x.duration),["10s","9s","7s","11s"],"each full-size style must retain its intended animation pace");
+    assert.deepEqual(fullBeamStyles.map(x=>x.duration),["9s","9s","9s","9s"],"all four full-size styles must share one continuous animation pace");
     assert.ok(Number(fullBeamStyles[1].secondaryOpacity)>0,"style 2 must show its opposing second comet");
     assert.ok(Number(fullBeamStyles[2].ringOpacity)>0,"style 3 must show its breathing perimeter halo");
     assert.ok(parseFloat(fullBeamStyles[3].glowWidth)>parseFloat(fullBeamStyles[0].glowWidth),"style 4 must have a visibly broader aurora ribbon");
@@ -396,7 +396,7 @@ const { chromium } = require("playwright");
       }));
     }
     assert.deepEqual(compactBeamStyles.map(x=>x.compact),["1","2","3","4"],"all four compact-notch lighting styles must be independently selectable");
-    assert.deepEqual(compactBeamStyles.map(x=>x.duration),["10s","9s","7s","11s"],"each compact style must match the full-size animation pace");
+    assert.deepEqual(compactBeamStyles.map(x=>x.duration),["9s","9s","9s","9s"],"all four compact styles must share one continuous animation pace");
     assert.ok(compactBeamStyles.every(x=>x.full===x.compact),"large and compact notches must always use the same selected style");
     assert.ok(Number(compactBeamStyles[1].secondaryOpacity)>0,"compact style 2 must show its opposing second comet");
     assert.ok(Number(compactBeamStyles[2].ringOpacity)>0,"compact style 3 must show its breathing perimeter halo");
