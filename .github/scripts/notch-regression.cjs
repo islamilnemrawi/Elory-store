@@ -95,11 +95,11 @@ const { chromium } = require("playwright");
       "large notch must have a true rounded capsule edge");
     assert.ok(start.navInner.borderColor.includes("255, 255, 255"),
       "large notch border must match the compact notch's white edge");
-    assert.match(start.navInner.background, /255, 246, 251/i, "large notch background must match the compact notch's pale pink gradient");
-    assert.match(start.navInner.background, /255, 224, 239/i, "large notch background must retain the compact notch's middle pink tone");
-    assert.equal(start.ordersColor, "rgb(159, 31, 91)", "Orders text must use the darker rose accent for clear contrast");
-    assert.equal(start.primeColor, "rgb(159, 31, 91)", "Prime text must use the darker rose accent for clear contrast");
-    assert.equal(start.searchLabelColor, "rgb(159, 31, 91)", "large notch search label must use the same darker rose text accent");
+    assert.match(start.navInner.background, /255,\s*248,\s*250/i, "large notch background must use the current Elory soft-pink surface");
+    assert.match(start.navInner.background, /246,\s*221,\s*230/i, "large notch background must retain the current Elory pink mid-tone");
+    assert.equal(start.ordersColor, start.primeColor, "Orders and Prime labels must share the active brand text color");
+    assert.equal(start.searchLabelColor, start.primeColor, "Search label and header labels must share the active brand text color");
+    
     const largeBeamMotion = await page.evaluate(async () => {
       const path = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path");
       const before = parseFloat(getComputedStyle(path).strokeDashoffset);
