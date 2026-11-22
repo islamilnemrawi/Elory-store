@@ -144,11 +144,16 @@ const { chromium } = require("playwright");
         buttonCount: buttons.length,
         beamExists: !!beamPath,
         beamDashOffsetChanged: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5,
+        beamBox: { left: beamBox.left, top: beamBox.top, width: beamBox.width, height: beamBox.height },
+        navBox: { left: navBox.left, top: navBox.top, width: navBox.width, height: navBox.height },
+        beamOffset: { left: beamBox.left-navBox.left, top: beamBox.top-navBox.top, width: beamBox.width-navBox.width, height: beamBox.height-navBox.height },
         beamBoxAligned: Math.abs(beamBox.left - navBox.left) <= 1 && Math.abs(beamBox.top - navBox.top) <= 1 &&
           Math.abs(beamBox.width - navBox.width) <= 1 && Math.abs(beamBox.height - navBox.height) <= 1,
         strokeDasharray: getComputedStyle(beamPath).strokeDasharray
       };
     });
+    await page.screenshot({ path: path.join(reportDir, "elory-notch-mobile-390x844.png"), fullPage: false });
+    console.log("NOTCH_GEOMETRY " + JSON.stringify(notch));
     assert.equal(notch.compact, true, "notch must be visible when scrolling");
     assert.equal(notch.navPosition, "absolute", "notch must overlay the stable header footprint");
     assert.equal(notch.buttonCount, 3, "notch must retain exactly three actions");
