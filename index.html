@@ -11002,10 +11002,10 @@ body.prime-mode{
           const dot=document.createElement('button'); dot.type='button'; dot.className='hero-dot'+(i===0?' active':'');
           dot.dataset.label=txt(item.buttonText||item.title||('الشريحة '+(i+1))); dot.setAttribute('aria-label',dot.dataset.label); dots.appendChild(dot);
         });
-        slider.appendChild(dots); slider.dataset.heroCmsReady='true'; slider.style.visibility='visible'; slider.style.opacity='1'; slider.style.pointerEvents='auto';
+        slider.appendChild(dots); slider.id='heroSliderPending'; slider.dataset.heroCmsPending='true'; slider.style.visibility='hidden'; slider.style.opacity='0'; slider.style.pointerEvents='none'; old.after(slider);
         const activateCmsHero=()=>{
-          if(!old.isConnected) return;
-          old.replaceWith(slider); window.heroIndex=0;
+          if(!old.isConnected || !slider.isConnected) return;
+          old.replaceWith(slider); slider.id='heroSlider'; slider.hidden=false; slider.style.visibility='visible'; slider.style.opacity='1'; slider.style.pointerEvents='auto'; slider.dataset.heroCmsReady='true'; delete slider.dataset.heroCmsPending; window.heroIndex=0;
           if(typeof window.startHero==='function') window.startHero();
           else if(slides.length){
           let active=0;
@@ -11025,11 +11025,11 @@ body.prime-mode{
           if(firstMedia.complete && firstMedia.naturalWidth>0) activateCmsHero();
           else {
             firstMedia.addEventListener('load',activateCmsHero,{once:true});
-            firstMedia.addEventListener('error',()=>console.warn('Elory hero campaign image failed; keeping the built-in hero visible.'),{once:true});
+            firstMedia.addEventListener('error',()=>{slider.remove();console.warn('Elory hero campaign image failed; keeping the built-in hero visible.');},{once:true});
           }
         }else if(firstMedia?.tagName==='VIDEO'){
           if(firstMedia.readyState>=2) activateCmsHero();
-          else firstMedia.addEventListener('loadeddata',activateCmsHero,{once:true});
+          else { firstMedia.addEventListener('loadeddata',activateCmsHero,{once:true}); firstMedia.addEventListener('error',()=>slider.remove(),{once:true}); }
         }else activateCmsHero();
       }
     }
