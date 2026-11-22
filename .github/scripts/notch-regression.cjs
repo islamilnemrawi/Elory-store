@@ -104,13 +104,19 @@ const { chromium } = require("playwright");
     
     const largeBeamMotion = await page.evaluate(async () => {
       const path = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path");
+      const wedge = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-wedge");
       const before = parseFloat(getComputedStyle(path).strokeDashoffset);
+      const beforeMatrix = wedge?.getCTM();
       await new Promise(resolve => setTimeout(resolve, 450));
       const after = parseFloat(getComputedStyle(path).strokeDashoffset);
-      return { before, after, changed: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5 };
+      const afterMatrix = wedge?.getCTM();
+      const wedgeMoved = !!beforeMatrix && !!afterMatrix &&
+        (Math.abs(afterMatrix.e-beforeMatrix.e)>2 || Math.abs(afterMatrix.f-beforeMatrix.f)>2);
+      return { before, after, changed: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5, wedgeMoved };
     });
     console.log("LARGE_BEAM_MOTION " + JSON.stringify(largeBeamMotion));
-    assert.equal(largeBeamMotion.changed, true, "large notch perimeter beam must visibly travel around the capsule");
+    assert.equal(largeBeamMotion.changed, true, "large notch perimeter timing track must advance");
+    assert.equal(largeBeamMotion.wedgeMoved, true, "large black wedge must visibly move along the capsule perimeter");
     assert.equal(start.beam.exists, true, "large notch must have its own perimeter beam");
     assert.equal(start.beam.tagName, "rect", "large notch beam must trace the complete capsule perimeter like the compact notch");
     assert.ok(Number(start.beam.rx) >= 24, "large notch beam must follow a fully rounded capsule edge");
@@ -280,8 +286,12 @@ const { chromium } = require("playwright");
       const searchCenter = document.getElementById("eloryNotchSearchButton").getBoundingClientRect().left +
         document.getElementById("eloryNotchSearchButton").getBoundingClientRect().width / 2;
       const before = parseFloat(getComputedStyle(beamPath).strokeDashoffset);
+      const beforeWedgeMatrix = beamWedge?.getCTM();
       await new Promise(resolve => setTimeout(resolve, 450));
       const after = parseFloat(getComputedStyle(beamPath).strokeDashoffset);
+      const afterWedgeMatrix = beamWedge?.getCTM();
+      const wedgeMoved = !!beforeWedgeMatrix && !!afterWedgeMatrix &&
+        (Math.abs(afterWedgeMatrix.e-beforeWedgeMatrix.e)>2 || Math.abs(afterWedgeMatrix.f-beforeWedgeMatrix.f)>2);
       const navBox = nav.getBoundingClientRect();
       const beamBox = beam.getBoundingClientRect();
       return {
@@ -301,6 +311,7 @@ const { chromium } = require("playwright");
         beamDashOffsetChanged: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5,
         wedgeExists: !!beamWedge,
         wedgeDuration: beamMotion?.getAttribute("dur"),
+        wedgeMoved,
         wedgeTrackUpdated: (beamMotion?.getAttribute("path") || "").includes(String(Math.round(navBox.width)-1)),
         beamBox: { left: beamBox.left, top: beamBox.top, width: beamBox.width, height: beamBox.height },
         navBox: { left: navBox.left, top: navBox.top, width: navBox.width, height: navBox.height },
@@ -324,6 +335,7 @@ const { chromium } = require("playwright");
     assert.equal(notch.beamDashOffsetChanged, true, "compact notch timing track must move even when reduced motion is requested");
     assert.equal(notch.wedgeExists, true, "compact notch must render its tapered black wedge");
     assert.equal(notch.wedgeDuration, "5.2s", "compact notch wedge must travel at the slower speed");
+    assert.equal(notch.wedgeMoved, true, "compact black wedge must visibly move along the capsule perimeter");
     assert.equal(notch.strokeLinecap, "round", "compact notch beam must have rounded head and tail");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
 
