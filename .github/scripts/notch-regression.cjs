@@ -331,7 +331,7 @@ const { chromium } = require("playwright");
     assert.equal(notch.beamExists, true, "SVG perimeter beam must exist");
     assert.equal(notch.beamDashOffsetChanged, true, "compact notch timing track must move even when reduced motion is requested");
     assert.equal(notch.wedgeExists, true, "compact notch must render its luminous tapered comet");
-    assert.equal(notch.wedgeDuration, "5.2s", "compact notch comet must travel at the slower speed");
+    assert.equal(notch.wedgeDuration, "8.5s", "compact notch comet must travel at the slower speed");
     assert.equal(notch.wedgeMoved, true, "compact luminous comet must visibly move along the capsule perimeter");
     assert.equal(notch.strokeLinecap, "round", "compact notch beam must have rounded head and tail");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
