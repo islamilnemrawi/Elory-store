@@ -5003,13 +5003,10 @@ main#home{
   </defs>
   <rect class="elory-reference-nav-beam-path" x="2.5" y="2.5" width="895" height="55" rx="27.5" pathLength="1000" stroke="transparent"/>
   <path class="elory-reference-nav-beam-motion-track" d="M30 1 H870 A29 29 0 0 1 899 30 V30 A29 29 0 0 1 870 59 H30 A29 29 0 0 1 1 30 V30 A29 29 0 0 1 30 1 Z" fill="none"/>
-  <g class="elory-reference-nav-beam-comet">
-    <path d="M-58 0 C-42 -1.8 -17 -1.5 0 0" fill="none" stroke="url(#eloryReferenceBeamGradient)" stroke-width="11" stroke-linecap="round" filter="url(#eloryReferenceBeamGlow)" opacity=".88"/>
-    <path d="M-58 0 C-42 -1.2 -17 -1 0 0" fill="none" stroke="url(#eloryReferenceBeamGradient)" stroke-width="4.2" stroke-linecap="round"/>
-    <ellipse cx="0" cy="0" rx="3.1" ry="2.2" fill="#fff" filter="url(#eloryReferenceBeamGlow)"/>
-    <ellipse cx="0" cy="0" rx="1.8" ry="1.35" fill="#fff"/>
-    <animateMotion class="elory-reference-nav-beam-motion" dur="5.2s" repeatCount="indefinite" rotate="auto" path="M70 1 H870 A29 29 0 0 1 899 30 V30 A29 29 0 0 1 870 59 H30 A29 29 0 0 1 1 30 V30 A29 29 0 0 1 30 1 H70 Z"/>
-  </g>
+  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-glow" x="2.5" y="2.5" width="895" height="55" rx="27.5" pathLength="1000"/>
+  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-mid" x="2.5" y="2.5" width="895" height="55" rx="27.5" pathLength="1000"/>
+  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-core" x="2.5" y="2.5" width="895" height="55" rx="27.5" pathLength="1000"/>
+  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-head" x="2.5" y="2.5" width="895" height="55" rx="27.5" pathLength="1000"/>
 </svg>
 <button class="nav-prime-btn" id="primeHeaderBtn" title="Elory Prime" type="button">Elory Prime</button>
 <button class="nav-orders-btn header-orders-btn" id="ordersBtn" title="طلباتي" type="button"><span>طلباتي</span><span class="nav-orders-count" id="ordersCount" style="display:none">0</span></button>
@@ -5054,13 +5051,10 @@ main#home{
   </defs>
   <rect class="elory-notch-beam-path" x="2.5" y="2.5" width="219" height="61" rx="30.5" pathLength="1000" stroke="transparent"/>
   <path class="elory-notch-beam-motion-track" d="M33 1 H191 A32 32 0 0 1 223 33 V33 A32 32 0 0 1 191 65 H33 A32 32 0 0 1 1 33 V33 A32 32 0 0 1 33 1 Z" fill="none"/>
-  <g class="elory-notch-beam-comet">
-    <path d="M-58 0 C-42 -1.8 -17 -1.5 0 0" fill="none" stroke="url(#eloryNotchBeamGradient)" stroke-width="11" stroke-linecap="round" filter="url(#eloryNotchBeamGlow)" opacity=".88"/>
-    <path d="M-58 0 C-42 -1.2 -17 -1 0 0" fill="none" stroke="url(#eloryNotchBeamGradient)" stroke-width="4.2" stroke-linecap="round"/>
-    <ellipse cx="0" cy="0" rx="3.1" ry="2.2" fill="#fff" filter="url(#eloryNotchBeamGlow)"/>
-    <ellipse cx="0" cy="0" rx="1.8" ry="1.35" fill="#fff"/>
-    <animateMotion class="elory-notch-beam-motion" begin="indefinite" dur="5.2s" repeatCount="indefinite" rotate="auto" path="M70 1 H191 A32 32 0 0 1 223 33 V33 A32 32 0 0 1 191 65 H33 A32 32 0 0 1 1 33 V33 A32 32 0 0 1 33 1 H70 Z"/>
-  </g>
+  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-glow" x="2.5" y="2.5" width="219" height="61" rx="30.5" pathLength="1000"/>
+  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-mid" x="2.5" y="2.5" width="219" height="61" rx="30.5" pathLength="1000"/>
+  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-core" x="2.5" y="2.5" width="219" height="61" rx="30.5" pathLength="1000"/>
+  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-head" x="2.5" y="2.5" width="219" height="61" rx="30.5" pathLength="1000"/>
 </svg>
 </div>
 </div>
@@ -11436,6 +11430,13 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
     beamPath.setAttribute("width",Math.max(1,width-1));
     beamPath.setAttribute("height",Math.max(1,height-1));
     beamPath.setAttribute("rx",Math.max(1,(height-1)/2));
+    beam.querySelectorAll(".elory-notch-beam-comet-layer").forEach(layer=>{
+      layer.setAttribute("x","0.5");
+      layer.setAttribute("y","0.5");
+      layer.setAttribute("width",Math.max(1,width-1));
+      layer.setAttribute("height",Math.max(1,height-1));
+      layer.setAttribute("rx",Math.max(1,(height-1)/2));
+    });
     lastBeamWidth=width;
     lastBeamHeight=height;
   };
@@ -11691,7 +11692,11 @@ main#home{margin-top:0!important;padding-top:0!important}
   stroke-width:3.5;
   animation:eloryNotchBeamTravel 2.35s linear infinite;
 }
-#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-comet{pointer-events:none}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-comet-layer{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:0;animation:eloryNotchBeamTravel 5.2s linear infinite}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-comet-glow{stroke:var(--elory-beam-main);stroke-width:11;stroke-dasharray:120 880;opacity:.34;filter:blur(3.8px)}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-comet-mid{stroke:var(--elory-beam-main);stroke-width:7;stroke-dasharray:90 910;stroke-dashoffset:30;opacity:.72;filter:blur(1.3px)}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-comet-core{stroke:var(--elory-beam-deep);stroke-width:4;stroke-dasharray:60 940;stroke-dashoffset:60;opacity:.96}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-comet-head{stroke:#fff;stroke-width:2.6;stroke-dasharray:10 990;stroke-dashoffset:110;filter:drop-shadow(0 0 3px #fff)}
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-mobile-notch{
   position:relative;
   z-index:3;
@@ -11854,7 +11859,11 @@ main#home{margin-top:0!important;padding-top:0!important}
   stroke-dasharray:118 882!important;
   animation:eloryReferenceBeamTravel 2.35s linear infinite!important;
 }
-#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet{pointer-events:none}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet-layer{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:0;animation:eloryReferenceBeamTravel 5.2s linear infinite}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet-glow{stroke:var(--elory-beam-main);stroke-width:11;stroke-dasharray:120 880;opacity:.34;filter:blur(3.8px)}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet-mid{stroke:var(--elory-beam-main);stroke-width:7;stroke-dasharray:90 910;stroke-dashoffset:30;opacity:.72;filter:blur(1.3px)}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet-core{stroke:var(--elory-beam-deep);stroke-width:4;stroke-dasharray:60 940;stroke-dashoffset:60;opacity:.96}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet-head{stroke:#fff;stroke-width:2.6;stroke-dasharray:10 990;stroke-dashoffset:110;filter:drop-shadow(0 0 3px #fff)}
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>button,
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.header-search-line{
   position:relative!important;
@@ -12143,13 +12152,13 @@ body.prime-mode{
 #eloryReferenceBeamGradient stop:nth-child(5),
 #eloryNotchBeamGradient stop:nth-child(5){stop-color:var(--elory-beam-deep)!important}
 #eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path{stroke:transparent!important;filter:none!important}
-#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet{filter:drop-shadow(0 0 5px color-mix(in srgb,var(--elory-beam-main) 70%,transparent))}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet-layer{vector-effect:non-scaling-stroke}
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
   border-color:color-mix(in srgb,var(--elory-beam-main) 54%,white)!important;
   box-shadow:0 9px 28px color-mix(in srgb,var(--elory-beam-deep) 22%,transparent)!important;
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-path{stroke:transparent!important;filter:none!important}
-#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-comet{filter:drop-shadow(0 0 5px color-mix(in srgb,var(--elory-beam-main) 70%,transparent))}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-comet-layer{vector-effect:non-scaling-stroke}
 #eloryGlobalStickyShell.elory-notch-compact .elory-notch-action{
   background:linear-gradient(145deg,var(--elory-header-icon-top),var(--elory-header-icon-bottom))!important;
   box-shadow:0 4px 11px var(--elory-header-icon-shadow),inset 0 1px 2px rgba(255,255,255,.32)!important;
