@@ -3562,6 +3562,24 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
       width: clamp(148px, 45vw, 168px) !important;
     }
   }
+
+/* Use a neutral, dimension-stable hero placeholder instead of flashing stale starter copy. */
+#heroSlider[data-hero-loading="true"]>.hero-slide.elory-code-slide .hero-copy,
+#heroSlider[data-hero-loading="true"]>.hero-slide.elory-code-slide .hero-product-stage,
+#heroSlider[data-hero-loading="true"]>.hero-slide.elory-code-slide .hero-decor{visibility:hidden!important;opacity:0!important}
+#heroSlider[data-hero-loading="true"]>.hero-slide.elory-code-slide::after{
+  content:"جاري تحميل العرض...";
+  position:absolute;top:50%;left:50%;z-index:25;
+  transform:translate(-50%,-50%);
+  padding:10px 18px;border:1px solid rgba(255,255,255,.55);
+  border-radius:999px;background:rgba(255,255,255,.22);
+  color:#fff;font-size:13px;font-weight:700;letter-spacing:.1px;
+  box-shadow:0 4px 16px rgba(139,57,88,.08);
+  animation:eloryHeroLoadingPulse 1.25s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes eloryHeroLoadingPulse{from{opacity:.55}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){#heroSlider[data-hero-loading="true"]>.hero-slide.elory-code-slide::after{animation:none}}
 </style>
 <style id="elory-compact-hero-wave">
   #heroSlider,
@@ -5619,7 +5637,7 @@ main#home{margin-top:0!important;padding-top:0!important}
 <main id="home">
 <!-- HERO -->
 <section class="hero">
-<div class="hero-slider elory-code-hero" id="heroSlider" style="opacity:0;pointer-events:none">
+<div class="hero-slider elory-code-hero" id="heroSlider" data-hero-loading="true" aria-busy="true" style="opacity:0;pointer-events:none">
 <div class="hero-slide active elory-code-slide">
 <div class="hero-wave-top"></div>
 <div class="hero-decor hero-decor-left"></div>
@@ -5667,6 +5685,18 @@ main#home{margin-top:0!important;padding-top:0!important}
 </div>
 </div>
 </section>
+<script id="elory-hero-fallback-timeout">
+(function(){
+  const slider=document.getElementById('heroSlider');
+  if(!slider)return;
+  window.setTimeout(()=>{
+    if(slider.dataset.heroCmsReady!=='true'){
+      slider.dataset.heroLoading='false';
+      slider.setAttribute('aria-busy','false');
+    }
+  },2200);
+})();
+</script>
 <!-- =====================================================
          CATEGORIES
          ===================================================== -->
@@ -10931,7 +10961,7 @@ main#home{margin-top:0!important;padding-top:0!important}
             return;
           }
         }
-        slider.appendChild(dots); slider.dataset.heroCmsReady='true'; slider.style.visibility='visible'; slider.style.opacity='1'; slider.style.pointerEvents='auto'; old.replaceWith(slider); window.heroIndex=0;
+        slider.appendChild(dots); slider.dataset.heroLoading='false'; slider.setAttribute('aria-busy','false'); slider.dataset.heroCmsReady='true'; slider.style.visibility='visible'; slider.style.opacity='1'; slider.style.pointerEvents='auto'; old.replaceWith(slider); window.heroIndex=0;
         if(typeof window.startHero==='function') window.startHero();
         else if(slides.length){
           let active=0;
@@ -11864,6 +11894,8 @@ main#home{margin-top:0!important;padding-top:0!important}
     }
     slider.replaceChildren(...cards, dots);
     slider.dataset.heroReady = 'true';
+    slider.dataset.heroLoading = 'false';
+    slider.setAttribute('aria-busy','false');
     slider.dataset.heroCmsReady = 'true';
     slider.style.visibility = 'visible';
     slider.style.opacity = '1';
