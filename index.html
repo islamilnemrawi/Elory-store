@@ -11685,7 +11685,9 @@ main#home{margin-top:0!important;padding-top:0!important}
   pointer-events:none;
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-path{
-  fill:none;stroke:none;stroke-dasharray:none;stroke-dashoffset:0;animation:none;filter:none;
+  fill:none;stroke:transparent;stroke-dasharray:110 890;stroke-dashoffset:0;
+  stroke-linecap:round;stroke-linejoin:round;stroke-width:3.5;
+  animation:eloryNotchBeamTravel 18s linear infinite;
 }
 /* Four coordinated light treatments. Both capsule sizes share the same effect language. */
 #eloryGlobalStickyShell .elory-reference-nav-beam-comet-layer,
@@ -11761,6 +11763,7 @@ main#home{margin-top:0!important;padding-top:0!important}
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-ring{stroke:var(--elory-beam-main);stroke-width:2.8;stroke-dasharray:1000 0;opacity:.82;filter:drop-shadow(0 0 3px var(--elory-beam-main)) drop-shadow(0 0 9px color-mix(in srgb,var(--elory-beam-main) 80%,transparent));animation:eloryHeartbeatHalo 6.8s ease-in-out infinite}
 @keyframes eloryHeartbeatHalo{0%,100%{opacity:.72;stroke-width:2.6}7%{opacity:.98;stroke-width:3.2}14%{opacity:.76;stroke-width:2.7}23%{opacity:.93;stroke-width:3}34%,88%{opacity:.72;stroke-width:2.6}}
 @media(prefers-reduced-motion:reduce){
+#eloryGlobalStickyShell .elory-reference-nav-beam-path,#eloryGlobalStickyShell .elory-notch-beam-path{animation:none!important}
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-ring,#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-ring{animation:none!important;opacity:.9!important;stroke-width:2.8!important}
 #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-layer,#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-layer{animation:none!important;opacity:0!important;filter:none!important}
 }
