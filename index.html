@@ -4992,11 +4992,11 @@ main#home{
 <svg class="elory-reference-nav-beam" viewBox="0 0 900 60" preserveAspectRatio="none" aria-hidden="true" focusable="false">
   <defs>
     <linearGradient id="eloryReferenceBeamGradient" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff5ca8" stop-opacity=".08"/>
-      <stop offset=".28" stop-color="#ff5ca8" stop-opacity=".95"/>
-      <stop offset=".52" stop-color="#fff7dc" stop-opacity="1"/>
-      <stop offset=".76" stop-color="#d76aff" stop-opacity=".95"/>
-      <stop offset="1" stop-color="#d76aff" stop-opacity=".05"/>
+      <stop offset="0" stop-color="#F6B8CE" stop-opacity=".08"/>
+      <stop offset=".28" stop-color="#F6B8CE" stop-opacity=".95"/>
+      <stop offset=".52" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset=".76" stop-color="#E88EAF" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#E88EAF" stop-opacity=".05"/>
     </linearGradient>
   </defs>
   <rect class="elory-reference-nav-beam-path" x="2.5" y="2.5" width="895" height="55" rx="27.5" pathLength="1000" stroke="url(#eloryReferenceBeamGradient)"/>
@@ -5032,11 +5032,11 @@ main#home{
 </div>
 <svg class="elory-notch-beam" viewBox="0 0 224 66" aria-hidden="true" focusable="false">
   <defs><linearGradient id="eloryNotchBeamGradient" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#ff5ca8" stop-opacity=".08"/>
-    <stop offset=".28" stop-color="#ff5ca8" stop-opacity=".95"/>
-    <stop offset=".52" stop-color="#fff7dc" stop-opacity="1"/>
-    <stop offset=".76" stop-color="#d76aff" stop-opacity=".95"/>
-    <stop offset="1" stop-color="#d76aff" stop-opacity=".05"/>
+    <stop offset="0" stop-color="#F6B8CE" stop-opacity=".08"/>
+    <stop offset=".28" stop-color="#F6B8CE" stop-opacity=".95"/>
+    <stop offset=".52" stop-color="#FFFFFF" stop-opacity="1"/>
+    <stop offset=".76" stop-color="#E88EAF" stop-opacity=".95"/>
+    <stop offset="1" stop-color="#E88EAF" stop-opacity=".05"/>
   </linearGradient></defs>
   <rect class="elory-notch-beam-path" x="2.5" y="2.5" width="219" height="61" rx="30.5" pathLength="1000" stroke="url(#eloryNotchBeamGradient)"/>
 </svg>
@@ -11632,6 +11632,18 @@ main#home{margin-top:0!important;padding-top:0!important}
   pointer-events:auto!important;
   transition:width .20s ease,box-shadow .20s ease!important;
 }
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay::before{
+  content:"";
+  position:absolute;
+  inset:-5px;
+  z-index:0;
+  border:2px solid rgba(246,184,206,.72);
+  border-radius:inherit;
+  box-shadow:0 0 8px 2px rgba(246,184,206,.58),0 0 18px 5px rgba(232,142,175,.38);
+  opacity:.72;
+  pointer-events:none;
+  animation:eloryHeartbeatHalo 6.8s ease-in-out infinite;
+}
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay::after{
   content:"";
   position:absolute;
@@ -11662,8 +11674,8 @@ main#home{margin-top:0!important;padding-top:0!important}
   stroke-linecap:round;
   stroke-linejoin:round;
   stroke-width:3.5;
-  filter:drop-shadow(0 0 4px rgba(255,67,160,.98)) drop-shadow(0 0 9px rgba(186,91,255,.72));
-  animation:eloryNotchBeamTravel 2.35s linear infinite;
+  filter:drop-shadow(0 0 4px #FFFFFF) drop-shadow(0 0 10px #F6B8CE) drop-shadow(0 0 18px rgba(232,142,175,.72));
+  animation:eloryNotchBeamTravel 24s linear infinite;
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-mobile-notch{
   position:relative;
@@ -11810,6 +11822,18 @@ main#home{margin-top:0!important;padding-top:0!important}
   box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12)!important;
   overflow:visible!important;
 }
+#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner::before{
+  content:"";
+  position:absolute;
+  inset:-5px;
+  z-index:0;
+  border:2px solid rgba(246,184,206,.72);
+  border-radius:inherit;
+  box-shadow:0 0 8px 2px rgba(246,184,206,.58),0 0 18px 5px rgba(232,142,175,.38);
+  opacity:.72;
+  pointer-events:none;
+  animation:eloryHeartbeatHalo 6.8s ease-in-out infinite;
+}
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.elory-reference-nav-beam{
   position:absolute!important;
   inset:0!important;
@@ -11826,8 +11850,8 @@ main#home{margin-top:0!important;padding-top:0!important}
   stroke-linecap:round!important;
   stroke-linejoin:round!important;
   stroke-dasharray:118 882!important;
-  filter:drop-shadow(0 0 4px rgba(255,67,160,.98)) drop-shadow(0 0 9px rgba(186,91,255,.72))!important;
-  animation:eloryReferenceBeamTravel 2.35s linear infinite!important;
+  filter:drop-shadow(0 0 4px #FFFFFF) drop-shadow(0 0 10px #F6B8CE) drop-shadow(0 0 18px rgba(232,142,175,.72))!important;
+  animation:eloryReferenceBeamTravel 24s linear infinite!important;
 }
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>button,
 #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.header-search-line{
@@ -12043,6 +12067,13 @@ main#home{margin-top:0!important;padding-top:0!important}
 
 @keyframes eloryNotchBeamTravel{to{stroke-dashoffset:-1000}}
 @keyframes eloryReferenceBeamTravel{to{stroke-dashoffset:-1000}}
+@keyframes eloryHeartbeatHalo{
+  0%,100%{opacity:.58;box-shadow:0 0 7px 2px rgba(246,184,206,.48),0 0 15px 4px rgba(232,142,175,.30)}
+  8%{opacity:.96;box-shadow:0 0 10px 3px rgba(246,184,206,.78),0 0 23px 7px rgba(232,142,175,.48)}
+  16%{opacity:.62;box-shadow:0 0 7px 2px rgba(246,184,206,.48),0 0 15px 4px rgba(232,142,175,.30)}
+  25%{opacity:.90;box-shadow:0 0 9px 3px rgba(246,184,206,.70),0 0 21px 6px rgba(232,142,175,.42)}
+  36%,72%{opacity:.58;box-shadow:0 0 7px 2px rgba(246,184,206,.44),0 0 14px 4px rgba(232,142,175,.28)}
+}
 @media(prefers-reduced-motion:reduce){
   #eloryGlobalStickyShell .elory-notch-search,#eloryGlobalStickyShell .elory-notch-search input{transition:none!important}
 }
