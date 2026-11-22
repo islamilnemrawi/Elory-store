@@ -12143,9 +12143,13 @@ body.prime-mode{
     inset 0 1px 0 rgba(255,255,255,.88)!important;
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam{
-  inset:0!important;
-  width:100%!important;
-  height:100%!important;
+  inset:auto!important;
+  left:-2px!important;
+  top:-2px!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:calc(100% + 4px)!important;
+  height:calc(100% + 4px)!important;
   max-width:none!important;
   max-height:none!important;
 }
