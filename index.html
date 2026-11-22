@@ -10339,15 +10339,27 @@ main#home{
         const firstCampaignSlide=slider.querySelector(':scope > .hero-slide');
         const firstCampaignImage=firstCampaignSlide?.querySelector('.elory-hero-fullbleed-picture img, img.hero-product-image');
         if(firstCampaignImage && firstCampaignImage.getAttribute('src')){
-          const imageReady=firstCampaignImage.complete
-            ? firstCampaignImage.naturalWidth>0
+          const campaignPicture=firstCampaignImage.closest('picture');
+          const responsiveSource=campaignPicture?.querySelector('source[srcset]');
+          const useResponsiveSource=!!(responsiveSource?.media && window.matchMedia(responsiveSource.media).matches);
+          const selectedCampaignSource=useResponsiveSource
+            ? responsiveSource.getAttribute('srcset')
+            : (firstCampaignImage.getAttribute('src') || firstCampaignImage.currentSrc);
+          const preloadImage=new window.Image();
+          preloadImage.decoding='async';
+          preloadImage.src=selectedCampaignSource;
+          let imageReady=preloadImage.complete
+            ? preloadImage.naturalWidth>0
             : await new Promise(resolve=>{
                 let settled=false;
                 const finish=ready=>{if(settled)return;settled=true;resolve(ready);};
-                firstCampaignImage.addEventListener('load',()=>finish(firstCampaignImage.naturalWidth>0),{once:true});
-                firstCampaignImage.addEventListener('error',()=>finish(false),{once:true});
+                preloadImage.addEventListener('load',()=>finish(preloadImage.naturalWidth>0),{once:true});
+                preloadImage.addEventListener('error',()=>finish(false),{once:true});
                 window.setTimeout(()=>finish(false),3500);
               });
+          if(imageReady && typeof preloadImage.decode==='function'){
+            imageReady=await preloadImage.decode().then(()=>true).catch(()=>false);
+          }
           if(!imageReady){
             console.warn('Elory hero campaign media is not ready; keeping the visible fallback slide.');
             return;
@@ -11274,15 +11286,27 @@ main#home{
     /* Do not replace the fallback until the first campaign image can be painted. */
     const firstRecoveryImage=cards[0]?.querySelector('.elory-hero-fullbleed-picture img');
     if(firstRecoveryImage){
-      const imageReady=firstRecoveryImage.complete
-        ? firstRecoveryImage.naturalWidth>0
+      const campaignPicture=firstRecoveryImage.closest('picture');
+      const responsiveSource=campaignPicture?.querySelector('source[srcset]');
+      const useResponsiveSource=!!(responsiveSource?.media && window.matchMedia(responsiveSource.media).matches);
+      const selectedCampaignSource=useResponsiveSource
+        ? responsiveSource.getAttribute('srcset')
+        : (firstRecoveryImage.getAttribute('src') || firstRecoveryImage.currentSrc);
+      const preloadImage=new window.Image();
+      preloadImage.decoding='async';
+      preloadImage.src=selectedCampaignSource;
+      let imageReady=preloadImage.complete
+        ? preloadImage.naturalWidth>0
         : await new Promise(resolve=>{
             let settled=false;
             const finish=ready=>{if(settled)return;settled=true;resolve(ready);};
-            firstRecoveryImage.addEventListener('load',()=>finish(firstRecoveryImage.naturalWidth>0),{once:true});
-            firstRecoveryImage.addEventListener('error',()=>finish(false),{once:true});
+            preloadImage.addEventListener('load',()=>finish(preloadImage.naturalWidth>0),{once:true});
+            preloadImage.addEventListener('error',()=>finish(false),{once:true});
             window.setTimeout(()=>finish(false),3500);
           });
+      if(imageReady && typeof preloadImage.decode==='function'){
+        imageReady=await preloadImage.decode().then(()=>true).catch(()=>false);
+      }
       if(!imageReady){
         console.warn('Elory recovery campaign media is not ready; keeping the visible fallback slide.');
         return;
