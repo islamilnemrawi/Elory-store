@@ -5045,7 +5045,7 @@ main#home{
   <rect class="elory-notch-beam-path" x="2.5" y="2.5" width="219" height="61" rx="30.5" pathLength="1000" stroke="transparent"/>
   <path class="elory-notch-beam-motion-track" d="M33 1 H191 A32 32 0 0 1 223 33 V33 A32 32 0 0 1 191 65 H33 A32 32 0 0 1 1 33 V33 A32 32 0 0 1 33 1 Z" fill="none"/>
   <polygon class="elory-notch-beam-wedge" points="-32,0 14,-5.5 14,5.5" fill="#111">
-    <animateMotion class="elory-notch-beam-motion" dur="5.2s" repeatCount="indefinite" rotate="auto" path="M33 1 H191 A32 32 0 0 1 223 33 V33 A32 32 0 0 1 191 65 H33 A32 32 0 0 1 1 33 V33 A32 32 0 0 1 33 1 Z"/>
+    <animateMotion class="elory-notch-beam-motion" begin="indefinite" dur="5.2s" repeatCount="indefinite" rotate="auto" path="M33 1 H191 A32 32 0 0 1 223 33 V33 A32 32 0 0 1 191 65 H33 A32 32 0 0 1 1 33 V33 A32 32 0 0 1 33 1 Z"/>
   </polygon>
 </svg>
 </div>
@@ -11407,6 +11407,7 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   const overlay=shell.querySelector(":scope > .elory-notch-overlay");
   const beam=overlay?.querySelector(".elory-notch-beam");
   const beamPath=beam?.querySelector(".elory-notch-beam-path");
+  const beamMotion=beam?.querySelector(".elory-notch-beam-motion");
   let lastBeamWidth=0,lastBeamHeight=0;
 
   // The full navigation remains in normal flow; only this independent overlay is fixed.
@@ -11437,7 +11438,10 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
     if(next===current)return;
     shell.classList.toggle("elory-notch-compact",next);
     if(!next)shell.classList.remove("elory-notch-search-open");
-    requestAnimationFrame(syncBeamGeometry);
+    requestAnimationFrame(()=>{
+      syncBeamGeometry();
+      if(next&&beamMotion?.beginElement)beamMotion.beginElement();
+    });
   };
 
   const bindNotchAction=(id,selector)=>{
