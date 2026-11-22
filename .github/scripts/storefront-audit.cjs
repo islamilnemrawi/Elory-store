@@ -21,10 +21,26 @@ async function inspectTarget(browser, target, viewport) {
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
   await page.addInitScript(() => {
-    window.__eloryVitals = { cls: 0, lcp: 0 };
+    window.__eloryVitals = { cls: 0, lcp: 0, shifts: [] };
+    const describe = node => {
+      if (!node || !node.tagName) return null;
+      const tag = node.tagName.toLowerCase();
+      return tag + (node.id ? "#" + node.id : "") +
+        (typeof node.className === "string" && node.className.trim() ? "." + node.className.trim().split(/\\s+/).slice(0,4).join(".") : "");
+    };
     try {
       new PerformanceObserver(list => {
-        for (const entry of list.getEntries()) if (!entry.hadRecentInput) window.__eloryVitals.cls += entry.value;
+        for (const entry of list.getEntries()) if (!entry.hadRecentInput) {
+          window.__eloryVitals.cls += entry.value;
+          if (window.__eloryVitals.shifts.length < 12) window.__eloryVitals.shifts.push({
+            value: Number(entry.value.toFixed(4)),
+            sources: (entry.sources || []).slice(0,5).map(source => ({
+              node: describe(source.node),
+              previousRect: source.previousRect ? { x:Math.round(source.previousRect.x), y:Math.round(source.previousRect.y), width:Math.round(source.previousRect.width), height:Math.round(source.previousRect.height) } : null,
+              currentRect: source.currentRect ? { x:Math.round(source.currentRect.x), y:Math.round(source.currentRect.y), width:Math.round(source.currentRect.width), height:Math.round(source.currentRect.height) } : null
+            }))
+          });
+        }
       }).observe({ type: "layout-shift", buffered: true });
     } catch (_) {}
     try {
@@ -68,6 +84,7 @@ async function inspectTarget(browser, target, viewport) {
         fcpMs: Math.round(paints.find(x => x.name === "first-contentful-paint")?.startTime || 0) || null,
         lcpMs: Math.round(window.__eloryVitals?.lcp || 0) || null,
         cls: Number((window.__eloryVitals?.cls || 0).toFixed(4)),
+        layoutShiftSources: window.__eloryVitals?.shifts || [],
         resourceCount: resources.length,
         totalTransferBytes: resources.reduce((sum,x)=>sum+(x.transferSize||0),0),
         largestResources: largest
