@@ -15,7 +15,7 @@ const { chromium } = require("playwright");
   });
   page.setDefaultTimeout(20000);
   const pageErrors = [];
-  page.on("pageerror", error => pageErrors.push(String(error)));
+  page.on("pageerror", error => pageErrors.push({ message: error.message, stack: error.stack }));
 
   try {
     await page.goto("http://127.0.0.1:4173/index.html", { waitUntil: "domcontentloaded", timeout: 60000 });
