@@ -12132,6 +12132,41 @@ body.prime-mode{
   background:linear-gradient(145deg,var(--elory-header-icon-top),var(--elory-header-icon-bottom))!important;
   box-shadow:0 4px 11px var(--elory-header-icon-shadow),inset 0 1px 2px rgba(255,255,255,.32)!important;
 }
+
+/* Visibility refinement: stronger notch beam and a search icon that matches its label. */
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
+  border-width:2px!important;
+  border-color:color-mix(in srgb,var(--elory-beam-deep) 68%,white)!important;
+  box-shadow:
+    0 10px 30px color-mix(in srgb,var(--elory-beam-deep) 34%,transparent),
+    0 0 0 2px color-mix(in srgb,var(--elory-beam-main) 24%,transparent),
+    inset 0 1px 0 rgba(255,255,255,.88)!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-path{
+  stroke-width:5.5!important;
+  filter:
+    drop-shadow(0 0 5px color-mix(in srgb,var(--elory-beam-main) 98%,transparent))
+    drop-shadow(0 0 12px color-mix(in srgb,var(--elory-beam-deep) 88%,transparent))
+    drop-shadow(0 0 20px color-mix(in srgb,var(--elory-beam-deep) 48%,transparent))!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .search-btn i{
+  color:var(--pink-dark)!important;
+  filter:drop-shadow(0 1px 1px rgba(255,255,255,.38))!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .search-btn{
+  color:var(--pink-dark)!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label{
+  color:var(--pink-dark)!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-btn i{
+  color:var(--pink-dark)!important;
+}
+@media(prefers-reduced-motion:reduce){
+  #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-path{
+    animation:none!important;
+  }
+}
 </style>
 
 </body>
