@@ -233,6 +233,22 @@ const { chromium } = require("playwright");
     assert.equal(notch.beamDashOffsetChanged, true, "beam dash must move along the edge");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
 
+    const compactSearchButton = page.locator("#eloryNotchSearchButton");
+    await compactSearchButton.click();
+    await page.waitForTimeout(250);
+    assert.equal(await page.locator("#eloryGlobalStickyShell").evaluate(el => el.classList.contains("elory-notch-search-open")), true,
+      "compact notch search must expand when tapped");
+    assert.equal(await page.locator("#eloryNotchCart").isVisible(), false, "cart action must yield the full notch to search");
+    assert.equal(await page.locator("#eloryNotchFavorites").isVisible(), false, "favorites action must yield the full notch to search");
+    assert.equal(await page.locator("#eloryNotchSearchInput").isVisible(), true, "compact search input must fill the notch");
+    await page.locator("#eloryNotchSearchInput").fill("اختبار");
+    await compactSearchButton.click();
+    await page.waitForTimeout(250);
+    assert.equal(await page.locator("#eloryGlobalStickyShell").evaluate(el => el.classList.contains("elory-notch-search-open")), false,
+      "second tap must close compact search even when text has been entered");
+    assert.equal(await page.locator("#eloryNotchCart").isVisible(), true, "cart action must return after closing search");
+    assert.equal(await page.locator("#eloryNotchFavorites").isVisible(), true, "favorites action must return after closing search");
+
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(300);
     await page.screenshot({ path: path.join(reportDir, "elory-header-mobile-390x844.png"), fullPage: false });
