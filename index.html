@@ -10269,6 +10269,7 @@ main#home{
               image.src=fullBleedSource;
               image.alt=txt(item.title||'Elory campaign');
               image.loading=i===0?'eager':'lazy';
+              image.fetchPriority=i===0?'high':'auto';
               image.decoding='async';
               picture.appendChild(image);
               slide.appendChild(picture);
@@ -11154,6 +11155,7 @@ main#home{
       image.src = source;
       image.alt = text(item.title || 'Elory campaign');
       image.loading = index === 0 ? 'eager' : 'lazy';
+      image.fetchPriority = index === 0 ? 'high' : 'auto';
       image.decoding = 'async';
       image.addEventListener('error', () => {
         console.warn('Elory hero campaign image could not be loaded:', source);
