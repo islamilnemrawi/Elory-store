@@ -9,6 +9,7 @@ on:
       - fix/storefront-first-paint-20261122
       - fix/storefront-loading-first-paint-20261122
       - fix/elory-initial-layout-shift-20261122
+      - audit/postdeploy-first-paint-20261122
     paths:
       - index.html
       - .github/scripts/storefront-audit.cjs
@@ -55,7 +56,7 @@ jobs:
       - name: Verify first paint and reload stability
         env:
           NODE_PATH: ${{ runner.temp }}/node_modules
-          FIRST_PAINT_URL: http://127.0.0.1:4173/index.html
+          FIRST_PAINT_URL: https://islamilnemrawi.github.io/Elory-store/
         run: node .github/scripts/first-paint-regression.cjs
 
       - name: Audit desktop and mobile storefront
