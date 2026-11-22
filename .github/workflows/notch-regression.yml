@@ -1,0 +1,60 @@
+name: Elory mobile notch regression
+
+on:
+  push:
+    branches:
+      - fix/mobile-notch-header-category-rename-20261122
+    paths:
+      - index.html
+      - .github/scripts/notch-regression.cjs
+      - .github/workflows/notch-regression.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-notch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out storefront
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright and Chromium
+        run: |
+          cd "$RUNNER_TEMP"
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Start local storefront server
+        run: |
+          python3 -m http.server 4173 --directory "$GITHUB_WORKSPACE" > "$RUNNER_TEMP/elory-http.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/elory-http.pid"
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/index.html > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/elory-http.log"
+          exit 1
+
+      - name: Test very slow mobile scrolling and moving edge beam
+        env:
+          NODE_PATH: ${{ runner.temp }}/node_modules
+        run: node .github/scripts/notch-regression.cjs
+
+      - name: Upload mobile screenshots and regression report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: elory-mobile-notch-regression
+          path: reports/
+          if-no-files-found: warn
