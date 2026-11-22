@@ -11407,7 +11407,6 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   const overlay=shell.querySelector(":scope > .elory-notch-overlay");
   const beam=overlay?.querySelector(".elory-notch-beam");
   const beamPath=beam?.querySelector(".elory-notch-beam-path");
-  const beamMotion=beam?.querySelector(".elory-notch-beam-motion");
   let lastBeamWidth=0,lastBeamHeight=0;
 
   // The full navigation remains in normal flow; only this independent overlay is fixed.
@@ -11422,16 +11421,6 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
     beamPath.setAttribute("width",Math.max(1,width-1));
     beamPath.setAttribute("height",Math.max(1,height-1));
     beamPath.setAttribute("rx",Math.max(1,(height-1)/2));
-    if(beamMotion){
-      const radius=Math.max(1,(height-2)/2);
-      const right=width-1,bottom=height-1;
-      const track="M "+radius+" 1 H "+(right-radius)+
-        " A "+radius+" "+radius+" 0 0 1 "+right+" "+(1+radius)+
-        " V "+(bottom-radius)+" A "+radius+" "+radius+" 0 0 1 "+(right-radius)+" "+bottom+
-        " H "+radius+" A "+radius+" "+radius+" 0 0 1 1 "+(bottom-radius)+
-        " V "+(1+radius)+" A "+radius+" "+radius+" 0 0 1 "+radius+" 1 Z";
-      beamMotion.setAttribute("path",track);
-    }
     lastBeamWidth=width;
     lastBeamHeight=height;
   };
