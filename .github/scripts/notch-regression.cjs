@@ -22,8 +22,10 @@ const { chromium } = require("playwright");
     await page.locator("#eloryGlobalStickyShell").waitFor();
     await page.waitForTimeout(2500);
     await page.evaluate(async () => {
+      document.documentElement.style.scrollBehavior = "auto";
+      document.body.style.scrollBehavior = "auto";
       window.scrollTo(0, 0);
-      await new Promise(resolve => requestAnimationFrame(resolve));
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     });
 
     const start = await page.evaluate(() => {
