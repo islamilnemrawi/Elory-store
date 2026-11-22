@@ -66,6 +66,7 @@ const { chromium } = require("playwright");
         })(),
         ordersColor: getComputedStyle(document.getElementById("ordersBtn")).color,
         primeColor: getComputedStyle(document.getElementById("primeHeaderBtn")).color,
+        searchLabelColor: getComputedStyle(document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label")).color,
         beam: (() => {
           const svg = fullNav.querySelector(".elory-reference-nav-beam");
           const path = svg?.querySelector(".elory-reference-nav-beam-path");
@@ -96,13 +97,23 @@ const { chromium } = require("playwright");
       "large notch border must match the compact notch's white edge");
     assert.match(start.navInner.background, /255, 246, 251/i, "large notch background must match the compact notch's pale pink gradient");
     assert.match(start.navInner.background, /255, 224, 239/i, "large notch background must retain the compact notch's middle pink tone");
-    assert.equal(start.ordersColor, "rgb(185, 45, 112)", "Orders text must use the compact notch pink accent for contrast");
-    assert.equal(start.primeColor, "rgb(185, 45, 112)", "Prime text must use the compact notch pink accent for contrast");
+    assert.equal(start.ordersColor, "rgb(159, 31, 91)", "Orders text must use the darker rose accent for clear contrast");
+    assert.equal(start.primeColor, "rgb(159, 31, 91)", "Prime text must use the darker rose accent for clear contrast");
+    assert.equal(start.searchLabelColor, "rgb(159, 31, 91)", "large notch search label must use the same darker rose text accent");
+    const largeBeamMotion = await page.evaluate(async () => {
+      const path = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path");
+      const before = parseFloat(getComputedStyle(path).strokeDashoffset);
+      await new Promise(resolve => setTimeout(resolve, 450));
+      const after = parseFloat(getComputedStyle(path).strokeDashoffset);
+      return { before, after, changed: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5 };
+    });
+    console.log("LARGE_BEAM_MOTION " + JSON.stringify(largeBeamMotion));
+    assert.equal(largeBeamMotion.changed, true, "large notch perimeter beam must visibly travel around the capsule");
     assert.equal(start.beam.exists, true, "large notch must have its own perimeter beam");
     assert.equal(start.beam.tagName, "rect", "large notch beam must trace the complete capsule perimeter like the compact notch");
     assert.ok(Number(start.beam.rx) >= 24, "large notch beam must follow a fully rounded capsule edge");
     assert.notEqual(start.beam.animation, "none", "large notch beam must remain animated even when reduced motion is requested");
-    assert.ok(start.beam.dasharray.includes("92") && start.beam.dasharray.includes("908"), "large notch beam must use the same short moving streak as the compact notch");
+    assert.ok(start.beam.dasharray.includes("118") && start.beam.dasharray.includes("882"), "large notch beam must use the strengthened moving streak");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
