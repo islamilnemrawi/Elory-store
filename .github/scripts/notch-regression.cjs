@@ -79,7 +79,7 @@ const { chromium } = require("playwright");
             stroke: getComputedStyle(path).stroke,
             animation: getComputedStyle(path).animationName,
             linecap: getComputedStyle(path).strokeLinecap,
-            wedgeExists: !!svg?.querySelector(".elory-reference-nav-beam-wedge"),
+            wedgeExists: !!svg?.querySelector(".elory-reference-nav-beam-comet"),
             wedgeDuration: svg?.querySelector(".elory-reference-nav-beam-motion")?.getAttribute("dur")
           } : { exists: false };
         })()
@@ -104,7 +104,7 @@ const { chromium } = require("playwright");
     
     const largeBeamMotion = await page.evaluate(async () => {
       const path = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path");
-      const wedge = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-wedge");
+      const wedge = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet");
       const before = parseFloat(getComputedStyle(path).strokeDashoffset);
       const beforeMatrix = wedge?.getCTM();
       await new Promise(resolve => setTimeout(resolve, 450));
@@ -116,14 +116,14 @@ const { chromium } = require("playwright");
     });
     console.log("LARGE_BEAM_MOTION " + JSON.stringify(largeBeamMotion));
     assert.equal(largeBeamMotion.changed, true, "large notch perimeter timing track must advance");
-    assert.equal(largeBeamMotion.wedgeMoved, true, "large black wedge must visibly move along the capsule perimeter");
+    assert.equal(largeBeamMotion.wedgeMoved, true, "large luminous comet must visibly move along the capsule perimeter");
     assert.equal(start.beam.exists, true, "large notch must have its own perimeter beam");
     assert.equal(start.beam.tagName, "rect", "large notch beam must trace the complete capsule perimeter like the compact notch");
     assert.ok(Number(start.beam.rx) >= 24, "large notch beam must follow a fully rounded capsule edge");
     assert.notEqual(start.beam.animation, "none", "large notch beam must remain animated even when reduced motion is requested");
     assert.ok(start.beam.dasharray.includes("118") && start.beam.dasharray.includes("882"), "large notch retains its invisible perimeter timing track");
-    assert.equal(start.beam.wedgeExists, true, "large notch must render its tapered black wedge");
-    assert.equal(start.beam.wedgeDuration, "5.2s", "large notch wedge must travel at the slower speed");
+    assert.equal(start.beam.wedgeExists, true, "large notch must render its luminous tapered comet");
+    assert.equal(start.beam.wedgeDuration, "5.2s", "large notch comet must travel at the slower speed");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
@@ -276,7 +276,7 @@ const { chromium } = require("playwright");
       const fullNavBox = fullNav.getBoundingClientRect();
       const beam = nav.querySelector(".elory-notch-beam");
       const beamPath = nav.querySelector(".elory-notch-beam-path");
-      const beamWedge = nav.querySelector(".elory-notch-beam-wedge");
+      const beamWedge = nav.querySelector(".elory-notch-beam-comet");
       const beamMotion = nav.querySelector(".elory-notch-beam-motion");
       const buttons = nav.querySelectorAll(".elory-mobile-notch .elory-notch-action:not(.elory-notch-search-close)");
       const cartCenter = document.getElementById("eloryNotchCart").getBoundingClientRect().left +
@@ -333,9 +333,9 @@ const { chromium } = require("playwright");
     assert.equal(notch.searchLabelHidden, true, "compact notch must show the magnifier icon without a text label");
     assert.equal(notch.beamExists, true, "SVG perimeter beam must exist");
     assert.equal(notch.beamDashOffsetChanged, true, "compact notch timing track must move even when reduced motion is requested");
-    assert.equal(notch.wedgeExists, true, "compact notch must render its tapered black wedge");
-    assert.equal(notch.wedgeDuration, "5.2s", "compact notch wedge must travel at the slower speed");
-    assert.equal(notch.wedgeMoved, true, "compact black wedge must visibly move along the capsule perimeter");
+    assert.equal(notch.wedgeExists, true, "compact notch must render its luminous tapered comet");
+    assert.equal(notch.wedgeDuration, "5.2s", "compact notch comet must travel at the slower speed");
+    assert.equal(notch.wedgeMoved, true, "compact luminous comet must visibly move along the capsule perimeter");
     assert.equal(notch.strokeLinecap, "round", "compact notch beam must have rounded head and tail");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
 
