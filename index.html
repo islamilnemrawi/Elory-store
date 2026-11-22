@@ -11549,6 +11549,16 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   }
 
   syncCompact();
+  const syncAfterViewportRestore=()=>{
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      syncCompact();
+      syncBeamGeometry();
+    }));
+  };
+  window.addEventListener("pageshow",syncAfterViewportRestore);
+  window.addEventListener("load",syncAfterViewportRestore,{once:true});
+  window.addEventListener("popstate",syncAfterViewportRestore);
+  syncAfterViewportRestore();
   window.addEventListener("scroll",syncCompact,{passive:true});
   window.addEventListener("resize",()=>{syncCompact();syncBeamGeometry();},{passive:true});
   window.addEventListener("orientationchange",()=>{syncCompact();syncBeamGeometry();},{passive:true});
@@ -11636,7 +11646,7 @@ main#home{margin-top:0!important;padding-top:0!important}
   content:"";
   position:absolute;
   inset:-5px;
-  z-index:0;
+  z-index:2;
   border:2px solid rgba(246,184,206,.72);
   border-radius:inherit;
   box-shadow:0 0 8px 2px rgba(246,184,206,.58),0 0 18px 5px rgba(232,142,175,.38);
@@ -11659,8 +11669,8 @@ main#home{margin-top:0!important;padding-top:0!important}
 /* A single luminous dash follows the actual rounded-rectangle perimeter path. */
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam{
   position:absolute;
-  inset:-1px;
-  z-index:2;
+  inset:0;
+  z-index:3;
   display:block!important;
   width:auto;
   height:auto;
@@ -11679,7 +11689,7 @@ main#home{margin-top:0!important;padding-top:0!important}
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-mobile-notch{
   position:relative;
-  z-index:3;
+  z-index:4;
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
