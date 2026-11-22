@@ -5,6 +5,7 @@ on:
     branches:
       - fix/mobile-notch-header-category-rename-20261122
       - fix/notch-beams-and-audit-20261122
+      - fix/notch-reload-beam-glow-20261122
     paths:
       - index.html
       - .github/scripts/notch-regression.cjs
