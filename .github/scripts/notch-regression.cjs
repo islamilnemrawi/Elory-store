@@ -21,6 +21,10 @@ const { chromium } = require("playwright");
     await page.goto("http://127.0.0.1:4173/index.html", { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.locator("#eloryGlobalStickyShell").waitFor();
     await page.waitForTimeout(2500);
+    await page.evaluate(async () => {
+      window.scrollTo(0, 0);
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    });
 
     const start = await page.evaluate(() => {
       document.documentElement.style.scrollBehavior = "auto";
@@ -29,6 +33,9 @@ const { chromium } = require("playwright");
       const fullNavBox = fullNav.getBoundingClientRect();
       return {
         viewport: { width: innerWidth, height: innerHeight },
+        scrollY: window.scrollY,
+        bodyScrollTop: document.body.scrollTop,
+        rootScrollTop: document.documentElement.scrollTop,
         shellHeight: shell.getBoundingClientRect().height,
         fullNavSize: { width: fullNavBox.width, height: fullNavBox.height },
         documentHeight: document.documentElement.scrollHeight,
@@ -39,7 +46,9 @@ const { chromium } = require("playwright");
         maxScroll: Math.max(0, document.documentElement.scrollHeight - innerHeight)
       };
     });
+    console.log("START_STATE " + JSON.stringify(start));
     assert.deepEqual(start.viewport, { width: 390, height: 844 }, "must run at a real 390x844 CSS viewport");
+    assert.equal(start.scrollY, 0, "regression test must begin at page top");
     assert.equal(start.compact, false, "page must start in full-header state");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
