@@ -5001,12 +5001,12 @@ main#home{
       <feGaussianBlur stdDeviation="3.2"/>
     </filter>
   </defs>
-  <rect class="elory-reference-nav-beam-path" x="7.5" y="7.5" width="885" height="45" rx="22.5" pathLength="1000" stroke="transparent"/>
+  <rect class="elory-reference-nav-beam-path" x="4.5" y="4.5" width="891" height="51" rx="25.5" pathLength="1000" stroke="transparent"/>
   <path class="elory-reference-nav-beam-motion-track" d="M30 1 H870 A29 29 0 0 1 899 30 V30 A29 29 0 0 1 870 59 H30 A29 29 0 0 1 1 30 V30 A29 29 0 0 1 30 1 Z" fill="none"/>
-  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-glow" x="7.5" y="7.5" width="885" height="45" rx="22.5" pathLength="1000"/>
-  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-mid" x="7.5" y="7.5" width="885" height="45" rx="22.5" pathLength="1000"/>
-  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-core" x="7.5" y="7.5" width="885" height="45" rx="22.5" pathLength="1000"/>
-  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-head" x="7.5" y="7.5" width="885" height="45" rx="22.5" pathLength="1000"/>
+  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-glow" x="4.5" y="4.5" width="891" height="51" rx="25.5" pathLength="1000"/>
+  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-mid" x="4.5" y="4.5" width="891" height="51" rx="25.5" pathLength="1000"/>
+  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-core" x="4.5" y="4.5" width="891" height="51" rx="25.5" pathLength="1000"/>
+  <rect class="elory-reference-nav-beam-comet-layer elory-reference-nav-beam-comet-head" x="4.5" y="4.5" width="891" height="51" rx="25.5" pathLength="1000"/>
 </svg>
 <button class="nav-prime-btn" id="primeHeaderBtn" title="Elory Prime" type="button">Elory Prime</button>
 <button class="nav-orders-btn header-orders-btn" id="ordersBtn" title="طلباتي" type="button"><span>طلباتي</span><span class="nav-orders-count" id="ordersCount" style="display:none">0</span></button>
@@ -5049,12 +5049,12 @@ main#home{
       <feGaussianBlur stdDeviation="3.2"/>
     </filter>
   </defs>
-  <rect class="elory-notch-beam-path" x="7.5" y="7.5" width="209" height="51" rx="25.5" pathLength="1000" stroke="transparent"/>
+  <rect class="elory-notch-beam-path" x="4.5" y="4.5" width="215" height="57" rx="28.5" pathLength="1000" stroke="transparent"/>
   <path class="elory-notch-beam-motion-track" d="M33 1 H191 A32 32 0 0 1 223 33 V33 A32 32 0 0 1 191 65 H33 A32 32 0 0 1 1 33 V33 A32 32 0 0 1 33 1 Z" fill="none"/>
-  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-glow" x="7.5" y="7.5" width="209" height="51" rx="25.5" pathLength="1000"/>
-  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-mid" x="7.5" y="7.5" width="209" height="51" rx="25.5" pathLength="1000"/>
-  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-core" x="7.5" y="7.5" width="209" height="51" rx="25.5" pathLength="1000"/>
-  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-head" x="7.5" y="7.5" width="209" height="51" rx="25.5" pathLength="1000"/>
+  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-glow" x="4.5" y="4.5" width="215" height="57" rx="28.5" pathLength="1000"/>
+  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-mid" x="4.5" y="4.5" width="215" height="57" rx="28.5" pathLength="1000"/>
+  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-core" x="4.5" y="4.5" width="215" height="57" rx="28.5" pathLength="1000"/>
+  <rect class="elory-notch-beam-comet-layer elory-notch-beam-comet-head" x="4.5" y="4.5" width="215" height="57" rx="28.5" pathLength="1000"/>
 </svg>
 </div>
 </div>
@@ -11432,11 +11432,11 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
     beamPath.setAttribute("rx",Math.max(1,(height-1)/2));
     beam.querySelectorAll(".elory-notch-beam-comet-layer").forEach(layer=>{
       // Keep the comet stroke safely inside the SVG viewport so its glow is not clipped.
-      layer.setAttribute("x","7.5");
-      layer.setAttribute("y","7.5");
-      layer.setAttribute("width",Math.max(1,width-15));
-      layer.setAttribute("height",Math.max(1,height-15));
-      layer.setAttribute("rx",Math.max(1,(height-15)/2));
+      layer.setAttribute("x","4.5");
+      layer.setAttribute("y","4.5");
+      layer.setAttribute("width",Math.max(1,width-9));
+      layer.setAttribute("height",Math.max(1,height-9));
+      layer.setAttribute("rx",Math.max(1,(height-9)/2));
     });
     lastBeamWidth=width;
     lastBeamHeight=height;
