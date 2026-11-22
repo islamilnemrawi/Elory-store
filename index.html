@@ -6496,6 +6496,8 @@ main#home{margin-top:0!important;padding-top:0!important}
       const active = storeCategories.filter(c => c && c.active !== false && String(c.name || "").trim());
       if (!active.length) {
         firstSet.innerHTML = '<div class="loading">لا توجد أقسام منشورة حالياً.</div>';
+        firstSet.setAttribute("aria-busy","false");
+        firstSet.removeAttribute("aria-label");
         track.querySelectorAll('[data-category-clone="true"]').forEach(node => node.remove());
         track.style.animation = "none";
         track.style.transform = "translate3d(0,0,0)";
@@ -6518,6 +6520,8 @@ main#home{margin-top:0!important;padding-top:0!important}
         return `<button type="button" class="category-card" data-category="${escapeHtml(safeCategory)}" aria-label="فتح قسم ${escapeHtml(safeCategory)}">${imageHtml}<div class="category-name">${escapeHtml(safeCategory)}</div>${textHtml}</button>`;
       }).join("");
       firstSet.innerHTML = cardHtml;
+      firstSet.setAttribute("aria-busy","false");
+      firstSet.removeAttribute("aria-label");
       renderMenuCategories();
       if(document.getElementById("shopPage")?.classList.contains("show")) renderCategoryContextNav();
       track.querySelectorAll('[data-category-clone="true"]').forEach(node => node.remove());
