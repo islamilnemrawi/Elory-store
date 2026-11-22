@@ -79,8 +79,8 @@ const { chromium } = require("playwright");
             stroke: getComputedStyle(path).stroke,
             animation: getComputedStyle(path).animationName,
             linecap: getComputedStyle(path).strokeLinecap,
-            wedgeExists: !!svg?.querySelector(".elory-reference-nav-beam-comet"),
-            wedgeDuration: svg?.querySelector(".elory-reference-nav-beam-motion")?.getAttribute("dur")
+            wedgeExists: svg?.querySelectorAll(".elory-reference-nav-beam-comet-layer").length === 4,
+            wedgeDuration: svg ? getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDuration : null
           } : { exists: false };
         })()
       };
@@ -104,14 +104,13 @@ const { chromium } = require("playwright");
     
     const largeBeamMotion = await page.evaluate(async () => {
       const path = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path");
-      const wedge = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet");
+      const head = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet-head");
       const before = parseFloat(getComputedStyle(path).strokeDashoffset);
-      const beforeMatrix = wedge?.getCTM();
+      const beforeHead = parseFloat(getComputedStyle(head).strokeDashoffset);
       await new Promise(resolve => setTimeout(resolve, 450));
       const after = parseFloat(getComputedStyle(path).strokeDashoffset);
-      const afterMatrix = wedge?.getCTM();
-      const wedgeMoved = !!beforeMatrix && !!afterMatrix &&
-        (Math.abs(afterMatrix.e-beforeMatrix.e)>2 || Math.abs(afterMatrix.f-beforeMatrix.f)>2);
+      const afterHead = parseFloat(getComputedStyle(head).strokeDashoffset);
+      const wedgeMoved = Number.isFinite(beforeHead) && Number.isFinite(afterHead) && Math.abs(afterHead-beforeHead)>5;
       return { before, after, changed: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5, wedgeMoved };
     });
     console.log("LARGE_BEAM_MOTION " + JSON.stringify(largeBeamMotion));
@@ -276,8 +275,8 @@ const { chromium } = require("playwright");
       const fullNavBox = fullNav.getBoundingClientRect();
       const beam = nav.querySelector(".elory-notch-beam");
       const beamPath = nav.querySelector(".elory-notch-beam-path");
-      const beamWedge = nav.querySelector(".elory-notch-beam-comet");
-      const beamMotion = nav.querySelector(".elory-notch-beam-motion");
+      const beamWedge = nav.querySelector(".elory-notch-beam-comet-head");
+      const cometLayers = nav.querySelectorAll(".elory-notch-beam-comet-layer");
       const buttons = nav.querySelectorAll(".elory-mobile-notch .elory-notch-action:not(.elory-notch-search-close)");
       const cartCenter = document.getElementById("eloryNotchCart").getBoundingClientRect().left +
         document.getElementById("eloryNotchCart").getBoundingClientRect().width / 2;
@@ -286,12 +285,11 @@ const { chromium } = require("playwright");
       const searchCenter = document.getElementById("eloryNotchSearchButton").getBoundingClientRect().left +
         document.getElementById("eloryNotchSearchButton").getBoundingClientRect().width / 2;
       const before = parseFloat(getComputedStyle(beamPath).strokeDashoffset);
-      const beforeWedgeMatrix = beamWedge?.getCTM();
+      const beforeWedgeOffset = parseFloat(getComputedStyle(beamWedge).strokeDashoffset);
       await new Promise(resolve => setTimeout(resolve, 450));
       const after = parseFloat(getComputedStyle(beamPath).strokeDashoffset);
-      const afterWedgeMatrix = beamWedge?.getCTM();
-      const wedgeMoved = !!beforeWedgeMatrix && !!afterWedgeMatrix &&
-        (Math.abs(afterWedgeMatrix.e-beforeWedgeMatrix.e)>2 || Math.abs(afterWedgeMatrix.f-beforeWedgeMatrix.f)>2);
+      const afterWedgeOffset = parseFloat(getComputedStyle(beamWedge).strokeDashoffset);
+      const wedgeMoved = Number.isFinite(beforeWedgeOffset) && Number.isFinite(afterWedgeOffset) && Math.abs(afterWedgeOffset-beforeWedgeOffset)>5;
       const navBox = nav.getBoundingClientRect();
       const beamBox = beam.getBoundingClientRect();
       return {
@@ -309,10 +307,9 @@ const { chromium } = require("playwright");
         searchLabelHidden: getComputedStyle(document.querySelector(".elory-notch-search-label")).display === "none",
         beamExists: !!beamPath,
         beamDashOffsetChanged: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5,
-        wedgeExists: !!beamWedge,
-        wedgeDuration: beamMotion?.getAttribute("dur"),
+        wedgeExists: cometLayers.length === 4,
+        wedgeDuration: getComputedStyle(beamWedge).animationDuration,
         wedgeMoved,
-        wedgeTrackUpdated: (beamMotion?.getAttribute("path") || "").includes(String(Math.round(navBox.width)-1)),
         beamBox: { left: beamBox.left, top: beamBox.top, width: beamBox.width, height: beamBox.height },
         navBox: { left: navBox.left, top: navBox.top, width: navBox.width, height: navBox.height },
         beamOffset: { left: beamBox.left-navBox.left, top: beamBox.top-navBox.top, width: beamBox.width-navBox.width, height: beamBox.height-navBox.height },
