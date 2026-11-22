@@ -11369,16 +11369,24 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   const shell=document.getElementById("eloryGlobalStickyShell");
   if(!shell)return;
   const root=document.documentElement;
+
+  let compactState=null;
+  let lastMeasuredHeight=-1;
   const update=()=>{
     const height=Math.ceil(shell.getBoundingClientRect().height||0);
-    root.style.setProperty("--elory-global-sticky-height",height+"px");
+    if(height!==lastMeasuredHeight){
+      root.style.setProperty("--elory-global-sticky-height",height+"px");
+      lastMeasuredHeight=height;
+    }
   };
   const syncCompact=()=>{
     const scrollTop=window.pageYOffset||root.scrollTop||document.body.scrollTop||0;
     const compact=scrollTop>72;
+    if(compact===compactState)return;
+    compactState=compact;
     shell.classList.toggle("elory-notch-compact",compact);
     if(!compact)shell.classList.remove("elory-notch-search-open");
-    update();
+    requestAnimationFrame(update);
   };
   const bindNotchAction=(id,selector)=>{
     const button=document.getElementById(id);
@@ -11427,11 +11435,10 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   update();
   syncCompact();
   window.addEventListener("scroll",syncCompact,{passive:true});
-  document.addEventListener("scroll",syncCompact,{passive:true,capture:true});
   window.addEventListener("resize",syncCompact,{passive:true});
   window.addEventListener("orientationchange",syncCompact,{passive:true});
   if("ResizeObserver" in window){
-    const observer=new ResizeObserver(update);
+    const observer=new ResizeObserver(()=>requestAnimationFrame(update));
     observer.observe(shell);
   }
 })();
@@ -11538,11 +11545,21 @@ main#home{
   content:"";
   position:absolute;
   inset:-1px;
-  z-index:0;
+  z-index:2;
   border-radius:inherit;
-  background:conic-gradient(from 0deg,#ffe7a8 0deg,#ff69ad 52deg,#f8d8ff 105deg,#b76cff 158deg,#ff8dc2 220deg,#fff2bd 278deg,#e64a99 330deg,#ffe7a8 360deg);
-  animation:eloryNotchRimSpin 3.2s linear infinite;
-  filter:saturate(1.15);
+  background:conic-gradient(from 0deg,
+    transparent 0deg 292deg,
+    rgba(255,105,173,.10) 304deg,
+    rgba(255,220,244,.85) 324deg,
+    #fff6ce 337deg,
+    #ff5eae 347deg,
+    rgba(183,108,255,.9) 355deg,
+    transparent 360deg);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));
+  animation:eloryNotchRimSpin 2.8s linear infinite;
+  filter:drop-shadow(0 0 3px rgba(255,93,174,.8));
+  pointer-events:none;
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav::after{
   content:"";
@@ -11566,7 +11583,7 @@ main#home{
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-mobile-notch{
   position:relative;
-  z-index:2;
+  z-index:3;
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
