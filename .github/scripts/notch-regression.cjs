@@ -118,13 +118,17 @@ const { chromium } = require("playwright");
         const svg=document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam");
         return {style:svg.dataset.beamStyle,secondaryOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-secondary-head")).opacity,
           ringOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-ring")).opacity,
+          glowOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-glow")).opacity,
+          midOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-mid")).opacity,
           glowWidth:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-glow")).strokeWidth,duration:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDuration};
       }));
     }
     assert.deepEqual(fullBeamStyles.map(x=>x.style),["1","2","3","4"],"all four full-size lighting styles must be independently selectable");
     assert.deepEqual(fullBeamStyles.map(x=>x.duration),["18s","18s","18s","18s"],"all four full-size styles must share one continuous animation pace");
     assert.ok(Number(fullBeamStyles[1].secondaryOpacity)>0,"style 2 must show its opposing second comet");
-    assert.ok(Number(fullBeamStyles[2].ringOpacity)>0,"style 3 must show its breathing perimeter halo");
+    assert.ok(Number(fullBeamStyles[2].ringOpacity)>=.9,"style 3 must retain a bright static halo when reduced motion is requested");
+    assert.equal(Number(fullBeamStyles[2].glowOpacity),0,"reduced-motion mode must not freeze a glow dash at the upper-left path origin");
+    assert.equal(Number(fullBeamStyles[2].midOpacity),0,"reduced-motion mode must not freeze a mid-layer dash at the upper-left path origin");
     assert.ok(parseFloat(fullBeamStyles[3].glowWidth)>parseFloat(fullBeamStyles[0].glowWidth),"style 4 must have a visibly broader aurora ribbon");
 
     const largeBeamMotion = await page.evaluate(async () => {
@@ -207,7 +211,7 @@ const { chromium } = require("playwright");
                 audit.cls += entry.value;
                 const sources = Array.from(entry.sources || []).map(source => {
                   const node = source.node;
-                  const name = node ? node.tagName.toLowerCase() +
+                  const name = node && node.tagName ? node.tagName.toLowerCase() +
                     (node.id ? "#" + node.id : "") +
                     (typeof node.className === "string" && node.className.trim() ? "." + node.className.trim().split(/\s+/).join(".") : "") : "unknown";
                   return { node: name, previousRect: source.previousRect, currentRect: source.currentRect };
@@ -397,6 +401,8 @@ const { chromium } = require("playwright");
         return {full:full.dataset.beamStyle,compact:compact.dataset.beamStyle,
           secondaryOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-secondary-head")).opacity,
           ringOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-ring")).opacity,
+          glowOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-glow")).opacity,
+          midOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-mid")).opacity,
           glowWidth:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-glow")).strokeWidth,duration:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).animationDuration};
       }));
     }
@@ -404,7 +410,9 @@ const { chromium } = require("playwright");
     assert.deepEqual(compactBeamStyles.map(x=>x.duration),["18s","18s","18s","18s"],"all four compact styles must share one continuous animation pace");
     assert.ok(compactBeamStyles.every(x=>x.full===x.compact),"large and compact notches must always use the same selected style");
     assert.ok(Number(compactBeamStyles[1].secondaryOpacity)>0,"compact style 2 must show its opposing second comet");
-    assert.ok(Number(compactBeamStyles[2].ringOpacity)>0,"compact style 3 must show its breathing perimeter halo");
+    assert.ok(Number(compactBeamStyles[2].ringOpacity)>=.9,"compact style 3 must retain a bright static halo when reduced motion is requested");
+    assert.equal(Number(compactBeamStyles[2].glowOpacity),0,"compact reduced-motion mode must not freeze a glow dash at the upper-left path origin");
+    assert.equal(Number(compactBeamStyles[2].midOpacity),0,"compact reduced-motion mode must not freeze a mid-layer dash at the upper-left path origin");
     assert.ok(parseFloat(compactBeamStyles[3].glowWidth)>parseFloat(compactBeamStyles[0].glowWidth),"compact style 4 must have a visibly broader aurora ribbon");
 
     const compactSearchButton = page.locator("#eloryNotchSearchButton");
