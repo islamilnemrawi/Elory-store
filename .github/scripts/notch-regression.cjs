@@ -47,13 +47,55 @@ const { chromium } = require("playwright");
         shellPosition: getComputedStyle(shell).position,
         headerVisibility: getComputedStyle(shell.querySelector(".header")).visibility,
         navCount: shell.querySelectorAll(":scope > .elory-reference-nav").length,
-        maxScroll: Math.max(0, document.documentElement.scrollHeight - innerHeight)
+        maxScroll: Math.max(0, document.documentElement.scrollHeight - innerHeight),
+        navInner: (() => {
+          const inner = fullNav.querySelector(".elory-reference-nav-inner");
+          const box = inner.getBoundingClientRect();
+          const orders = document.getElementById("ordersBtn").getBoundingClientRect();
+          const style = getComputedStyle(inner);
+          return {
+            width: box.width,
+            height: box.height,
+            centerOffset: Math.abs((orders.left + orders.width / 2) - (box.left + box.width / 2)),
+            background: style.backgroundImage + " " + style.backgroundColor,
+            borderColor: style.borderTopColor,
+            borderRadius: style.borderTopLeftRadius,
+            gap: parseFloat(style.columnGap)
+          };
+        })(),
+        ordersColor: getComputedStyle(document.getElementById("ordersBtn")).color,
+        primeColor: getComputedStyle(document.getElementById("primeHeaderBtn")).color,
+        beam: (() => {
+          const svg = fullNav.querySelector(".elory-reference-nav-beam");
+          const path = svg?.querySelector(".elory-reference-nav-beam-path");
+          return path ? {
+            exists: true,
+            d: path.getAttribute("d"),
+            dasharray: getComputedStyle(path).strokeDasharray,
+            stroke: getComputedStyle(path).stroke,
+            animation: getComputedStyle(path).animationName
+          } : { exists: false };
+        })()
       };
     });
     console.log("START_STATE " + JSON.stringify(start));
     assert.deepEqual(start.viewport, { width: 390, height: 844 }, "must run at a real 390x844 CSS viewport");
     assert.equal(start.scrollY, 0, "regression test must begin at page top");
     assert.equal(start.compact, false, "page must start in full-header state");
+    assert.ok(start.navInner.width < start.viewport.width - 12, "large navigation must render as a separate centered notch, not a full-width strip");
+    assert.ok(start.navInner.height >= 50, "large navigation notch must have a substantial capsule height");
+    assert.ok(start.navInner.centerOffset <= 2, "Orders label must be centered in the large notch");
+    assert.ok(start.navInner.gap <= 8, "large notch actions must have compact spacing");
+    assert.ok(start.navInner.borderRadius.includes("px") && parseFloat(start.navInner.borderRadius) >= 24,
+      "large notch must have a true rounded capsule edge");
+    assert.equal(start.ordersColor, "rgb(255, 255, 255)", "Orders text must use the notch's white contrast color");
+    assert.equal(start.primeColor, "rgb(255, 255, 255)", "Prime text must use the notch's white contrast color");
+    assert.equal(start.beam.exists, true, "large notch must have its own perimeter beam");
+    assert.match(start.beam.d, /M\s*\d+(?:\.\d+)?\s+\d+(?:\.\d+)?/i, "large notch beam must use an explicit side-and-bottom path");
+    assert.ok(!/M\s*\d+(?:\.\d+)?\s+\d+(?:\.\d+)?\s+H\s*\d+/i.test(start.beam.d),
+      "large notch beam must not draw a horizontal top edge");
+    assert.equal(start.beam.animation, "eloryReferenceBeamTravel", "large notch beam must animate as a moving head and tail");
+    assert.ok(start.beam.dasharray !== "none", "large notch beam must have a finite luminous streak");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
