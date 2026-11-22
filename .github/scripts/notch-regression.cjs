@@ -291,6 +291,14 @@ const { chromium } = require("playwright");
     assert.ok(scrollAudit.toggles.filter(x => x.compact).every(x => x.scrollY >= 88), "compact mode must engage only after its enter threshold");
     assert.ok(scrollAudit.toggles.filter(x => !x.compact).every(x => x.scrollY <= 48), "full header must return only after the exit threshold");
 
+    await page.evaluate(() => {
+      const shell=document.getElementById("eloryGlobalStickyShell");
+      shell.querySelectorAll(".elory-reference-nav-beam,.elory-notch-beam").forEach(svg=>{
+        svg.classList.remove("elory-beam-style-1","elory-beam-style-2","elory-beam-style-4");
+        svg.classList.add("elory-beam-style-3");
+        svg.dataset.beamStyle="3";
+      });
+    });
     await page.evaluate(() => window.scrollTo(0, 180));
     await page.waitForTimeout(350);
     const fixedStyleAfterScroll = await page.evaluate(() => {
