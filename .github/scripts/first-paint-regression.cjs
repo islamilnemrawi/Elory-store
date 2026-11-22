@@ -79,7 +79,7 @@ async function runViewport(browser, viewport) {
               sources: (entry.sources || []).map(source => {
                 const node = source.node;
                 return {
-                  node: node ? node.tagName.toLowerCase() : null,
+                  node: node?.tagName?.toLowerCase?.() || null,
                   id: node?.id || null,
                   className: typeof node?.className === "string" ? node.className : null,
                   previousRect: source.previousRect ? {
@@ -105,6 +105,10 @@ async function runViewport(browser, viewport) {
     results.httpStatus = response ? response.status() : null;
     assert.ok(response && response.status() < 400, viewport.name + ": storefront must return HTTP < 400");
 
+    await page.evaluate(() => {
+      history.scrollRestoration = "manual";
+      window.scrollTo(0, 0);
+    });
     const started = Date.now();
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     for (const checkpoint of checkpoints) {
@@ -112,6 +116,8 @@ async function runViewport(browser, viewport) {
       if (remaining > 0) await wait(remaining);
       const state = await sample(page, String(checkpoint) + "ms");
       results.samples.push(state);
+      assert.ok(state.scrollY <= 5,
+        viewport.name + " " + state.label + ": first-paint audit must remain at the top of the storefront");
       assertPainted(state, viewport.name);
       await page.screenshot({
         path: path.join(OUT, viewport.name + "-" + String(checkpoint).padStart(4, "0") + "ms.png"),
