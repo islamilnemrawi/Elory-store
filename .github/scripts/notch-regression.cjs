@@ -61,13 +61,6 @@ const { chromium } = require("playwright");
     // Header search must behave as a true toggle and preserve the original Prime/Orders actions.
     const headerSearch = page.locator("#eloryGlobalStickyShell > .elory-reference-nav");
     const headerSearchButton = page.locator("#eloryHeaderSearchButton");
-    console.log("HEADER_SEARCH_INITIAL " + JSON.stringify(await headerSearchButton.evaluate(el => ({
-      button: { display:getComputedStyle(el).display, visibility:getComputedStyle(el).visibility, opacity:getComputedStyle(el).opacity, rect:el.getBoundingClientRect().toJSON() },
-      parent: { display:getComputedStyle(el.parentElement).display, visibility:getComputedStyle(el.parentElement).visibility, rect:el.parentElement.getBoundingClientRect().toJSON() },
-      line: { display:getComputedStyle(el.closest(".header-search-line")).display, visibility:getComputedStyle(el.closest(".header-search-line")).visibility, rect:el.closest(".header-search-line").getBoundingClientRect().toJSON() },
-      nav: { display:getComputedStyle(el.closest(".elory-reference-nav")).display, visibility:getComputedStyle(el.closest(".elory-reference-nav")).visibility, rect:el.closest(".elory-reference-nav").getBoundingClientRect().toJSON() },
-      shell: { className:el.closest("#eloryGlobalStickyShell").className }
-    }))));
     await headerSearchButton.click();
     await page.waitForTimeout(250);
     assert.equal(await headerSearch.evaluate(el => el.classList.contains("elory-header-search-open")), true,
