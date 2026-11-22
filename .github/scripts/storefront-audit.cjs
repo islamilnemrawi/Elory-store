@@ -74,33 +74,33 @@ async function inspectTarget(browser, target, viewport) {
       disabled: !!el.disabled, visible: (() => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.display !== "none" && s.visibility !== "hidden"; })(),
       inForm: !!el.closest("form"), id: el.id || ""
     })));
-    for (const b of buttonMeta) {
-      if (!b.visible || b.disabled) continue;
-      const label = [b.text, b.aria, b.title, b.id].join(" ");
-      if (b.type === "submit" || b.inForm || blockedAction.test(label)) {
-        result.skippedButtons.push({ ...b, reason: "potentially destructive, purchase, or form-submit action" });
-        continue;
-      }
+    // Do not click arbitrary storefront controls: many buttons trigger cart, auth,
+    // navigation, or third-party flows. Inventory them without changing user state.
+    result.buttonInventory = buttonMeta.map(b => ({
+      ...b,
+      action: b.type === "submit" || b.inForm || blockedAction.test([b.text, b.aria, b.title, b.id].join(" "))
+        ? "sensitive-or-form"
+        : "requires-dedicated-functional-test"
+    }));
+    result.skippedButtons = result.buttonInventory.map(b => ({
+      index: b.index, text: b.text, id: b.id,
+      reason: "not clicked by the non-destructive audit"
+    }));
+    const base = new URL(target.url);
+    const hrefs = [...new Set(result.internalLinks.map(x => x.href).filter(h => {
       try {
-        await page.locator("button,[role=button]").nth(b.index).click({ timeout: 3500 });
-        await wait(350);
-        result.testedButtons.push({ ...b, result: "clicked", resultingUrl: page.url() });
-        if (page.url() !== target.url && new URL(page.url()).origin === new URL(target.url()).origin) {
-          await page.goto(target.url, { waitUntil: "domcontentloaded", timeout: 20000 }); await wait(700);
-        } else {
-          await page.reload({ waitUntil: "domcontentloaded", timeout: 20000 }); await wait(500);
-        }
-      } catch (e) {
-        result.testedButtons.push({ ...b, result: "failed", error: String(e).slice(0, 500) });
-        try { await page.goto(target.url, { waitUntil: "domcontentloaded", timeout: 20000 }); await wait(500); } catch {}
-      }
-    }
-    const hrefs = [...new Set(result.internalLinks.map(x => x.href).filter(h => h && !h.endsWith("#")))].slice(0, 80);
+        const u = new URL(h);
+        return u.origin === base.origin && (u.pathname !== base.pathname || u.search !== base.search) &&
+          !blockedAction.test(u.pathname + " " + u.search);
+      } catch { return false; }
+    }))].slice(0, 80);
     for (const href of hrefs) {
       try {
-        const res = await page.goto(href, { waitUntil: "domcontentloaded", timeout: 15000 });
-        result.testedLinks.push({ href, status: res?.status() ?? null, result: res && res.status() < 400 ? "loaded" : "http-error" });
-      } catch (e) { result.testedLinks.push({ href, result: "navigation-failed", error: String(e).slice(0, 300) }); }
+        const res = await context.request.get(href, { timeout: 15000 });
+        result.testedLinks.push({ href, status: res.status(), result: res.ok() ? "loaded" : "http-error" });
+      } catch (e) {
+        result.testedLinks.push({ href, result: "request-failed", error: String(e).slice(0, 300) });
+      }
     }
   } catch (e) { result.fatalError = String(e).slice(0, 1000); }
   finally { await context.close(); }
