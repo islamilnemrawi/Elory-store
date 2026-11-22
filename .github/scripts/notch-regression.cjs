@@ -70,6 +70,8 @@ const { chromium } = require("playwright");
           const path = svg?.querySelector(".elory-reference-nav-beam-path");
           return path ? {
             exists: true,
+            tagName: path.tagName.toLowerCase(),
+            rx: path.getAttribute("rx"),
             d: path.getAttribute("d"),
             dasharray: getComputedStyle(path).strokeDasharray,
             stroke: getComputedStyle(path).stroke,
@@ -95,9 +97,10 @@ const { chromium } = require("playwright");
     assert.equal(start.ordersColor, "rgb(255, 255, 255)", "Orders text must match the compact notch action-icon color");
     assert.equal(start.primeColor, "rgb(255, 255, 255)", "Prime text must match the compact notch action-icon color");
     assert.equal(start.beam.exists, true, "large notch must have its own perimeter beam");
-    assert.match(start.beam.d, /<rect-not-used>/i, "large notch beam must trace the complete capsule perimeter");
+    assert.equal(start.beam.tagName, "rect", "large notch beam must trace the complete capsule perimeter like the compact notch");
+    assert.ok(Number(start.beam.rx) >= 24, "large notch beam must follow a fully rounded capsule edge");
     assert.equal(start.beam.animation, "eloryReferenceBeamTravel", "large notch beam must animate continuously");
-    assert.match(start.beam.dasharray, /92px?,\\s*908px?/i, "large notch beam must use the same short moving streak as the compact notch");
+    assert.ok(start.beam.dasharray.includes("92") && start.beam.dasharray.includes("908"), "large notch beam must use the same short moving streak as the compact notch");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
