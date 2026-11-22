@@ -128,17 +128,17 @@ window.ELORY_PAYMENT_CONFIG = Object.freeze({
        ========================================================= */
 
     :root {
-      --bg: #fffafb;
+      --bg: #fff8fa;
       --surface: #ffffff;
-      --surface-2: #fdf2f6;
+      --surface-2: #f6dde6;
 
       --text: #292126;
       --muted: #81747a;
 
-      --pink: #d96b91;
-      --pink-dark: #b94e75;
-      --pink-light: #f8dce6;
-      --pink-soft: #fff0f5;
+      --pink: #e9a6bc;
+      --pink-dark: #c987a0;
+      --pink-light: #f6dde6;
+      --pink-soft: #fff8fa;
 
       --gold: #b79552;
       --gold-light: #e7d39b;
@@ -161,20 +161,20 @@ window.ELORY_PAYMENT_CONFIG = Object.freeze({
     /* ================= PRIME THEME ================= */
 
     body.prime-mode {
-      /* Prime changes brand accents only; all neutral layout tokens match the standard store. */
-      --bg: #fffafb;
+      /* Prime owns a separate lavender palette; shared neutrals stay neutral. */
+      --bg: #faf7fe;
       --surface: #ffffff;
-      --surface-2: #fdf2f6;
+      --surface-2: #e9ddf6;
       --text: #292126;
-      --muted: #81747a;
-      --pink: #A56BD5;
-      --pink-dark: #8952BC;
-      --pink-light: #E5D3F5;
-      --pink-soft: #F3EAFB;
+      --muted: #81748a;
+      --pink: #bda4df;
+      --pink-dark: #967ebb;
+      --pink-light: #e9ddf6;
+      --pink-soft: #faf7fe;
       --gold: #b79552;
       --gold-light: #e7d39b;
-      --border: #E5D3F5;
-      --announcement: #8952BC;
+      --border: #e9ddf6;
+      --announcement: #967ebb;
       --shadow-sm: 0 4px 18px rgba(79, 38, 52, .07);
       --shadow: 0 12px 35px rgba(79, 38, 52, .10);
       --shadow-lg: 0 22px 60px rgba(79, 38, 52, .16);
@@ -3835,12 +3835,12 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
 <style id="elory-final-soft-pink-category-polish">
 /* FINAL VISUAL POLISH — soft pink palette, complete category-logo fallback, elegant circles. */
 :root{
-  --pink:#c97899;
-  --pink-dark:#ad5f7f;
-  --pink-light:#e7b5c7;
-  --pink-soft:#f7e1e8;
-  --announcement:#ad7089;
-  --border:#ead8e0;
+  --pink:#e9a6bc;
+  --pink-dark:#c987a0;
+  --pink-light:#f6dde6;
+  --pink-soft:#fff8fa;
+  --announcement:#c987a0;
+  --border:#eadfe4;
 }
 
 /* Keep Prime's mauve theme intact; the softer palette above applies to the normal store only. */
@@ -4401,25 +4401,25 @@ main#home > .header .hg-icon-v19{
 <style id="elory-stable-final-fix">
 /* ELORY — consolidated V14 visual/navigation fix. One final visual layer only. */
 :root{
-  --elory-ref-top:#d9437e;
-  --elory-ref-top-soft:#ef86aa;
-  --elory-ref-header:#ffd4df;
-  --elory-ref-header-mid:#f8bdcd;
-  --elory-ref-header-deep:#e9a5b9;
-  --elory-ref-nav-a:#f3b6c7;
-  --elory-ref-nav-mid:#efacbf;
-  --elory-ref-nav-b:#dc91ab;
-  --elory-ref-hero-a:#e69caf;
-  --elory-ref-hero-mid:#f4bcc8;
-  --elory-ref-hero-b:#e8a6b8;
-  --elory-ref-icon:#d9437e;
-  --elory-ref-icon-deep:#b92b68;
-  --elory-ref-cream:#fdf8f2;
+  --elory-ref-top:var(--pink);
+  --elory-ref-top-soft:var(--pink-light);
+  --elory-ref-header:var(--pink-soft);
+  --elory-ref-header-mid:var(--pink-light);
+  --elory-ref-header-deep:var(--pink);
+  --elory-ref-nav-a:var(--pink-light);
+  --elory-ref-nav-mid:var(--pink-light);
+  --elory-ref-nav-b:var(--pink);
+  --elory-ref-hero-a:var(--pink);
+  --elory-ref-hero-mid:var(--pink-light);
+  --elory-ref-hero-b:var(--pink);
+  --elory-ref-icon:var(--pink);
+  --elory-ref-icon-deep:var(--pink-dark);
+  --elory-ref-cream:var(--bg);
 }
 
 /* The three upper surfaces are deliberately related, but never flat: the light source stays near the logo. */
 .announcement{
-  background:linear-gradient(90deg,#d9437e 0%,#ef86aa 50%,#d9437e 100%) !important;
+  background:linear-gradient(90deg,var(--pink-dark) 0%,var(--pink) 50%,var(--pink-dark) 100%) !important;
 }
 .header{
   position:relative !important;
@@ -4432,7 +4432,7 @@ main#home > .header .hg-icon-v19{
 }
 .header-main-wrap,.header-top-line{background:transparent !important;}
 .hg-icon-v19{
-  background:linear-gradient(145deg,#e56f99 0%,#d9437e 46%,#b92b68 100%) !important;
+  background:linear-gradient(145deg,var(--pink) 0%,var(--pink-dark) 100%) !important;
   color:#fff !important;
   border:1px solid rgba(255,255,255,.82) !important;
   box-shadow:0 5px 14px rgba(189,42,104,.20) !important;
@@ -4473,12 +4473,12 @@ main#home > .header .hg-icon-v19{
   border:0 !important;
   border-radius:999px !important;
   background:transparent !important;
-  color:#7d2d4d !important;
+  color:var(--pink-dark) !important;
   font-weight:800 !important;
   box-shadow:none !important;
 }
 .elory-reference-nav button.active{
-  background:linear-gradient(145deg,#e2558a 0%,#d9437e 48%,#c72c6b 100%) !important;
+  background:linear-gradient(145deg,var(--pink) 0%,var(--pink-dark) 100%) !important;
   color:#fff !important;
   box-shadow:0 5px 13px rgba(201,44,107,.20) !important;
 }
@@ -4490,10 +4490,10 @@ main#home > .header .hg-icon-v19{
   border:1px solid rgba(189,42,104,.14) !important;
   box-shadow:inset 0 1px 2px rgba(150,70,100,.04) !important;
 }
-.elory-reference-nav .search-compact-v19 input{background:transparent !important;color:#7d2d4d !important;}
+.elory-reference-nav .search-compact-v19 input{background:transparent !important;color:var(--pink-dark) !important;}
 .elory-reference-nav .search-compact-v19 .search-btn{
   width:29px !important;height:29px !important;flex-basis:29px !important;
-  background:linear-gradient(145deg,#e2558a,#c72c6b) !important;color:#fff !important;
+  background:linear-gradient(145deg,var(--pink),var(--pink-dark)) !important;color:#fff !important;
 }
 
 /* Hero: related to the header, but brighter in the center so the wave remains readable. */
@@ -11570,7 +11570,7 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   margin:0!important;
   padding:0!important;
   isolation:isolate!important;
-  background:#fff8fb;
+  background:var(--bg);
   box-shadow:0 5px 18px rgba(119,45,75,.12);
 }
 #eloryGlobalStickyShell>.announcement,
@@ -11624,10 +11624,10 @@ main#home{margin-top:0!important;padding-top:0!important}
   padding:3px!important;
   box-sizing:border-box!important;
   overflow:visible!important;
-  border:1px solid rgba(255,143,190,.5)!important;
+  border:1px solid color-mix(in srgb,var(--pink) 48%,transparent)!important;
   border-radius:999px!important;
   background:transparent!important;
-  box-shadow:0 9px 28px rgba(167,48,102,.18)!important;
+  box-shadow:0 9px 28px color-mix(in srgb,var(--pink-dark) 18%,transparent)!important;
   backdrop-filter:none!important;
   pointer-events:auto!important;
   transition:width .20s ease,box-shadow .20s ease!important;
@@ -11639,7 +11639,7 @@ main#home{margin-top:0!important;padding-top:0!important}
   z-index:1;
   border:1px solid rgba(255,255,255,.92);
   border-radius:inherit;
-  background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98));
+  background:linear-gradient(145deg,var(--pink-soft),var(--pink-light) 56%,var(--bg));
   box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12);
   pointer-events:none;
 }
@@ -11695,7 +11695,7 @@ main#home{margin-top:0!important;padding-top:0!important}
   padding:0!important;
   border:1px solid rgba(255,255,255,.95)!important;
   border-radius:50%!important;
-  background:linear-gradient(145deg,#e85f9c 0%,#d33d82 55%,#b92d70 100%)!important;
+  background:linear-gradient(145deg,var(--pink),var(--pink-dark))!important;
   color:#fff!important;
   font-size:18px!important;
   line-height:1!important;
@@ -11734,14 +11734,14 @@ main#home{margin-top:0!important;padding-top:0!important}
   border:0!important;
   outline:0!important;
   background:transparent!important;
-  color:#71364f!important;
+  color:var(--pink-dark)!important;
   font-family:inherit!important;
   font-size:13px!important;
   text-align:right!important;
   pointer-events:none!important;
   transition:width .22s ease,opacity .18s ease,padding .22s ease;
 }
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input::placeholder{color:#a36e86!important}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input::placeholder{color:var(--pink-dark)!important}
 #eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open>.elory-notch-overlay{
   width:min(342px,calc(100vw - 20px))!important;
 }
@@ -11850,7 +11850,7 @@ main#home{margin-top:0!important;padding-top:0!important}
   border:0!important;
   border-radius:999px!important;
   background:transparent!important;
-  color:#9f1f5b!important;
+  color:var(--pink-dark)!important;
   font-family:inherit!important;
   font-size:11px!important;
   font-weight:800!important;
@@ -11862,10 +11862,10 @@ main#home{margin-top:0!important;padding-top:0!important}
 #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{justify-self:center!important;text-align:center!important}
 #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
 #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn>span:not(.nav-orders-count){
-  color:#9f1f5b!important;
+  color:var(--pink-dark)!important;
 }
 #eloryGlobalStickyShell>.elory-reference-nav .nav-orders-count{
-  color:#74143f!important;
+  color:var(--pink-dark)!important;
   background:#fff!important;
   font-size:9px!important;
   min-width:15px!important;
@@ -11925,7 +11925,7 @@ main#home{margin-top:0!important;padding-top:0!important}
 }
 #eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label{
   display:inline!important;
-  color:#9f1f5b!important;
+  color:var(--pink-dark)!important;
   font-family:inherit!important;
   font-size:11px!important;
   font-weight:800!important;
@@ -11994,7 +11994,7 @@ main#home{margin-top:0!important;padding-top:0!important}
   border:0!important;
   border-radius:50%!important;
   background:#fff!important;
-  color:#8b194c!important;
+  color:var(--pink-dark)!important;
   box-shadow:0 2px 8px rgba(42,4,22,.18)!important;
 }
 #eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-btn i{color:#8b194c!important}
