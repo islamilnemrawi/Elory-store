@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - audit/full-storefront-playwright-20261122
+      - audit/full-storefront-playwright-20261122
       - fix/notch-beams-and-audit-20261122
       - fix/mobile-notch-header-category-rename-20261122
     paths:
