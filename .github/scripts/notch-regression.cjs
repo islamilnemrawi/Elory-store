@@ -122,7 +122,7 @@ const { chromium } = require("playwright");
       }));
     }
     assert.deepEqual(fullBeamStyles.map(x=>x.style),["1","2","3","4"],"all four full-size lighting styles must be independently selectable");
-    assert.deepEqual(fullBeamStyles.map(x=>x.duration),["9s","9s","9s","9s"],"all four full-size styles must share one continuous animation pace");
+    assert.deepEqual(fullBeamStyles.map(x=>x.duration),["18s","18s","18s","18s"],"all four full-size styles must share one continuous animation pace");
     assert.ok(Number(fullBeamStyles[1].secondaryOpacity)>0,"style 2 must show its opposing second comet");
     assert.ok(Number(fullBeamStyles[2].ringOpacity)>0,"style 3 must show its breathing perimeter halo");
     assert.ok(parseFloat(fullBeamStyles[3].glowWidth)>parseFloat(fullBeamStyles[0].glowWidth),"style 4 must have a visibly broader aurora ribbon");
@@ -291,19 +291,16 @@ const { chromium } = require("playwright");
     assert.ok(scrollAudit.toggles.filter(x => x.compact).every(x => x.scrollY >= 88), "compact mode must engage only after its enter threshold");
     assert.ok(scrollAudit.toggles.filter(x => !x.compact).every(x => x.scrollY <= 48), "full header must return only after the exit threshold");
 
-    const styleBeforeDirectionChange = await page.evaluate(() =>
-      document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam").dataset.beamStyle
-    );
     await page.evaluate(() => window.scrollTo(0, 180));
     await page.waitForTimeout(350);
-    const randomStyleChange = await page.evaluate(() => {
+    const fixedStyleAfterScroll = await page.evaluate(() => {
       const shell=document.getElementById("eloryGlobalStickyShell");
       const full=shell.querySelector(".elory-reference-nav-beam");
       const compact=shell.querySelector(".elory-notch-beam");
       return {full:full.dataset.beamStyle,compact:compact.dataset.beamStyle};
     });
-    assert.notEqual(randomStyleChange.full,styleBeforeDirectionChange,"reversing scroll direction must randomly select a different lighting style");
-    assert.equal(randomStyleChange.full,randomStyleChange.compact,"the large and compact notches must change style together");
+    assert.equal(fixedStyleAfterScroll.full,"3","the approved breathing-halo style must remain fixed during scrolling");
+    assert.equal(fixedStyleAfterScroll.compact,"3","the compact notch must retain the same approved style");
     const notch = await page.evaluate(async () => {
       const shell = document.getElementById("eloryGlobalStickyShell");
       const fullNav = shell.querySelector(":scope > .elory-reference-nav");
@@ -396,7 +393,7 @@ const { chromium } = require("playwright");
       }));
     }
     assert.deepEqual(compactBeamStyles.map(x=>x.compact),["1","2","3","4"],"all four compact-notch lighting styles must be independently selectable");
-    assert.deepEqual(compactBeamStyles.map(x=>x.duration),["9s","9s","9s","9s"],"all four compact styles must share one continuous animation pace");
+    assert.deepEqual(compactBeamStyles.map(x=>x.duration),["18s","18s","18s","18s"],"all four compact styles must share one continuous animation pace");
     assert.ok(compactBeamStyles.every(x=>x.full===x.compact),"large and compact notches must always use the same selected style");
     assert.ok(Number(compactBeamStyles[1].secondaryOpacity)>0,"compact style 2 must show its opposing second comet");
     assert.ok(Number(compactBeamStyles[2].ringOpacity)>0,"compact style 3 must show its breathing perimeter halo");
@@ -434,7 +431,7 @@ const { chromium } = require("playwright");
     await page.screenshot({ path: path.join(reportDir, "elory-header-mobile-390x844.png"), fullPage: false });
 
     const report = {
-      beamStyles: { full: fullBeamStyles, compact: compactBeamStyles, randomDirectionChange: randomStyleChange },
+      beamStyles: { full: fullBeamStyles, compact: compactBeamStyles, fixedStyleAfterScroll },
       status: "passed",
       viewport: start.viewport,
       start,
