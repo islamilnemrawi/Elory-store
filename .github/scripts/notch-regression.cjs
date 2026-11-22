@@ -102,6 +102,30 @@ const { chromium } = require("playwright");
     assert.equal(start.ordersColor, start.primeColor, "Orders and Prime labels must share the active brand text color");
     assert.equal(start.searchLabelColor, start.primeColor, "Search label and header labels must share the active brand text color");
     
+    const fullBeamStyles = [];
+    for (let style = 1; style <= 4; style++) {
+      await page.evaluate(styleNumber => {
+        const shell = document.getElementById("eloryGlobalStickyShell");
+        shell.querySelectorAll(".elory-reference-nav-beam,.elory-notch-beam").forEach(svg => {
+          svg.classList.remove("elory-beam-style-1","elory-beam-style-2","elory-beam-style-3","elory-beam-style-4");
+          svg.classList.add("elory-beam-style-" + styleNumber);
+          svg.dataset.beamStyle = String(styleNumber);
+        });
+      }, style);
+      await page.waitForTimeout(180);
+      await page.screenshot({path:path.join(reportDir,"elory-beam-style-"+style+"-full.png"),fullPage:false});
+      fullBeamStyles.push(await page.evaluate(() => {
+        const svg=document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam");
+        return {style:svg.dataset.beamStyle,secondaryOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-secondary-head")).opacity,
+          ringOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-ring")).opacity,
+          glowWidth:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-glow")).strokeWidth};
+      }));
+    }
+    assert.deepEqual(fullBeamStyles.map(x=>x.style),["1","2","3","4"],"all four full-size lighting styles must be independently selectable");
+    assert.ok(Number(fullBeamStyles[1].secondaryOpacity)>0,"style 2 must show its opposing second comet");
+    assert.ok(Number(fullBeamStyles[2].ringOpacity)>0,"style 3 must show its breathing perimeter halo");
+    assert.ok(parseFloat(fullBeamStyles[3].glowWidth)>parseFloat(fullBeamStyles[0].glowWidth),"style 4 must have a visibly broader aurora ribbon");
+
     const largeBeamMotion = await page.evaluate(async () => {
       const path = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path");
       const head = document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-comet-head");
@@ -122,7 +146,7 @@ const { chromium } = require("playwright");
     assert.notEqual(start.beam.animation, "none", "large notch beam must remain animated even when reduced motion is requested");
     assert.ok(start.beam.dasharray.includes("118") && start.beam.dasharray.includes("882"), "large notch retains its invisible perimeter timing track");
     assert.equal(start.beam.wedgeExists, true, "large notch must render its luminous tapered comet");
-    assert.equal(start.beam.wedgeDuration, "12.5s", "large notch comet must travel at the slower speed");
+    assert.equal(start.beam.wedgeDuration, "10s", "large notch comet must use the coordinated animation duration");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
@@ -332,10 +356,38 @@ const { chromium } = require("playwright");
     assert.equal(notch.beamExists, true, "SVG perimeter beam must exist");
     assert.equal(notch.beamDashOffsetChanged, true, "compact notch timing track must move even when reduced motion is requested");
     assert.equal(notch.wedgeExists, true, "compact notch must render its luminous tapered comet");
-    assert.equal(notch.wedgeDuration, "8.5s", "compact notch comet must travel at the slower speed");
+    assert.equal(notch.wedgeDuration, "10s", "compact notch comet must use the coordinated animation duration");
     assert.equal(notch.wedgeMoved, true, "compact luminous comet must visibly move along the capsule perimeter");
     assert.equal(notch.strokeLinecap, "round", "compact notch beam must have rounded head and tail");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
+
+    const compactBeamStyles = [];
+    for (let style = 1; style <= 4; style++) {
+      await page.evaluate(styleNumber => {
+        const shell = document.getElementById("eloryGlobalStickyShell");
+        shell.querySelectorAll(".elory-reference-nav-beam,.elory-notch-beam").forEach(svg => {
+          svg.classList.remove("elory-beam-style-1","elory-beam-style-2","elory-beam-style-3","elory-beam-style-4");
+          svg.classList.add("elory-beam-style-" + styleNumber);
+          svg.dataset.beamStyle = String(styleNumber);
+        });
+      }, style);
+      await page.waitForTimeout(180);
+      await page.screenshot({path:path.join(reportDir,"elory-beam-style-"+style+"-compact.png"),fullPage:false});
+      compactBeamStyles.push(await page.evaluate(() => {
+        const shell=document.getElementById("eloryGlobalStickyShell");
+        const full=shell.querySelector(".elory-reference-nav-beam");
+        const compact=shell.querySelector(".elory-notch-beam");
+        return {full:full.dataset.beamStyle,compact:compact.dataset.beamStyle,
+          secondaryOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-secondary-head")).opacity,
+          ringOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-ring")).opacity,
+          glowWidth:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-glow")).strokeWidth};
+      }));
+    }
+    assert.deepEqual(compactBeamStyles.map(x=>x.compact),["1","2","3","4"],"all four compact-notch lighting styles must be independently selectable");
+    assert.ok(compactBeamStyles.every(x=>x.full===x.compact),"large and compact notches must always use the same selected style");
+    assert.ok(Number(compactBeamStyles[1].secondaryOpacity)>0,"compact style 2 must show its opposing second comet");
+    assert.ok(Number(compactBeamStyles[2].ringOpacity)>0,"compact style 3 must show its breathing perimeter halo");
+    assert.ok(parseFloat(compactBeamStyles[3].glowWidth)>parseFloat(compactBeamStyles[0].glowWidth),"compact style 4 must have a visibly broader aurora ribbon");
 
     const compactSearchButton = page.locator("#eloryNotchSearchButton");
     const compactSearchClose = page.locator("#eloryNotchSearchCloseButton");
@@ -369,6 +421,7 @@ const { chromium } = require("playwright");
     await page.screenshot({ path: path.join(reportDir, "elory-header-mobile-390x844.png"), fullPage: false });
 
     const report = {
+      beamStyles: { full: fullBeamStyles, compact: compactBeamStyles },
       status: "passed",
       viewport: start.viewport,
       start,
