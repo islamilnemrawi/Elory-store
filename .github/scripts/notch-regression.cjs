@@ -11,7 +11,8 @@ const { chromium } = require("playwright");
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 1,
     isMobile: true,
-    hasTouch: true
+    hasTouch: true,
+    reducedMotion: "reduce"
   });
   page.setDefaultTimeout(20000);
   const pageErrors = [];
@@ -94,12 +95,12 @@ const { chromium } = require("playwright");
       "large notch border must match the compact notch's white edge");
     assert.match(start.navInner.background, /255, 246, 251/i, "large notch background must match the compact notch's pale pink gradient");
     assert.match(start.navInner.background, /255, 224, 239/i, "large notch background must retain the compact notch's middle pink tone");
-    assert.equal(start.ordersColor, "rgb(255, 255, 255)", "Orders text must match the compact notch action-icon color");
-    assert.equal(start.primeColor, "rgb(255, 255, 255)", "Prime text must match the compact notch action-icon color");
+    assert.equal(start.ordersColor, "rgb(211, 61, 130)", "Orders text must use the compact notch pink accent for contrast");
+    assert.equal(start.primeColor, "rgb(211, 61, 130)", "Prime text must use the compact notch pink accent for contrast");
     assert.equal(start.beam.exists, true, "large notch must have its own perimeter beam");
     assert.equal(start.beam.tagName, "rect", "large notch beam must trace the complete capsule perimeter like the compact notch");
     assert.ok(Number(start.beam.rx) >= 24, "large notch beam must follow a fully rounded capsule edge");
-    assert.equal(start.beam.animation, "eloryReferenceBeamTravel", "large notch beam must animate continuously");
+    assert.notEqual(start.beam.animation, "none", "large notch beam must remain animated even when reduced motion is requested");
     assert.ok(start.beam.dasharray.includes("92") && start.beam.dasharray.includes("908"), "large notch beam must use the same short moving streak as the compact notch");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
@@ -298,7 +299,7 @@ const { chromium } = require("playwright");
     assert.equal(notch.actionOrderCorrect, true, "notch actions must be ordered cart right, favorites center, search left");
     assert.equal(notch.searchLabelHidden, true, "compact notch must show the magnifier icon without a text label");
     assert.equal(notch.beamExists, true, "SVG perimeter beam must exist");
-    assert.equal(notch.beamDashOffsetChanged, true, "beam dash must move along the edge");
+    assert.equal(notch.beamDashOffsetChanged, true, "compact notch beam dash must move along the edge even when reduced motion is requested");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
 
     const compactSearchButton = page.locator("#eloryNotchSearchButton");
