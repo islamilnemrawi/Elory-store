@@ -63,12 +63,27 @@ async function inspectTarget(browser, target, viewport) {
     const response = await page.goto(target.url, { waitUntil: "domcontentloaded", timeout: 60000 });
     result.httpStatus = response?.status() ?? null;
     result.firstPaint = await page.evaluate(() => {
+      const rect = selector => {
+        const el = document.querySelector(selector);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { x:Math.round(r.x), y:Math.round(r.y), width:Math.round(r.width), height:Math.round(r.height), display:getComputedStyle(el).display };
+      };
       const hero = document.getElementById("heroSlider");
       const style = hero ? getComputedStyle(hero) : null;
       return { heroVisible: !!hero && !hero.hidden && style.visibility !== "hidden" && Number(style.opacity) > 0,
-        heroOpacity: style?.opacity ?? null, heroHeight: Math.round(hero?.getBoundingClientRect().height || 0) };
+        heroOpacity: style?.opacity ?? null, heroHeight: Math.round(hero?.getBoundingClientRect().height || 0),
+        layout: Object.fromEntries(["#eloryGlobalStickyShell",".elory-reference-nav-inner","main#home",".hero","#heroSlider","#categoriesSection","#categoryWrapper","#categories","#categorySet","#featured","#productsGrid"].map(selector=>[selector,rect(selector)])) };
     });
     await wait(5000);
+    result.finalLayout = await page.evaluate(() => Object.fromEntries(
+      ["#eloryGlobalStickyShell",".elory-reference-nav-inner","main#home",".hero","#heroSlider","#categoriesSection","#categoryWrapper","#categories","#categorySet","#featured","#productsGrid"].map(selector=>{
+        const el=document.querySelector(selector);
+        if(!el)return [selector,null];
+        const r=el.getBoundingClientRect();
+        return [selector,{x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height),display:getComputedStyle(el).display}];
+      })
+    ));
     result.performance = await page.evaluate(() => {
       const nav = performance.getEntriesByType("navigation")[0];
       const paints = performance.getEntriesByType("paint");
