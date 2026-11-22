@@ -68,6 +68,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: elory-full-storefront-audit
-          path: reports/storefront-audit/
+          path: |
+            reports/storefront-audit/
+            reports/first-paint/
           if-no-files-found: warn
           retention-days: 7
