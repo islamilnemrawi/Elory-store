@@ -4932,6 +4932,571 @@ main#home{
   .product-search-suggestion{transition:none}
 }
 </style>
+<style id="elory-payment-capability-guard-style">
+.payment-option[hidden]{display:none!important}
+.elory-footer-column span[hidden]{display:none!important}
+.payment-capability-notice{margin:10px 0;padding:10px 12px;border-radius:12px;background:#fff5e9;color:#77511d;font-size:13px;line-height:1.6}
+</style>
+<style id="elory-prime-page-isolation-fix">
+body.elory-prime-page-open{
+  position:fixed!important;
+  top:calc(-1 * var(--elory-prime-scroll-y,0px))!important;
+  left:0!important;right:0!important;width:100%!important;
+  overflow:hidden!important;overscroll-behavior:none!important;
+}
+html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavior:none!important;}
+.modal#primeModal.prime-page-mode{
+  position:fixed!important;inset:0!important;width:100vw!important;
+  height:100vh!important;height:100dvh!important;
+  display:block!important;padding:0!important;margin:0!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  overscroll-behavior:contain!important;touch-action:pan-y!important;
+  align-items:initial!important;justify-content:initial!important;
+  background:#fff!important;backdrop-filter:none!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+.modal#primeModal.prime-page-mode .prime-modal{
+  position:relative!important;inset:auto!important;
+  display:flex!important;flex-direction:column!important;
+  justify-content:flex-start!important;align-items:stretch!important;
+  width:100%!important;max-width:none!important;
+  min-height:100vh!important;min-height:100dvh!important;
+  height:auto!important;max-height:none!important;
+  margin:0!important;padding:clamp(30px,5vw,58px) clamp(16px,6vw,90px) 48px!important;
+  overflow:visible!important;overscroll-behavior:contain!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;
+}
+.modal#primeModal.prime-page-mode .prime-page-hero,
+.modal#primeModal.prime-page-mode .prime-page-benefits,
+.modal#primeModal.prime-page-mode .prime-page-membership,
+.modal#primeModal.prime-page-mode .prime-page-footnote{width:min(900px,100%);margin-left:auto;margin-right:auto}
+.modal#primeModal.prime-page-mode .prime-page-hero{padding-top:18px}
+.modal#primeModal.prime-page-mode .close-modal{position:fixed!important;z-index:5!important;top:14px!important;right:14px!important}
+@media(max-width:700px){
+  .modal#primeModal.prime-page-mode .prime-modal{padding:25px 14px 32px!important}
+  .modal#primeModal.prime-page-mode .close-modal{top:10px!important;right:10px!important}
+}
+</style>
+<style id="elory-global-sticky-header">
+/* Full header and full navigation always keep their natural document dimensions. */
+#eloryGlobalStickyShell{
+  position:relative!important;
+  top:auto!important;
+  z-index:900!important;
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  isolation:isolate!important;
+  background:#fff8fb;
+  box-shadow:0 5px 18px rgba(119,45,75,.12);
+}
+#eloryGlobalStickyShell>.announcement,
+#eloryGlobalStickyShell>.header,
+#eloryGlobalStickyShell>.elory-reference-nav{flex:none!important}
+#eloryGlobalStickyShell>.header{position:relative!important;top:auto!important}
+#eloryGlobalStickyShell>.elory-reference-nav{
+  position:relative!important;
+  top:auto!important;
+  margin-bottom:0!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav-inner{
+  opacity:1;
+  visibility:visible;
+}
+main#home{margin-top:0!important;padding-top:0!important}
+@media(max-width:760px){
+  main#home{margin-top:0!important;padding-top:0!important}
+  #eloryGlobalStickyShell>.elory-reference-nav{margin-bottom:0!important}
+}
+@media(max-width:380px){main#home{margin-top:0!important;padding-top:0!important}}
+
+/* Compact mode never resizes or repositions the original header/navigation. */
+#eloryGlobalStickyShell.elory-notch-compact{
+  pointer-events:none!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.announcement,
+#eloryGlobalStickyShell.elory-notch-compact>.header,
+#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  /* Their dimensions and positions are intentionally unchanged. */
+}
+#eloryGlobalStickyShell>.elory-notch-overlay{display:none}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
+  position:fixed!important;
+  top:0!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  z-index:905!important;
+  isolation:isolate!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:min(224px,calc(100vw - 24px))!important;
+  height:66px!important;
+  min-height:66px!important;
+  max-height:66px!important;
+  margin:0!important;
+  padding:3px!important;
+  box-sizing:border-box!important;
+  overflow:visible!important;
+  border:1px solid rgba(255,143,190,.5)!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  box-shadow:0 9px 28px rgba(167,48,102,.18)!important;
+  backdrop-filter:none!important;
+  pointer-events:auto!important;
+  transition:width .20s ease,box-shadow .20s ease!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay::before{
+  content:"";
+  position:absolute;
+  inset:-5px;
+  z-index:2;
+  border:2px solid rgba(246,184,206,.72);
+  border-radius:inherit;
+  box-shadow:0 0 8px 2px rgba(246,184,206,.58),0 0 18px 5px rgba(232,142,175,.38);
+  opacity:.72;
+  pointer-events:none;
+  animation:eloryHeartbeatHalo 6.8s ease-in-out infinite;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay::after{
+  content:"";
+  position:absolute;
+  inset:3px;
+  z-index:1;
+  border:1px solid rgba(255,255,255,.92);
+  border-radius:inherit;
+  background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98));
+  box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12);
+  pointer-events:none;
+}
+
+/* A single luminous dash follows the actual rounded-rectangle perimeter path. */
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam{
+  position:absolute;
+  inset:-1px;
+  z-index:3;
+  display:block!important;
+  width:auto;
+  height:auto;
+  overflow:visible;
+  pointer-events:none;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-path{
+  fill:none;
+  stroke-dasharray:110 890;
+  stroke-dashoffset:0;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-width:3.5;
+  filter:drop-shadow(0 0 4px #FFFFFF) drop-shadow(0 0 10px #F6B8CE) drop-shadow(0 0 18px rgba(232,142,175,.72));
+  animation:eloryNotchBeamTravel 24s linear infinite;
+}
+#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-mobile-notch{
+  position:relative;
+  z-index:4;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:16px!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  padding:0 12px!important;
+  direction:rtl!important;
+  box-sizing:border-box!important;
+  pointer-events:auto!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action{
+  position:relative!important;
+  display:flex!important;
+  flex:0 0 42px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:42px!important;
+  min-width:42px!important;
+  max-width:42px!important;
+  height:42px!important;
+  min-height:42px!important;
+  max-height:42px!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.95)!important;
+  border-radius:50%!important;
+  background:linear-gradient(145deg,#e85f9c 0%,#d33d82 55%,#b92d70 100%)!important;
+  color:#fff!important;
+  font-size:18px!important;
+  line-height:1!important;
+  box-shadow:0 4px 11px rgba(174,47,103,.23),inset 0 1px 2px rgba(255,255,255,.32)!important;
+  cursor:pointer!important;
+  -webkit-tap-highlight-color:transparent;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action i{
+  display:block!important;
+  font-size:18px!important;
+  line-height:1!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action:active{transform:scale(.93)}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search{
+  display:flex!important;flex:0 0 42px!important;align-items:center!important;justify-content:center!important;
+  width:42px!important;min-width:42px!important;height:42px!important;overflow:hidden!important;
+  border-radius:999px!important;background:transparent!important;
+  transition:width .22s ease,background .2s ease,box-shadow .2s ease;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search-button{
+  display:flex!important;flex:0 0 42px!important;align-items:center!important;justify-content:center!important;
+  gap:0!important;width:42px!important;min-width:42px!important;height:42px!important;padding:0!important;
+  font-family:inherit!important;font-size:18px!important;font-weight:800!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search-label{display:none!important}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search-close{display:none!important}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input{
+  display:block!important;
+  flex:1 1 auto!important;
+  width:0!important;
+  min-width:0!important;
+  height:38px!important;
+  margin:0!important;
+  padding:0!important;
+  opacity:0!important;
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  color:#71364f!important;
+  font-family:inherit!important;
+  font-size:13px!important;
+  text-align:right!important;
+  pointer-events:none!important;
+  transition:width .22s ease,opacity .18s ease,padding .22s ease;
+}
+#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input::placeholder{color:#a36e86!important}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open>.elory-notch-overlay{
+  width:min(342px,calc(100vw - 20px))!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-mobile-notch{
+  gap:0!important;
+  padding:0 9px!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open #eloryNotchCart,
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open #eloryNotchFavorites{display:none!important}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search{
+  display:flex!important;flex:1 1 100%!important;align-items:center!important;gap:4px!important;
+  width:100%!important;min-width:0!important;padding:0 4px!important;
+  background:rgba(255,255,255,.96)!important;box-shadow:inset 0 1px 4px rgba(128,61,89,.10)!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search-label{display:none!important}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search-button{
+  flex:0 0 34px!important;width:34px!important;min-width:34px!important;padding:0!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search-close{
+  display:flex!important;flex:0 0 34px!important;width:34px!important;min-width:34px!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search input{
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  padding:0 11px!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search .elory-notch-search-button{margin:0 2px!important}
+/* Full navigation is a single, centered capsule notch with a side-and-bottom white beam. */
+#eloryGlobalStickyShell>.elory-reference-nav{
+  position:relative!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  height:72px!important;
+  min-height:72px!important;
+  margin:0!important;
+  padding:7px 8px!important;
+  box-sizing:border-box!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner{
+  position:relative!important;
+  isolation:isolate!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:center!important;
+  justify-items:stretch!important;
+  direction:rtl!important;
+  width:min(640px,calc(100% - 12px))!important;
+  height:58px!important;
+  min-height:58px!important;
+  margin:0 auto!important;
+  padding:4px 10px!important;
+  gap:2px!important;
+  box-sizing:border-box!important;
+  border:1px solid rgba(255,255,255,.92)!important;
+  border-radius:999px!important;
+  background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98))!important;
+  box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12)!important;
+  overflow:visible!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner::before{
+  content:"";
+  position:absolute;
+  inset:-5px;
+  z-index:0;
+  border:2px solid rgba(246,184,206,.72);
+  border-radius:inherit;
+  box-shadow:0 0 8px 2px rgba(246,184,206,.58),0 0 18px 5px rgba(232,142,175,.38);
+  opacity:.72;
+  pointer-events:none;
+  animation:eloryHeartbeatHalo 6.8s ease-in-out infinite;
+}
+#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.elory-reference-nav-beam{
+  position:absolute!important;
+  inset:0!important;
+  z-index:2!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path{
+  fill:none!important;
+  stroke-width:3.5!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+  stroke-dasharray:118 882!important;
+  filter:drop-shadow(0 0 4px #FFFFFF) drop-shadow(0 0 10px #F6B8CE) drop-shadow(0 0 18px rgba(232,142,175,.72))!important;
+  animation:eloryReferenceBeamTravel 24s linear infinite!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>button,
+#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.header-search-line{
+  position:relative!important;
+  z-index:3!important;
+  width:100%!important;
+  min-width:0!important;
+  justify-self:stretch!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
+#eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:4px!important;
+  height:36px!important;
+  min-height:36px!important;
+  margin:0!important;
+  padding:0 4px!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  color:#9f1f5b!important;
+  font-family:inherit!important;
+  font-size:11px!important;
+  font-weight:800!important;
+  line-height:1.2!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  box-shadow:none!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{justify-self:center!important;text-align:center!important}
+#eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
+#eloryGlobalStickyShell>.elory-reference-nav #ordersBtn>span:not(.nav-orders-count){
+  color:#9f1f5b!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .nav-orders-count{
+  color:#74143f!important;
+  background:#fff!important;
+  font-size:9px!important;
+  min-width:15px!important;
+  padding:2px 4px!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .header-search-line{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  max-width:none!important;
+  height:36px!important;
+  min-width:0!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  max-width:none!important;
+  height:36px!important;
+  min-width:0!important;
+  gap:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav #searchInput{display:none!important}
+#eloryGlobalStickyShell>.elory-reference-nav .search-btn{
+  display:flex!important;
+  flex:1 1 auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:6px!important;
+  width:100%!important;
+  min-width:0!important;
+  height:36px!important;
+  margin:0!important;
+  padding:0 4px!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  color:#fff!important;
+  font-family:inherit!important;
+  font-size:11px!important;
+  font-weight:800!important;
+  white-space:nowrap!important;
+  box-shadow:none!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .search-btn i{
+  display:inline-block!important;
+  color:#fff!important;
+  font-size:14px!important;
+  line-height:1!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label{
+  display:inline!important;
+  color:#9f1f5b!important;
+  font-family:inherit!important;
+  font-size:11px!important;
+  font-weight:800!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav .elory-search-close{
+  display:none!important;
+  flex:0 0 30px!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:30px!important;
+  min-width:30px!important;
+  height:30px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:transparent!important;
+  color:#fff!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open>.elory-reference-nav-inner{
+  grid-template-columns:minmax(0,1fr)!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #primeHeaderBtn,
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #ordersBtn{display:none!important}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .header-search-line{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  height:38px!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-compact-v19{
+  justify-content:space-between!important;
+  width:100%!important;
+  height:38px!important;
+  padding:0 5px!important;
+  gap:4px!important;
+  border:1px solid rgba(255,255,255,.38)!important;
+  border-radius:999px!important;
+  background:rgba(255,255,255,.10)!important;
+  box-shadow:inset 0 1px 5px rgba(25,3,14,.16)!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #searchInput{
+  display:block!important;
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  height:32px!important;
+  margin:0!important;
+  padding:0 9px!important;
+  opacity:1!important;
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  color:#fff!important;
+  caret-color:#fff!important;
+  pointer-events:auto!important;
+  text-align:right!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #searchInput::placeholder{color:rgba(255,255,255,.72)!important}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-btn{
+  flex:0 0 30px!important;
+  width:30px!important;
+  min-width:30px!important;
+  height:30px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:#fff!important;
+  color:#8b194c!important;
+  box-shadow:0 2px 8px rgba(42,4,22,.18)!important;
+}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-btn i{color:#8b194c!important}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-btn .elory-search-label{display:none!important}
+#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .elory-search-close{
+  display:flex!important;
+  flex:0 0 30px!important;
+  color:#fff!important;
+}
+@media(max-width:760px){
+  #eloryGlobalStickyShell>.elory-reference-nav{
+    height:70px!important;
+    min-height:70px!important;
+    padding:6px 6px!important;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner{
+    width:min(640px,calc(100% - 8px))!important;
+    height:56px!important;
+    min-height:56px!important;
+    padding:3px 7px!important;
+    gap:1px!important;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
+  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{
+    height:34px!important;
+    min-height:34px!important;
+    padding:0 3px!important;
+    font-size:10.5px!important;
+  }
+  #eloryGlobalStickyShell>.elory-reference-nav .header-search-line,
+  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19,
+  #eloryGlobalStickyShell>.elory-reference-nav .search-btn{height:34px!important}
+  #eloryGlobalStickyShell>.elory-reference-nav .search-btn{gap:4px!important;font-size:10.5px!important}
+  #eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label{font-size:10.5px!important}
+}
+@media(max-width:380px){
+  #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner{padding-inline:4px!important}
+  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
+  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{font-size:10px!important}
+  #eloryGlobalStickyShell>.elory-reference-nav .search-btn{gap:3px!important;font-size:10px!important}
+  #eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label{font-size:10px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19{transition:none!important}
+}
+
+@keyframes eloryNotchBeamTravel{to{stroke-dashoffset:-1000}}
+@keyframes eloryReferenceBeamTravel{to{stroke-dashoffset:-1000}}
+@keyframes eloryHeartbeatHalo{
+  0%,100%{opacity:.58;box-shadow:0 0 7px 2px rgba(246,184,206,.48),0 0 15px 4px rgba(232,142,175,.30)}
+  8%{opacity:.96;box-shadow:0 0 10px 3px rgba(246,184,206,.78),0 0 23px 7px rgba(232,142,175,.48)}
+  16%{opacity:.62;box-shadow:0 0 7px 2px rgba(246,184,206,.48),0 0 15px 4px rgba(232,142,175,.30)}
+  25%{opacity:.90;box-shadow:0 0 9px 3px rgba(246,184,206,.70),0 0 21px 6px rgba(232,142,175,.42)}
+  36%,72%{opacity:.58;box-shadow:0 0 7px 2px rgba(246,184,206,.44),0 0 14px 4px rgba(232,142,175,.28)}
+}
+@media(prefers-reduced-motion:reduce){
+  #eloryGlobalStickyShell .elory-notch-search,#eloryGlobalStickyShell .elory-notch-search input{transition:none!important}
+}
+</style>
 </head>
 <body>
 <div aria-live="polite" class="cart-add-notice" id="cartAddNotice" role="status"><img alt="" id="cartAddNoticeImage"/><span id="cartAddNoticeText"></span></div>
@@ -11286,11 +11851,7 @@ main#home{
 })();
 </script>
 
-<style id="elory-payment-capability-guard-style">
-.payment-option[hidden]{display:none!important}
-.elory-footer-column span[hidden]{display:none!important}
-.payment-capability-notice{margin:10px 0;padding:10px 12px;border-radius:12px;background:#fff5e9;color:#77511d;font-size:13px;line-height:1.6}
-</style>
+
 <script id="elory-payment-capability-guard">
 (function(){
   const state = {ready:false,mode:"unknown",card_enabled:false,wallet_enabled:false};
@@ -11354,46 +11915,7 @@ main#home{
   })();
 })();
 </script>
-<style id="elory-prime-page-isolation-fix">
-body.elory-prime-page-open{
-  position:fixed!important;
-  top:calc(-1 * var(--elory-prime-scroll-y,0px))!important;
-  left:0!important;right:0!important;width:100%!important;
-  overflow:hidden!important;overscroll-behavior:none!important;
-}
-html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavior:none!important;}
-.modal#primeModal.prime-page-mode{
-  position:fixed!important;inset:0!important;width:100vw!important;
-  height:100vh!important;height:100dvh!important;
-  display:block!important;padding:0!important;margin:0!important;
-  overflow-x:hidden!important;overflow-y:auto!important;
-  overscroll-behavior:contain!important;touch-action:pan-y!important;
-  align-items:initial!important;justify-content:initial!important;
-  background:#fff!important;backdrop-filter:none!important;
-  -webkit-overflow-scrolling:touch!important;
-}
-.modal#primeModal.prime-page-mode .prime-modal{
-  position:relative!important;inset:auto!important;
-  display:flex!important;flex-direction:column!important;
-  justify-content:flex-start!important;align-items:stretch!important;
-  width:100%!important;max-width:none!important;
-  min-height:100vh!important;min-height:100dvh!important;
-  height:auto!important;max-height:none!important;
-  margin:0!important;padding:clamp(30px,5vw,58px) clamp(16px,6vw,90px) 48px!important;
-  overflow:visible!important;overscroll-behavior:contain!important;
-  border:0!important;border-radius:0!important;box-shadow:none!important;
-}
-.modal#primeModal.prime-page-mode .prime-page-hero,
-.modal#primeModal.prime-page-mode .prime-page-benefits,
-.modal#primeModal.prime-page-mode .prime-page-membership,
-.modal#primeModal.prime-page-mode .prime-page-footnote{width:min(900px,100%);margin-left:auto;margin-right:auto}
-.modal#primeModal.prime-page-mode .prime-page-hero{padding-top:18px}
-.modal#primeModal.prime-page-mode .close-modal{position:fixed!important;z-index:5!important;top:14px!important;right:14px!important}
-@media(max-width:700px){
-  .modal#primeModal.prime-page-mode .prime-modal{padding:25px 14px 32px!important}
-  .modal#primeModal.prime-page-mode .close-modal{top:10px!important;right:10px!important}
-}
-</style>
+
 <script id="elory-global-sticky-measurement">
 (()=>{
   const shell=document.getElementById("eloryGlobalStickyShell");
@@ -11570,525 +12092,6 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
   }
 })();
 </script>
-<style id="elory-global-sticky-header">
-/* Full header and full navigation always keep their natural document dimensions. */
-#eloryGlobalStickyShell{
-  position:relative!important;
-  top:auto!important;
-  z-index:900!important;
-  display:block!important;
-  width:100%!important;
-  max-width:100%!important;
-  margin:0!important;
-  padding:0!important;
-  isolation:isolate!important;
-  background:#fff8fb;
-  box-shadow:0 5px 18px rgba(119,45,75,.12);
-}
-#eloryGlobalStickyShell>.announcement,
-#eloryGlobalStickyShell>.header,
-#eloryGlobalStickyShell>.elory-reference-nav{flex:none!important}
-#eloryGlobalStickyShell>.header{position:relative!important;top:auto!important}
-#eloryGlobalStickyShell>.elory-reference-nav{
-  position:relative!important;
-  top:auto!important;
-  margin-bottom:0!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav-inner{
-  opacity:1;
-  visibility:visible;
-}
-main#home{margin-top:0!important;padding-top:0!important}
-@media(max-width:760px){
-  main#home{margin-top:0!important;padding-top:0!important}
-  #eloryGlobalStickyShell>.elory-reference-nav{margin-bottom:0!important}
-}
-@media(max-width:380px){main#home{margin-top:0!important;padding-top:0!important}}
 
-/* Compact mode never resizes or repositions the original header/navigation. */
-#eloryGlobalStickyShell.elory-notch-compact{
-  pointer-events:none!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact>.announcement,
-#eloryGlobalStickyShell.elory-notch-compact>.header,
-#eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav{
-  opacity:0!important;
-  visibility:hidden!important;
-  pointer-events:none!important;
-  /* Their dimensions and positions are intentionally unchanged. */
-}
-#eloryGlobalStickyShell>.elory-notch-overlay{display:none}
-#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
-  position:fixed!important;
-  top:0!important;
-  left:50%!important;
-  transform:translateX(-50%)!important;
-  z-index:905!important;
-  isolation:isolate!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:min(224px,calc(100vw - 24px))!important;
-  height:66px!important;
-  min-height:66px!important;
-  max-height:66px!important;
-  margin:0!important;
-  padding:3px!important;
-  box-sizing:border-box!important;
-  overflow:visible!important;
-  border:1px solid rgba(255,143,190,.5)!important;
-  border-radius:999px!important;
-  background:transparent!important;
-  box-shadow:0 9px 28px rgba(167,48,102,.18)!important;
-  backdrop-filter:none!important;
-  pointer-events:auto!important;
-  transition:width .20s ease,box-shadow .20s ease!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay::before{
-  content:"";
-  position:absolute;
-  inset:-5px;
-  z-index:2;
-  border:2px solid rgba(246,184,206,.72);
-  border-radius:inherit;
-  box-shadow:0 0 8px 2px rgba(246,184,206,.58),0 0 18px 5px rgba(232,142,175,.38);
-  opacity:.72;
-  pointer-events:none;
-  animation:eloryHeartbeatHalo 6.8s ease-in-out infinite;
-}
-#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay::after{
-  content:"";
-  position:absolute;
-  inset:3px;
-  z-index:1;
-  border:1px solid rgba(255,255,255,.92);
-  border-radius:inherit;
-  background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98));
-  box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12);
-  pointer-events:none;
-}
-
-/* A single luminous dash follows the actual rounded-rectangle perimeter path. */
-#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam{
-  position:absolute;
-  inset:-1px;
-  z-index:3;
-  display:block!important;
-  width:auto;
-  height:auto;
-  overflow:visible;
-  pointer-events:none;
-}
-#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-notch-beam-path{
-  fill:none;
-  stroke-dasharray:110 890;
-  stroke-dashoffset:0;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-  stroke-width:3.5;
-  filter:drop-shadow(0 0 4px #FFFFFF) drop-shadow(0 0 10px #F6B8CE) drop-shadow(0 0 18px rgba(232,142,175,.72));
-  animation:eloryNotchBeamTravel 24s linear infinite;
-}
-#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay .elory-mobile-notch{
-  position:relative;
-  z-index:4;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  gap:16px!important;
-  width:100%!important;
-  height:100%!important;
-  min-width:0!important;
-  padding:0 12px!important;
-  direction:rtl!important;
-  box-sizing:border-box!important;
-  pointer-events:auto!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action{
-  position:relative!important;
-  display:flex!important;
-  flex:0 0 42px!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:42px!important;
-  min-width:42px!important;
-  max-width:42px!important;
-  height:42px!important;
-  min-height:42px!important;
-  max-height:42px!important;
-  padding:0!important;
-  border:1px solid rgba(255,255,255,.95)!important;
-  border-radius:50%!important;
-  background:linear-gradient(145deg,#e85f9c 0%,#d33d82 55%,#b92d70 100%)!important;
-  color:#fff!important;
-  font-size:18px!important;
-  line-height:1!important;
-  box-shadow:0 4px 11px rgba(174,47,103,.23),inset 0 1px 2px rgba(255,255,255,.32)!important;
-  cursor:pointer!important;
-  -webkit-tap-highlight-color:transparent;
-}
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action i{
-  display:block!important;
-  font-size:18px!important;
-  line-height:1!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-action:active{transform:scale(.93)}
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search{
-  display:flex!important;flex:0 0 42px!important;align-items:center!important;justify-content:center!important;
-  width:42px!important;min-width:42px!important;height:42px!important;overflow:hidden!important;
-  border-radius:999px!important;background:transparent!important;
-  transition:width .22s ease,background .2s ease,box-shadow .2s ease;
-}
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search-button{
-  display:flex!important;flex:0 0 42px!important;align-items:center!important;justify-content:center!important;
-  gap:0!important;width:42px!important;min-width:42px!important;height:42px!important;padding:0!important;
-  font-family:inherit!important;font-size:18px!important;font-weight:800!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search-label{display:none!important}
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search-close{display:none!important}
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input{
-  display:block!important;
-  flex:1 1 auto!important;
-  width:0!important;
-  min-width:0!important;
-  height:38px!important;
-  margin:0!important;
-  padding:0!important;
-  opacity:0!important;
-  border:0!important;
-  outline:0!important;
-  background:transparent!important;
-  color:#71364f!important;
-  font-family:inherit!important;
-  font-size:13px!important;
-  text-align:right!important;
-  pointer-events:none!important;
-  transition:width .22s ease,opacity .18s ease,padding .22s ease;
-}
-#eloryGlobalStickyShell.elory-notch-compact .elory-notch-search input::placeholder{color:#a36e86!important}
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open>.elory-notch-overlay{
-  width:min(342px,calc(100vw - 20px))!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-mobile-notch{
-  gap:0!important;
-  padding:0 9px!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open #eloryNotchCart,
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open #eloryNotchFavorites{display:none!important}
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search{
-  display:flex!important;flex:1 1 100%!important;align-items:center!important;gap:4px!important;
-  width:100%!important;min-width:0!important;padding:0 4px!important;
-  background:rgba(255,255,255,.96)!important;box-shadow:inset 0 1px 4px rgba(128,61,89,.10)!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search-label{display:none!important}
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search-button{
-  flex:0 0 34px!important;width:34px!important;min-width:34px!important;padding:0!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search-close{
-  display:flex!important;flex:0 0 34px!important;width:34px!important;min-width:34px!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search input{
-  flex:1 1 auto!important;
-  width:100%!important;
-  min-width:0!important;
-  padding:0 11px!important;
-  opacity:1!important;
-  pointer-events:auto!important;
-}
-#eloryGlobalStickyShell.elory-notch-compact.elory-notch-search-open .elory-notch-search .elory-notch-search-button{margin:0 2px!important}
-/* Full navigation is a single, centered capsule notch with a side-and-bottom white beam. */
-#eloryGlobalStickyShell>.elory-reference-nav{
-  position:relative!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:100%!important;
-  height:72px!important;
-  min-height:72px!important;
-  margin:0!important;
-  padding:7px 8px!important;
-  box-sizing:border-box!important;
-  background:transparent!important;
-  border:0!important;
-  box-shadow:none!important;
-  overflow:visible!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner{
-  position:relative!important;
-  isolation:isolate!important;
-  display:grid!important;
-  grid-template-columns:repeat(3,minmax(0,1fr))!important;
-  align-items:center!important;
-  justify-items:stretch!important;
-  direction:rtl!important;
-  width:min(640px,calc(100% - 12px))!important;
-  height:58px!important;
-  min-height:58px!important;
-  margin:0 auto!important;
-  padding:4px 10px!important;
-  gap:2px!important;
-  box-sizing:border-box!important;
-  border:1px solid rgba(255,255,255,.92)!important;
-  border-radius:999px!important;
-  background:linear-gradient(145deg,rgba(255,246,251,.99),rgba(255,224,239,.98) 56%,rgba(247,225,255,.98))!important;
-  box-shadow:inset 0 1px 4px rgba(255,255,255,.95),inset 0 -3px 9px rgba(184,82,134,.12)!important;
-  overflow:visible!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner::before{
-  content:"";
-  position:absolute;
-  inset:-5px;
-  z-index:0;
-  border:2px solid rgba(246,184,206,.72);
-  border-radius:inherit;
-  box-shadow:0 0 8px 2px rgba(246,184,206,.58),0 0 18px 5px rgba(232,142,175,.38);
-  opacity:.72;
-  pointer-events:none;
-  animation:eloryHeartbeatHalo 6.8s ease-in-out infinite;
-}
-#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.elory-reference-nav-beam{
-  position:absolute!important;
-  inset:0!important;
-  z-index:2!important;
-  display:block!important;
-  width:100%!important;
-  height:100%!important;
-  overflow:visible!important;
-  pointer-events:none!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav .elory-reference-nav-beam-path{
-  fill:none!important;
-  stroke-width:3.5!important;
-  stroke-linecap:round!important;
-  stroke-linejoin:round!important;
-  stroke-dasharray:118 882!important;
-  filter:drop-shadow(0 0 4px #FFFFFF) drop-shadow(0 0 10px #F6B8CE) drop-shadow(0 0 18px rgba(232,142,175,.72))!important;
-  animation:eloryReferenceBeamTravel 24s linear infinite!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>button,
-#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner>.header-search-line{
-  position:relative!important;
-  z-index:3!important;
-  width:100%!important;
-  min-width:0!important;
-  justify-self:stretch!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
-#eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  gap:4px!important;
-  height:36px!important;
-  min-height:36px!important;
-  margin:0!important;
-  padding:0 4px!important;
-  border:0!important;
-  border-radius:999px!important;
-  background:transparent!important;
-  color:#9f1f5b!important;
-  font-family:inherit!important;
-  font-size:11px!important;
-  font-weight:800!important;
-  line-height:1.2!important;
-  text-align:center!important;
-  white-space:nowrap!important;
-  box-shadow:none!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{justify-self:center!important;text-align:center!important}
-#eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
-#eloryGlobalStickyShell>.elory-reference-nav #ordersBtn>span:not(.nav-orders-count){
-  color:#9f1f5b!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav .nav-orders-count{
-  color:#74143f!important;
-  background:#fff!important;
-  font-size:9px!important;
-  min-width:15px!important;
-  padding:2px 4px!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav .header-search-line{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:100%!important;
-  max-width:none!important;
-  height:36px!important;
-  min-width:0!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:100%!important;
-  max-width:none!important;
-  height:36px!important;
-  min-width:0!important;
-  gap:0!important;
-  padding:0!important;
-  border:0!important;
-  border-radius:999px!important;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav #searchInput{display:none!important}
-#eloryGlobalStickyShell>.elory-reference-nav .search-btn{
-  display:flex!important;
-  flex:1 1 auto!important;
-  align-items:center!important;
-  justify-content:center!important;
-  gap:6px!important;
-  width:100%!important;
-  min-width:0!important;
-  height:36px!important;
-  margin:0!important;
-  padding:0 4px!important;
-  border:0!important;
-  border-radius:999px!important;
-  background:transparent!important;
-  color:#fff!important;
-  font-family:inherit!important;
-  font-size:11px!important;
-  font-weight:800!important;
-  white-space:nowrap!important;
-  box-shadow:none!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav .search-btn i{
-  display:inline-block!important;
-  color:#fff!important;
-  font-size:14px!important;
-  line-height:1!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label{
-  display:inline!important;
-  color:#9f1f5b!important;
-  font-family:inherit!important;
-  font-size:11px!important;
-  font-weight:800!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav .elory-search-close{
-  display:none!important;
-  flex:0 0 30px!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:30px!important;
-  min-width:30px!important;
-  height:30px!important;
-  margin:0!important;
-  padding:0!important;
-  border:0!important;
-  border-radius:50%!important;
-  background:transparent!important;
-  color:#fff!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open>.elory-reference-nav-inner{
-  grid-template-columns:minmax(0,1fr)!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #primeHeaderBtn,
-#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #ordersBtn{display:none!important}
-#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .header-search-line{
-  width:100%!important;
-  max-width:none!important;
-  min-width:0!important;
-  height:38px!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-compact-v19{
-  justify-content:space-between!important;
-  width:100%!important;
-  height:38px!important;
-  padding:0 5px!important;
-  gap:4px!important;
-  border:1px solid rgba(255,255,255,.38)!important;
-  border-radius:999px!important;
-  background:rgba(255,255,255,.10)!important;
-  box-shadow:inset 0 1px 5px rgba(25,3,14,.16)!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #searchInput{
-  display:block!important;
-  flex:1 1 auto!important;
-  width:100%!important;
-  min-width:0!important;
-  height:32px!important;
-  margin:0!important;
-  padding:0 9px!important;
-  opacity:1!important;
-  border:0!important;
-  outline:0!important;
-  background:transparent!important;
-  color:#fff!important;
-  caret-color:#fff!important;
-  pointer-events:auto!important;
-  text-align:right!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open #searchInput::placeholder{color:rgba(255,255,255,.72)!important}
-#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-btn{
-  flex:0 0 30px!important;
-  width:30px!important;
-  min-width:30px!important;
-  height:30px!important;
-  padding:0!important;
-  border:0!important;
-  border-radius:50%!important;
-  background:#fff!important;
-  color:#8b194c!important;
-  box-shadow:0 2px 8px rgba(42,4,22,.18)!important;
-}
-#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-btn i{color:#8b194c!important}
-#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .search-btn .elory-search-label{display:none!important}
-#eloryGlobalStickyShell>.elory-reference-nav.elory-header-search-open .elory-search-close{
-  display:flex!important;
-  flex:0 0 30px!important;
-  color:#fff!important;
-}
-@media(max-width:760px){
-  #eloryGlobalStickyShell>.elory-reference-nav{
-    height:70px!important;
-    min-height:70px!important;
-    padding:6px 6px!important;
-  }
-  #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner{
-    width:min(640px,calc(100% - 8px))!important;
-    height:56px!important;
-    min-height:56px!important;
-    padding:3px 7px!important;
-    gap:1px!important;
-  }
-  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
-  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{
-    height:34px!important;
-    min-height:34px!important;
-    padding:0 3px!important;
-    font-size:10.5px!important;
-  }
-  #eloryGlobalStickyShell>.elory-reference-nav .header-search-line,
-  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19,
-  #eloryGlobalStickyShell>.elory-reference-nav .search-btn{height:34px!important}
-  #eloryGlobalStickyShell>.elory-reference-nav .search-btn{gap:4px!important;font-size:10.5px!important}
-  #eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label{font-size:10.5px!important}
-}
-@media(max-width:380px){
-  #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner{padding-inline:4px!important}
-  #eloryGlobalStickyShell>.elory-reference-nav #primeHeaderBtn,
-  #eloryGlobalStickyShell>.elory-reference-nav #ordersBtn{font-size:10px!important}
-  #eloryGlobalStickyShell>.elory-reference-nav .search-btn{gap:3px!important;font-size:10px!important}
-  #eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label{font-size:10px!important}
-}
-@media(prefers-reduced-motion:reduce){
-  #eloryGlobalStickyShell>.elory-reference-nav .search-compact-v19{transition:none!important}
-}
-
-@keyframes eloryNotchBeamTravel{to{stroke-dashoffset:-1000}}
-@keyframes eloryReferenceBeamTravel{to{stroke-dashoffset:-1000}}
-@keyframes eloryHeartbeatHalo{
-  0%,100%{opacity:.58;box-shadow:0 0 7px 2px rgba(246,184,206,.48),0 0 15px 4px rgba(232,142,175,.30)}
-  8%{opacity:.96;box-shadow:0 0 10px 3px rgba(246,184,206,.78),0 0 23px 7px rgba(232,142,175,.48)}
-  16%{opacity:.62;box-shadow:0 0 7px 2px rgba(246,184,206,.48),0 0 15px 4px rgba(232,142,175,.30)}
-  25%{opacity:.90;box-shadow:0 0 9px 3px rgba(246,184,206,.70),0 0 21px 6px rgba(232,142,175,.42)}
-  36%,72%{opacity:.58;box-shadow:0 0 7px 2px rgba(246,184,206,.44),0 0 14px 4px rgba(232,142,175,.28)}
-}
-@media(prefers-reduced-motion:reduce){
-  #eloryGlobalStickyShell .elory-notch-search,#eloryGlobalStickyShell .elory-notch-search input{transition:none!important}
-}
-</style>
 </body>
 </html>
