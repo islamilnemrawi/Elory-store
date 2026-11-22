@@ -10896,7 +10896,7 @@ body.prime-mode{
     }
     if(c.hero && c.hero.isVisible===false) visible('.hero',false);
     if(old && slides.length){
-      const templates=$('.hero-slide',old), dotsTemplate=$('.hero-dots',old);
+      const templates=Array.from(old.querySelectorAll('.hero-slide')), dotsTemplate=$('.hero-dots',old);
       if(templates.length){
         const slider=old.cloneNode(false); slider.removeAttribute('data-hero-ready');
         slides.forEach((item,i)=>{
