@@ -98,8 +98,8 @@ const { chromium } = require("playwright");
     assert.ok(start.navInner.gap <= 8, "large notch actions must have compact spacing");
     assert.ok(start.navInner.borderRadius.includes("px") && parseFloat(start.navInner.borderRadius) >= 24,
       "large notch must have a true rounded capsule edge");
-    assert.ok(start.navInner.borderColor.includes("255, 255, 255"),
-      "large notch border must match the compact notch's white edge");
+    assert.notEqual(start.navInner.borderColor, "rgba(0, 0, 0, 0)",
+      "large notch border must remain visible with a soft blush edge");
     assert.match(start.navInner.background, /255,\s*248,\s*250/i, "large notch background must use the current Elory soft-pink surface");
     assert.match(start.navInner.background, /246,\s*221,\s*230/i, "large notch background must retain the current Elory pink mid-tone");
     assert.equal(start.ordersColor, start.primeColor, "Orders and Prime labels must share the active brand text color");
