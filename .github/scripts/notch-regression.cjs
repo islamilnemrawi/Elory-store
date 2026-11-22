@@ -113,7 +113,7 @@ const { chromium } = require("playwright");
     assert.equal(start.beam.tagName, "rect", "large notch beam must trace the complete capsule perimeter like the compact notch");
     assert.ok(Number(start.beam.rx) >= 24, "large notch beam must follow a fully rounded capsule edge");
     assert.notEqual(start.beam.animation, "none", "large notch beam must remain animated even when reduced motion is requested");
-    assert.ok(start.beam.dasharray.includes("92") && start.beam.dasharray.includes("908"), "large notch beam must use the same short moving streak as the compact notch");
+    assert.ok(start.beam.dasharray.includes("118") && start.beam.dasharray.includes("882"), "large notch beam must use the strengthened moving streak");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
