@@ -58,24 +58,34 @@ const { chromium } = require("playwright");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
     await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
 
-    // Header search must behave as a true toggle and preserve the original Prime/Orders actions.
+    // Full navigation search: labeled launcher, dedicated close action, magnifier submits.
     const headerSearch = page.locator("#eloryGlobalStickyShell > .elory-reference-nav");
     const headerSearchButton = page.locator("#eloryHeaderSearchButton");
+    const headerSearchClose = page.locator("#eloryHeaderSearchCloseButton");
+    assert.equal(await headerSearchButton.locator(".elory-search-label").innerText(), "البحث",
+      "full navigation closed state must show the search label beside the magnifier");
     await headerSearchButton.click();
     await page.waitForTimeout(250);
     assert.equal(await headerSearch.evaluate(el => el.classList.contains("elory-header-search-open")), true,
-      "full navigation search icon must expand the existing nav into a search field");
+      "full navigation search launcher must expand the search field");
     assert.equal(await page.locator("#primeHeaderBtn").isVisible(), false, "Prime must hide while full-nav search is open");
     assert.equal(await page.locator("#ordersBtn").isVisible(), false, "Orders must hide while full-nav search is open");
     assert.equal(await page.locator("#searchInput").isVisible(), true, "full-nav search input must occupy the navigation");
+    assert.equal(await headerSearchClose.isVisible(), true, "full-nav search must show a dedicated close button");
     await page.locator("#searchInput").fill("اختبار");
-    await headerSearchButton.click();
+    await headerSearchClose.click();
     await page.waitForTimeout(250);
     assert.equal(await headerSearch.evaluate(el => el.classList.contains("elory-header-search-open")), false,
-      "second tap must close search even when text has been entered");
+      "dedicated close button must collapse full navigation search");
     assert.equal(await page.locator("#primeHeaderBtn").isVisible(), true, "Prime must return after closing full-nav search");
     assert.equal(await page.locator("#ordersBtn").isVisible(), true, "Orders must return after closing full-nav search");
     assert.equal(await page.locator("#searchInput").isVisible(), false, "full-nav search input must collapse");
+    await headerSearchButton.click();
+    await page.locator("#searchInput").fill("اختبار");
+    await headerSearchButton.click();
+    await page.waitForTimeout(300);
+    assert.equal(await headerSearch.evaluate(el => el.classList.contains("elory-header-search-open")), false,
+      "full navigation magnifier must submit and close search when a query is entered");
 
 
     await page.evaluate(() => {
@@ -235,20 +245,31 @@ const { chromium } = require("playwright");
     assert.equal(notch.beamBoxAligned, true, "beam SVG must align with the notch border");
 
     const compactSearchButton = page.locator("#eloryNotchSearchButton");
+    const compactSearchClose = page.locator("#eloryNotchSearchCloseButton");
     await compactSearchButton.click();
     await page.waitForTimeout(250);
     assert.equal(await page.locator("#eloryGlobalStickyShell").evaluate(el => el.classList.contains("elory-notch-search-open")), true,
-      "compact notch search must expand when tapped");
+      "compact notch search launcher must expand the input");
     assert.equal(await page.locator("#eloryNotchCart").isVisible(), false, "cart action must yield the full notch to search");
     assert.equal(await page.locator("#eloryNotchFavorites").isVisible(), false, "favorites action must yield the full notch to search");
     assert.equal(await page.locator("#eloryNotchSearchInput").isVisible(), true, "compact search input must fill the notch");
+    assert.equal(await compactSearchClose.isVisible(), true, "compact search must show a dedicated close button");
     await page.locator("#eloryNotchSearchInput").fill("اختبار");
-    await compactSearchButton.click();
+    await page.waitForTimeout(300);
+    assert.equal(await page.locator("#searchInput").inputValue(), "اختبار",
+      "compact input must feed the existing live product-search suggestion engine");
+    await compactSearchClose.click();
     await page.waitForTimeout(250);
     assert.equal(await page.locator("#eloryGlobalStickyShell").evaluate(el => el.classList.contains("elory-notch-search-open")), false,
-      "second tap must close compact search even when text has been entered");
+      "dedicated close button must collapse compact search");
     assert.equal(await page.locator("#eloryNotchCart").isVisible(), true, "cart action must return after closing search");
     assert.equal(await page.locator("#eloryNotchFavorites").isVisible(), true, "favorites action must return after closing search");
+    await compactSearchButton.click();
+    await page.locator("#eloryNotchSearchInput").fill("اختبار");
+    await compactSearchButton.click();
+    await page.waitForTimeout(300);
+    assert.equal(await page.locator("#eloryGlobalStickyShell").evaluate(el => el.classList.contains("elory-notch-search-open")), false,
+      "compact magnifier must submit and close search when a query is entered");
 
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(300);
