@@ -11393,9 +11393,9 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
     const box=nav.getBoundingClientRect(),width=Math.round(box.width),height=Math.round(box.height);
     if(width<1||height<1||(width===lastBeamWidth&&height===lastBeamHeight))return;
     beam.setAttribute("viewBox","0 0 "+width+" "+height);
-    beamPath.setAttribute("x","2.5");beamPath.setAttribute("y","2.5");
-    beamPath.setAttribute("width",Math.max(1,width-5));beamPath.setAttribute("height",Math.max(1,height-5));
-    beamPath.setAttribute("rx",Math.max(1,(height-5)/2));lastBeamWidth=width;lastBeamHeight=height;
+    beamPath.setAttribute("x","0.5");beamPath.setAttribute("y","0.5");
+    beamPath.setAttribute("width",Math.max(1,width-1));beamPath.setAttribute("height",Math.max(1,height-1));
+    beamPath.setAttribute("rx",Math.max(1,(height-1)/2));lastBeamWidth=width;lastBeamHeight=height;
   };
   const syncCompact=()=>{
     const scrollTop=Math.max(Number(window.pageYOffset)||0,Number(root.scrollTop)||0,Number(document.body.scrollTop)||0);
@@ -11452,7 +11452,7 @@ html:has(body.elory-prime-page-open){overflow:hidden!important;overscroll-behavi
 /* Preserve the full header's flow footprint while changing only its visible presentation. */
 html{scroll-padding-top:calc(var(--elory-global-sticky-height,0px) + 12px)}
 #eloryGlobalStickyShell{
-  position:sticky!important;top:0!important;z-index:900!important;display:block!important;
+  position:relative!important;top:auto!important;z-index:900!important;display:block!important;
   width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;
   isolation:isolate!important;background:#fff8fb;box-shadow:0 5px 18px rgba(119,45,75,.12);
 }
@@ -11485,7 +11485,7 @@ main#home{margin-top:0!important;padding-top:0!important}
 #eloryGlobalStickyShell>.elory-reference-nav{position:relative!important;box-sizing:border-box!important}
 #eloryGlobalStickyShell>.elory-reference-nav .elory-mobile-notch{display:none}
 #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav{
-  position:absolute!important;top:0!important;left:50%!important;transform:translateX(-50%)!important;
+  position:fixed!important;top:0!important;left:50%!important;transform:translateX(-50%)!important;
   isolation:isolate!important;display:flex!important;align-items:center!important;justify-content:center!important;
   width:min(224px,calc(100vw - 24px))!important;height:66px!important;min-height:66px!important;max-height:66px!important;
   margin:0!important;padding:3px!important;overflow:visible!important;box-sizing:border-box!important;
@@ -11501,7 +11501,7 @@ main#home{margin-top:0!important;padding-top:0!important}
 }
 /* The moving highlight is an SVG dash on the capsule border, not a rotating gradient. */
 #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-notch-beam{
-  position:absolute;inset:0;z-index:2;display:block!important;width:100%;height:100%;overflow:visible;pointer-events:none;
+  position:absolute;inset:-1px;z-index:2;display:block!important;width:auto;height:auto;overflow:visible;pointer-events:none;
 }
 #eloryGlobalStickyShell.elory-notch-compact>.elory-reference-nav .elory-notch-beam-path{
   fill:none;stroke-dasharray:92 908;stroke-dashoffset:0;stroke-linecap:round;stroke-width:3;
