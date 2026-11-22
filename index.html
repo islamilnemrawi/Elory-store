@@ -3179,6 +3179,27 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--pink,#d96b91);outli
 #categoriesSection .category-image.category-placeholder span{display:block;line-height:1;filter:drop-shadow(0 2px 3px rgba(139,57,88,.12));}
 #categoriesSection .category-name{display:block;max-width:100%;margin:7px 0 0;overflow-wrap:anywhere;color:var(--text,#553744);font-size:15px!important;font-weight:700;line-height:1.35;text-align:center}
 #categoriesSection .category-count{margin-top:2px;color:var(--muted,#81747a);font-size:13px;line-height:1.2}
+#categoriesSection .category-skeleton{pointer-events:none;gap:0}
+#categoriesSection .category-skeleton .category-image,
+#categoriesSection .category-skeleton .category-name{
+  border:0!important;
+  color:transparent!important;
+  background:linear-gradient(100deg,#f8e4ec 20%,#fff5f8 38%,#f8e4ec 56%)!important;
+  background-size:220% 100%!important;
+  animation:eloryCategorySkeleton 1.35s ease-in-out infinite!important;
+  box-shadow:none!important;
+}
+#categoriesSection .category-skeleton .category-name{
+  width:68%;height:9px;margin-top:10px;border-radius:999px;
+}
+@keyframes eloryCategorySkeleton{
+  0%{background-position:100% 0}
+  100%{background-position:-120% 0}
+}
+@media(prefers-reduced-motion:reduce){
+  #categoriesSection .category-skeleton .category-image,
+  #categoriesSection .category-skeleton .category-name{animation:none!important}
+}
 
 #featured{position:relative;margin:0;padding:20px clamp(16px,4vw,52px) 42px;background:var(--bg,#fffafb)}
 #featured .elory-featured-head,#featured .section-head{display:flex;align-items:center;justify-content:center;margin:0 0 17px}
@@ -5653,8 +5674,13 @@ main#home{margin-top:0!important;padding-top:0!important}
 <div class="categories-wrapper" id="categoryWrapper">
 <div class="categories" id="categories">
 <!-- Live categories are rendered from Supabase. -->
-<div class="category-set" id="categorySet">
-<div class="loading">جاري تحميل الأقسام...</div>
+<div class="category-set" id="categorySet" aria-busy="true" aria-label="جاري تحميل الأقسام">
+<div class="category-card category-skeleton" aria-hidden="true"><span class="category-image"></span><span class="category-name"></span></div>
+<div class="category-card category-skeleton" aria-hidden="true"><span class="category-image"></span><span class="category-name"></span></div>
+<div class="category-card category-skeleton" aria-hidden="true"><span class="category-image"></span><span class="category-name"></span></div>
+<div class="category-card category-skeleton" aria-hidden="true"><span class="category-image"></span><span class="category-name"></span></div>
+<div class="category-card category-skeleton" aria-hidden="true"><span class="category-image"></span><span class="category-name"></span></div>
+<div class="category-card category-skeleton" aria-hidden="true"><span class="category-image"></span><span class="category-name"></span></div>
 </div>
 </div>
 </div>
