@@ -21,6 +21,16 @@ const { chromium } = require("playwright");
   try {
     await page.goto("http://127.0.0.1:4173/index.html", { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.locator("#eloryGlobalStickyShell").waitFor();
+    const firstPaintHero = await page.evaluate(() => {
+      const hero = document.getElementById("heroSlider");
+      const style = hero ? getComputedStyle(hero) : null;
+      return { exists: !!hero, opacity: style?.opacity, visibility: style?.visibility, pointerEvents: style?.pointerEvents, height: hero?.getBoundingClientRect().height || 0 };
+    });
+    assert.equal(firstPaintHero.exists, true, "hero fallback must exist at first paint");
+    assert.equal(Number(firstPaintHero.opacity), 1, "hero fallback must not remain hidden while CMS data loads");
+    assert.equal(firstPaintHero.visibility, "visible", "hero fallback must be visible before campaign data resolves");
+    assert.ok(firstPaintHero.height >= 240, "hero must reserve its normal layout height during first paint");
+    console.log("FIRST_PAINT_HERO " + JSON.stringify(firstPaintHero));
     await page.waitForTimeout(2500);
     await page.evaluate(async () => {
       document.documentElement.style.scrollBehavior = "auto";
