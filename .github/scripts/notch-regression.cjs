@@ -173,9 +173,11 @@ const { chromium } = require("playwright");
                 audit.cls += entry.value;
                 const sources = Array.from(entry.sources || []).map(source => {
                   const node = source.node;
-                  const name = node ? node.tagName.toLowerCase() +
-                    (node.id ? "#" + node.id : "") +
-                    (typeof node.className === "string" && node.className.trim() ? "." + node.className.trim().split(/\s+/).join(".") : "") : "unknown";
+                  const name = node && node.nodeType === 1
+                    ? node.tagName.toLowerCase() +
+                      (node.id ? "#" + node.id : "") +
+                      (typeof node.className === "string" && node.className.trim() ? "." + node.className.trim().split(/\s+/).join(".") : "")
+                    : node && node.nodeName ? node.nodeName.toLowerCase() : "unknown";
                   return { node: name, previousRect: source.previousRect, currentRect: source.currentRect };
                 });
                 audit.layoutShifts.push({ value: entry.value, startTime: entry.startTime, sources });
