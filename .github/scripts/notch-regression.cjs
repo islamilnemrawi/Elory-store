@@ -343,8 +343,56 @@ const { chromium } = require("playwright");
     assert.equal(await page.locator("#eloryGlobalStickyShell").evaluate(el => el.classList.contains("elory-notch-search-open")), false,
       "compact magnifier must submit and close search when a query is entered");
 
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await page.waitForTimeout(300);
+    // Reload while scrolled: the compact notch must re-sync after browser scroll restoration.
+    await page.evaluate(() => {
+      history.scrollRestoration = "auto";
+      window.scrollTo(0, 180);
+    });
+    await page.waitForTimeout(250);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.locator("#eloryGlobalStickyShell").waitFor();
+    await page.waitForTimeout(700);
+    const reloadState = await page.evaluate(() => {
+      const shell = document.getElementById("eloryGlobalStickyShell");
+      const overlay = shell.querySelector(":scope > .elory-notch-overlay");
+      return {
+        scrollY: Math.round(window.scrollY),
+        compact: shell.classList.contains("elory-notch-compact"),
+        overlayDisplay: getComputedStyle(overlay).display,
+        overlayPosition: getComputedStyle(overlay).position
+      };
+    });
+    console.log("RELOAD_STATE " + JSON.stringify(reloadState));
+    assert.ok(reloadState.scrollY <= 88 || reloadState.compact,
+      "after reload, a restored scroll position beyond the compact threshold must show the compact notch");
+    if (reloadState.scrollY > 88) {
+      assert.equal(reloadState.compact, true, "compact state must be restored after a scrolled page reload");
+      assert.equal(reloadState.overlayDisplay, "flex", "compact overlay must be visible after a scrolled page reload");
+      assert.equal(reloadState.overlayPosition, "fixed", "compact overlay must remain fixed after a scrolled page reload");
+    }
+
+    await page.evaluate(() => window.scrollTo(0, 180));
+    await page.waitForTimeout(250);
+    const glowState = await page.evaluate(() => {
+      const overlay = document.querySelector("#eloryGlobalStickyShell>.elory-notch-overlay");
+      const before = getComputedStyle(overlay, "::before");
+      const after = getComputedStyle(overlay, "::after");
+      const beam = getComputedStyle(overlay.querySelector(".elory-notch-beam"));
+      const content = getComputedStyle(overlay.querySelector(".elory-mobile-notch"));
+      return {
+        haloZ: Number(before.zIndex),
+        faceZ: Number(after.zIndex),
+        beamZ: Number(beam.zIndex),
+        contentZ: Number(content.zIndex),
+        haloShadow: before.boxShadow,
+        haloOpacity: Number(before.opacity)
+      };
+    });
+    console.log("GLOW_STACKING " + JSON.stringify(glowState));
+    assert.ok(glowState.haloZ > glowState.faceZ, "compact notch halo must render above its opaque face layer");
+    assert.ok(glowState.beamZ > glowState.haloZ, "moving beam must render above the halo");
+    assert.ok(glowState.contentZ > glowState.beamZ, "notch controls must remain above the moving beam");
+    assert.notEqual(glowState.haloShadow, "none", "compact notch must have a visible glow shadow");
     await page.screenshot({ path: path.join(reportDir, "elory-header-mobile-390x844.png"), fullPage: false });
 
     const report = {
