@@ -9239,9 +9239,10 @@ main#home{margin-top:0!important;padding-top:0!important}
         }
 
         track.style.setProperty("--elory-category-distance", setWidth + "px");
-        // Consistent, calm speed across mobile and desktop; never accelerate on wide screens.
+        // Keep the rail on a stable compositor transform with a consistent pixel speed.
+        // Avoid the old 18s floor, which made short category sets crawl unevenly.
         const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
-        const duration = reduceMotion ? 90 : Math.max(18, setWidth / 34);
+        const duration = reduceMotion ? 90 : Math.max(12, setWidth / 42);
         track.style.setProperty("--elory-category-duration", duration + "s");
         track.style.animation = "eloryCategoryInfinite var(--elory-category-duration) linear infinite";
         const nextAnimation = track.getAnimations().find(item => item.animationName === "eloryCategoryInfinite");
