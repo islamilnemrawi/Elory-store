@@ -47,15 +47,12 @@ async function sample(page, label) {
 }
 
 function assertPainted(state, viewportName) {
-  if (!state.heroVisible) return;
   assert.ok(state.sliderWidth > 0, viewportName + " " + state.label + ": hero slider must have width");
   assert.ok(state.sliderHeight >= 250, viewportName + " " + state.label + ": hero must reserve its layout height");
   assert.ok(state.sliderOpacity >= 0.99, viewportName + " " + state.label + ": hero region must not be transparent while CMS loads");
   assert.notEqual(state.sliderVisibility, "hidden", viewportName + " " + state.label + ": hero region must remain visible");
-  if (!state.ready) {
-    assert.equal(state.visibleSlides, 0,
-      viewportName + " " + state.label + ": baked-in starter slides must stay hidden until CMS/recovery publishes the real campaign");
-  }
+  assert.ok(state.visibleSlides >= 1,
+    viewportName + " " + state.label + ": a real fallback or CMS campaign slide must remain visible during loading");
 }
 
 async function runViewport(browser, viewport) {
@@ -76,7 +73,26 @@ async function runViewport(browser, viewport) {
         for (const entry of list.getEntries()) {
           if (!entry.hadRecentInput) {
             window.__eloryFirstPaintAudit.cls += entry.value;
-            window.__eloryFirstPaintAudit.shifts.push({ value: entry.value, startTime: entry.startTime });
+            window.__eloryFirstPaintAudit.shifts.push({
+              value: entry.value,
+              startTime: entry.startTime,
+              sources: (entry.sources || []).map(source => {
+                const node = source.node;
+                return {
+                  node: node ? node.tagName.toLowerCase() : null,
+                  id: node?.id || null,
+                  className: typeof node?.className === "string" ? node.className : null,
+                  previousRect: source.previousRect ? {
+                    x: source.previousRect.x, y: source.previousRect.y,
+                    width: source.previousRect.width, height: source.previousRect.height
+                  } : null,
+                  currentRect: source.currentRect ? {
+                    x: source.currentRect.x, y: source.currentRect.y,
+                    width: source.currentRect.width, height: source.currentRect.height
+                  } : null
+                };
+              })
+            });
           }
         }
       }).observe({ type: "layout-shift", buffered: true });
