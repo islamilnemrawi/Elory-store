@@ -152,6 +152,9 @@ async function runViewport(browser, viewport) {
       heroReady: document.getElementById("heroSlider")?.dataset.heroCmsReady === "true",
       audit: window.__eloryFirstPaintAudit || { cls: null, shifts: [] }
     }));
+    assert.ok(results.final.audit.cls <= 0.1,
+      viewport.name + ": cumulative layout shift must remain at or below 0.1 (actual " +
+      results.final.audit.cls + ")");
 
     // Exercise a real refresh from a scrolled position and inspect the first rendered frame.
     await page.evaluate(() => {
