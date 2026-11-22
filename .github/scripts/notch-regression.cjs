@@ -12,7 +12,7 @@ const { chromium } = require("playwright");
     deviceScaleFactor: 1,
     isMobile: true,
     hasTouch: true,
-    reducedMotion: "reduce"
+    reducedMotion: "no-preference"
   });
   page.setDefaultTimeout(20000);
   const pageErrors = [];
@@ -69,6 +69,7 @@ const { chromium } = require("playwright");
         searchLabelColor: getComputedStyle(document.querySelector("#eloryGlobalStickyShell>.elory-reference-nav .search-btn .elory-search-label")).color,
         beam: (() => {
           const svg = fullNav.querySelector(".elory-reference-nav-beam");
+          const compactSvg = shell.querySelector(".elory-notch-beam");
           const path = svg?.querySelector(".elory-reference-nav-beam-path");
           return path ? {
             exists: true,
@@ -80,7 +81,8 @@ const { chromium } = require("playwright");
             animation: getComputedStyle(path).animationName,
             linecap: getComputedStyle(path).strokeLinecap,
             wedgeExists: svg?.querySelectorAll(".elory-reference-nav-beam-comet-layer").length === 4,
-            wedgeDuration: svg ? getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDuration : null
+            wedgeDuration: svg ? getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDuration : null,
+            bothStartStyle3: !!svg?.classList.contains("elory-beam-style-3") && !!compactSvg?.classList.contains("elory-beam-style-3")
           } : { exists: false };
         })()
       };
@@ -88,6 +90,7 @@ const { chromium } = require("playwright");
     console.log("START_STATE " + JSON.stringify(start));
     assert.deepEqual(start.viewport, { width: 390, height: 844 }, "must run at a real 390x844 CSS viewport");
     assert.equal(start.scrollY, 0, "regression test must begin at page top");
+    assert.equal(start.beam.bothStartStyle3, true, "both notch SVGs must start in the approved style before first paint");
     assert.equal(start.compact, false, "page must start in full-header state");
     assert.ok(start.navInner.width < start.viewport.width - 12, "large navigation must render as a separate centered notch, not a full-width strip");
     assert.ok(start.navInner.height >= 50, "large navigation notch must have a substantial capsule height");
@@ -120,15 +123,23 @@ const { chromium } = require("playwright");
           ringOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-ring")).opacity,
           glowOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-glow")).opacity,
           midOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-mid")).opacity,
+          headOpacity:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).opacity,
+          headStroke:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).stroke,
           glowWidth:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-glow")).strokeWidth,duration:getComputedStyle(svg.querySelector(".elory-reference-nav-beam-comet-head")).animationDuration};
       }));
     }
     assert.deepEqual(fullBeamStyles.map(x=>x.style),["1","2","3","4"],"all four full-size lighting styles must be independently selectable");
     assert.deepEqual(fullBeamStyles.map(x=>x.duration),["18s","18s","18s","18s"],"all four full-size styles must share one continuous animation pace");
     assert.ok(Number(fullBeamStyles[1].secondaryOpacity)>0,"style 2 must show its opposing second comet");
-    assert.ok(Number(fullBeamStyles[2].ringOpacity)>=.9,"style 3 must retain a bright static halo when reduced motion is requested");
-    assert.equal(Number(fullBeamStyles[2].glowOpacity),0,"reduced-motion mode must not freeze a glow dash at the upper-left path origin");
-    assert.equal(Number(fullBeamStyles[2].midOpacity),0,"reduced-motion mode must not freeze a mid-layer dash at the upper-left path origin");
+    assert.ok(Number(fullBeamStyles[2].ringOpacity)>0,"style 3 must show one visible perimeter halo");
+    assert.equal(Number(fullBeamStyles[2].glowOpacity),0,"style 3 must not stack a second glow dash");
+    assert.equal(Number(fullBeamStyles[2].midOpacity),0,"style 3 must not stack a second mid dash");
+    assert.match(fullBeamStyles[2].headStroke,/246, 184, 206/,"style 3 moving glint must remain Elory blush pink");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const reducedFull = await page.evaluate(() => ({ring:getComputedStyle(document.querySelector(".elory-reference-nav-beam-ring")).opacity,head:getComputedStyle(document.querySelector(".elory-reference-nav-beam-comet-head")).opacity}));
+    assert.ok(Number(reducedFull.ring)>=.9,"large notch halo must remain visible with reduced motion");
+    assert.equal(Number(reducedFull.head),0,"large notch must not freeze a glint at the upper-left path origin");
+    await page.emulateMedia({ reducedMotion: "no-preference" });
     assert.ok(parseFloat(fullBeamStyles[3].glowWidth)>parseFloat(fullBeamStyles[0].glowWidth),"style 4 must have a visibly broader aurora ribbon");
 
     const largeBeamMotion = await page.evaluate(async () => {
@@ -403,6 +414,8 @@ const { chromium } = require("playwright");
           ringOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-ring")).opacity,
           glowOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-glow")).opacity,
           midOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-mid")).opacity,
+          headOpacity:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).opacity,
+          headStroke:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).stroke,
           glowWidth:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-glow")).strokeWidth,duration:getComputedStyle(compact.querySelector(".elory-notch-beam-comet-head")).animationDuration};
       }));
     }
@@ -410,9 +423,15 @@ const { chromium } = require("playwright");
     assert.deepEqual(compactBeamStyles.map(x=>x.duration),["18s","18s","18s","18s"],"all four compact styles must share one continuous animation pace");
     assert.ok(compactBeamStyles.every(x=>x.full===x.compact),"large and compact notches must always use the same selected style");
     assert.ok(Number(compactBeamStyles[1].secondaryOpacity)>0,"compact style 2 must show its opposing second comet");
-    assert.ok(Number(compactBeamStyles[2].ringOpacity)>=.9,"compact style 3 must retain a bright static halo when reduced motion is requested");
-    assert.equal(Number(compactBeamStyles[2].glowOpacity),0,"compact reduced-motion mode must not freeze a glow dash at the upper-left path origin");
-    assert.equal(Number(compactBeamStyles[2].midOpacity),0,"compact reduced-motion mode must not freeze a mid-layer dash at the upper-left path origin");
+    assert.ok(Number(compactBeamStyles[2].ringOpacity)>0,"compact style 3 must show one visible perimeter halo");
+    assert.equal(Number(compactBeamStyles[2].glowOpacity),0,"compact style 3 must not stack a second glow dash");
+    assert.equal(Number(compactBeamStyles[2].midOpacity),0,"compact style 3 must not stack a second mid dash");
+    assert.match(compactBeamStyles[2].headStroke,/246, 184, 206/,"compact style 3 moving glint must remain Elory blush pink");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const reducedCompact = await page.evaluate(() => ({ring:getComputedStyle(document.querySelector(".elory-notch-beam-ring")).opacity,head:getComputedStyle(document.querySelector(".elory-notch-beam-comet-head")).opacity}));
+    assert.ok(Number(reducedCompact.ring)>=.9,"compact notch halo must remain visible with reduced motion");
+    assert.equal(Number(reducedCompact.head),0,"compact notch must not freeze a glint at the upper-left path origin");
+    await page.emulateMedia({ reducedMotion: "no-preference" });
     assert.ok(parseFloat(compactBeamStyles[3].glowWidth)>parseFloat(compactBeamStyles[0].glowWidth),"compact style 4 must have a visibly broader aurora ribbon");
 
     const compactSearchButton = page.locator("#eloryNotchSearchButton");
