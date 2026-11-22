@@ -25,10 +25,12 @@ const { chromium } = require("playwright");
     const start = await page.evaluate(() => {
       document.documentElement.style.scrollBehavior = "auto";
       const shell = document.getElementById("eloryGlobalStickyShell");
-      const nav = shell.querySelector(":scope > .elory-reference-nav");
+      const fullNav = shell.querySelector(":scope > .elory-reference-nav");
+      const fullNavBox = fullNav.getBoundingClientRect();
       return {
         viewport: { width: innerWidth, height: innerHeight },
         shellHeight: shell.getBoundingClientRect().height,
+        fullNavSize: { width: fullNavBox.width, height: fullNavBox.height },
         documentHeight: document.documentElement.scrollHeight,
         compact: shell.classList.contains("elory-notch-compact"),
         shellPosition: getComputedStyle(shell).position,
@@ -41,6 +43,7 @@ const { chromium } = require("playwright");
     assert.equal(start.compact, false, "page must start in full-header state");
     assert.equal(start.shellPosition, "relative", "the full header shell must not be a large sticky repaint layer");
     assert.ok(start.maxScroll > 300, "page needs enough scroll range for the regression test");
+    await page.evaluate(size => { window.__eloryStartNavSize = size; }, start.fullNavSize);
 
     await page.evaluate(() => {
       const shell = document.getElementById("eloryGlobalStickyShell");
@@ -69,7 +72,7 @@ const { chromium } = require("playwright");
                   const node = source.node;
                   const name = node ? node.tagName.toLowerCase() +
                     (node.id ? "#" + node.id : "") +
-                    (typeof node.className === "string" && node.className.trim() ? "." + node.className.trim().split(/\\s+/).join(".") : "") : "unknown";
+                    (typeof node.className === "string" && node.className.trim() ? "." + node.className.trim().split(/\s+/).join(".") : "") : "unknown";
                   return { node: name, previousRect: source.previousRect, currentRect: source.currentRect };
                 });
                 audit.layoutShifts.push({ value: entry.value, startTime: entry.startTime, sources });
@@ -121,6 +124,12 @@ const { chromium } = require("playwright");
       const minHeight = Math.min(...heights);
       const maxHeight = Math.max(...heights);
       const documentHeights = [...audit.toggles.map(x => x.documentHeight), ...audit.samples.map(x => x.documentHeight)];
+      const transitionShifts = audit.layoutShifts.filter(entry =>
+        audit.toggles.some(toggle => entry.startTime >= toggle.time && entry.startTime <= toggle.time + 800)
+      );
+      const navTransitionShifts = transitionShifts.filter(entry =>
+        entry.sources.some(source => source.node.includes("nav.elory-reference-nav"))
+      );
       return {
         toggles: audit.toggles,
         samples: audit.samples,
@@ -128,6 +137,9 @@ const { chromium } = require("playwright");
         documentHeightDelta: documentHeights.length ? Math.max(...documentHeights) - Math.min(...documentHeights) : 0,
         cls: audit.cls,
         layoutShifts: audit.layoutShifts,
+        transitionCLS: transitionShifts.reduce((sum, entry) => sum + entry.value, 0),
+        fullNavTransitionCLS: navTransitionShifts.reduce((sum, entry) => sum + entry.value, 0),
+        fullNavTransitionShiftCount: navTransitionShifts.length,
         frameGapCountOver34ms: audit.frameGaps.length,
         maxFrameGapMs: audit.frameGaps.length ? Math.max(...audit.frameGaps) : 0,
         documentHeight: document.documentElement.scrollHeight,
@@ -137,7 +149,8 @@ const { chromium } = require("playwright");
 
     console.log("SLOW_SCROLL_AUDIT " + JSON.stringify(scrollAudit));
     assert.equal(scrollAudit.toggles.length, 4, "two slow down/up cycles should produce exactly four compact-state transitions");
-    assert.ok(scrollAudit.shellHeightDelta <= 1, "sticky shell height must not change when compact mode toggles");
+    assert.ok(scrollAudit.shellHeightDelta <= 1, "header shell height must not change when compact mode toggles");
+    assert.ok(scrollAudit.fullNavTransitionCLS < 0.005, "the original full navigation must not shift when the notch appears or disappears");
     assert.ok(scrollAudit.toggles.filter(x => x.compact).every(x => x.scrollY >= 88), "compact mode must engage only after its enter threshold");
     assert.ok(scrollAudit.toggles.filter(x => !x.compact).every(x => x.scrollY <= 48), "full header must return only after the exit threshold");
 
@@ -145,7 +158,9 @@ const { chromium } = require("playwright");
     await page.waitForTimeout(350);
     const notch = await page.evaluate(async () => {
       const shell = document.getElementById("eloryGlobalStickyShell");
-      const nav = shell.querySelector(":scope > .elory-reference-nav");
+      const fullNav = shell.querySelector(":scope > .elory-reference-nav");
+      const nav = shell.querySelector(":scope > .elory-notch-overlay");
+      const fullNavBox = fullNav.getBoundingClientRect();
       const beam = nav.querySelector(".elory-notch-beam");
       const beamPath = nav.querySelector(".elory-notch-beam-path");
       const buttons = nav.querySelectorAll(".elory-mobile-notch .elory-notch-action");
@@ -159,6 +174,11 @@ const { chromium } = require("playwright");
         navPosition: getComputedStyle(nav).position,
         navWidth: navBox.width,
         navHeight: navBox.height,
+        fullNavVisibility: getComputedStyle(fullNav).visibility,
+        fullNavWidth: fullNavBox.width,
+        fullNavHeight: fullNavBox.height,
+        fullNavSizeStable: Math.abs(fullNavBox.width - window.__eloryStartNavSize.width) <= 1 &&
+          Math.abs(fullNavBox.height - window.__eloryStartNavSize.height) <= 1,
         buttonCount: buttons.length,
         beamExists: !!beamPath,
         beamDashOffsetChanged: Number.isFinite(before) && Number.isFinite(after) && Math.abs(after - before) > 5,
@@ -173,7 +193,9 @@ const { chromium } = require("playwright");
     await page.screenshot({ path: path.join(reportDir, "elory-notch-mobile-390x844.png"), fullPage: false });
     console.log("NOTCH_GEOMETRY " + JSON.stringify(notch));
     assert.equal(notch.compact, true, "notch must be visible when scrolling");
-    assert.equal(notch.navPosition, "fixed", "notch must remain fixed independently of the normal-flow header");
+    assert.equal(notch.navPosition, "fixed", "the independent notch overlay must be fixed");
+    assert.equal(notch.fullNavVisibility, "hidden", "the original navigation must hide without leaving normal flow");
+    assert.equal(notch.fullNavSizeStable, true, "the original navigation dimensions must remain unchanged");
     assert.equal(notch.buttonCount, 3, "notch must retain exactly three actions");
     assert.equal(notch.beamExists, true, "SVG perimeter beam must exist");
     assert.equal(notch.beamDashOffsetChanged, true, "beam dash must move along the edge");
