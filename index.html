@@ -12306,41 +12306,57 @@ body.prime-mode{
 }
 
 
-/* Remove the fixed perimeter stroke that reads as a static colored patch.
-   Keep the moving glint and replace the hard ring with a soft breathing halo. */
-#eloryGlobalStickyShell .elory-reference-nav-beam-ring,
-#eloryGlobalStickyShell .elory-notch-beam-ring{
-  opacity:0!important;
-  animation:none!important;
-  filter:none!important;
-}
-@keyframes elorySoftNotchHalo{
+/* Restore the full soft perimeter halo. The moving pink glint remains independent. */
+@keyframes eloryHeartbeatHalo{
   0%,100%{
-    box-shadow:inset 0 1px 4px rgba(255,255,255,.96),
-      0 0 0 1px color-mix(in srgb,var(--elory-beam-main) 12%,transparent),
-      0 6px 18px color-mix(in srgb,var(--elory-beam-deep) 12%,transparent);
+    opacity:.34;
+    stroke-width:2.7;
   }
-  50%{
-    box-shadow:inset 0 1px 4px rgba(255,255,255,.98),
-      0 0 0 2px color-mix(in srgb,var(--elory-beam-main) 24%,transparent),
-      0 0 24px color-mix(in srgb,var(--elory-beam-deep) 22%,transparent),
-      0 7px 20px color-mix(in srgb,var(--elory-beam-deep) 15%,transparent);
+  7%{
+    opacity:.98;
+    stroke-width:3.8;
+  }
+  14%{
+    opacity:.46;
+    stroke-width:2.9;
+  }
+  23%{
+    opacity:.84;
+    stroke-width:3.5;
+  }
+  34%,88%{
+    opacity:.36;
+    stroke-width:2.7;
   }
 }
-#eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner,
-#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
-  animation:elorySoftNotchHalo 7s ease-in-out infinite!important;
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-ring,
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-ring{
+  opacity:.36!important;
+  stroke:var(--elory-beam-deep)!important;
+  stroke-width:2.7!important;
+  stroke-dasharray:1000 0!important;
+  filter:
+    drop-shadow(0 0 5px var(--elory-beam-main))
+    drop-shadow(0 0 12px var(--elory-beam-deep))
+    drop-shadow(0 0 22px color-mix(in srgb,var(--elory-beam-deep) 48%,transparent))!important;
+  animation:eloryHeartbeatHalo 6.8s ease-in-out infinite!important;
 }
-#eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
-  border-color:color-mix(in srgb,var(--elory-beam-main) 46%,white)!important;
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-glow,
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-glow{
+  animation:eloryBeamGlowPulse 6.8s ease-in-out infinite!important;
+}
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-mid,
+#eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-mid{
+  animation:eloryBeamGlowPulse 6.8s ease-in-out infinite!important;
 }
 @media(prefers-reduced-motion:reduce){
-  #eloryGlobalStickyShell>.elory-reference-nav>.elory-reference-nav-inner,
-  #eloryGlobalStickyShell.elory-notch-compact>.elory-notch-overlay{
+  #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-ring,
+  #eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-ring,
+  #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-glow,
+  #eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-glow,
+  #eloryGlobalStickyShell .elory-beam-style-3 .elory-reference-nav-beam-comet-mid,
+  #eloryGlobalStickyShell .elory-beam-style-3 .elory-notch-beam-comet-mid{
     animation:none!important;
+    opacity:.55!important;
   }
 }
-</style>
-
-</body>
-</html>
