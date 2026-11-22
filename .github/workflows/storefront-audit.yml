@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - audit/full-storefront-playwright-20261122
+      - fix/notch-beams-and-audit-20261122
     paths:
       - index.html
       - .github/scripts/storefront-audit.cjs
