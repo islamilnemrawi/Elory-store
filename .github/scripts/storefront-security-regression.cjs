@@ -17,7 +17,9 @@ async function main() {
       typeof window.renderCustomerOrderCard === "function" &&
       typeof window.bindCustomerOrderNavigation === "function" &&
       typeof window.renderMenuCategories === "function" &&
-      typeof window.renderProducts === "function",
+      typeof window.renderProducts === "function" &&
+      typeof window.productCardHtml === "function" &&
+      typeof window.renderFavorites === "function",
       null,
       { timeout: 30000 }
     );
@@ -29,6 +31,8 @@ async function main() {
       window.__shopCalls = [];
       window.__openedProductId = null;
       window.__menuToggleArgs = null;
+      window.__productCardActions = [];
+      window.__favoriteActions = [];
       window.__homeShopArgs = null;
 
       window.showShopPage = (value, title) => {
@@ -40,6 +44,11 @@ async function main() {
       window.toggleMenu = (...args) => {
         window.__menuToggleArgs = args;
       };
+      window.toggleFavorite = button => window.__productCardActions.push(["favorite",button.dataset.productId]);
+      window.addToCart = id => window.__productCardActions.push(["add-cart",id]);
+      window.handleProductPrimeOffer = event => window.__productCardActions.push(["prime",event.target.closest("button")?.dataset.productCardAction]);
+      window.addFavoriteToCart = id => window.__favoriteActions.push(["add",id]);
+      window.removeFavoriteById = id => window.__favoriteActions.push(["remove",id]);
 
 
       storeCategories = [{ name: category, active: true, sort_order: 1 }];
@@ -52,6 +61,25 @@ async function main() {
       homeLink.textContent = category;
       document.getElementById("productsGrid").append(homeLink);
       homeLink.click();
+      const productCard = document.createElement("div");
+      productCard.innerHTML = productCardHtml({id:productId,name:"XSS product",image:"",category:"Probe",price:10});
+      document.body.append(productCard);
+      const cardFavorite = productCard.querySelector('[data-product-card-action="favorite"]');
+      const cardAdd = productCard.querySelector('[data-product-card-action="add-cart"]');
+      const cardPrime = productCard.querySelector('[data-product-card-action="prime"]');
+      const cardHandlers = [cardFavorite?.getAttribute("onclick")??null,cardAdd?.getAttribute("onclick")??null,cardPrime?.getAttribute("onclick")??null];
+      cardFavorite?.click(); cardAdd?.click(); cardPrime?.click();
+
+      favorites = [{id:productId,name:"XSS favorite",price:10}];
+      products = [];
+      favoriteProductDetailsCache.clear();
+      renderFavorites(false);
+      const favoriteOpen = document.querySelector('#favoritesItems [data-favorite-action="open"]');
+      const favoriteAdd = document.querySelector('#favoritesItems [data-favorite-action="add"]');
+      const favoriteRemove = document.querySelector('#favoritesItems [data-favorite-action="remove"]');
+      const favoriteHandlers = [favoriteOpen?.getAttribute("onclick")??null,favoriteAdd?.getAttribute("onclick")??null,favoriteRemove?.getAttribute("onclick")??null];
+      favoriteOpen?.click(); favoriteAdd?.click(); favoriteRemove?.click();
+
       renderMenuCategories();
       const menuButton = document.querySelector("#menuCategories button[data-menu-category]");
       const menuInlineHandler = menuButton?.getAttribute("onclick") ?? null;
@@ -74,6 +102,10 @@ async function main() {
       orderButton?.click();
 
       return {
+        cardHandlers,
+        productCardActions: window.__productCardActions,
+        favoriteHandlers,
+        favoriteActions: window.__favoriteActions,
         menuInlineHandler,
         menuCategoryValue,
         menuShopArgs: window.__shopCalls[1],
@@ -89,7 +121,11 @@ async function main() {
       };
     });
 
-    assert.equal(result.menuInlineHandler, null, "Menu category buttons must not contain inline JavaScript handlers");
+    assert.deepEqual(result.cardHandlers,[null,null,null],"Product card actions must not contain inline JavaScript");
+    assert.deepEqual(result.productCardActions,[["favorite","probe');window.__eloryXss=1;//"],["add-cart","probe');window.__eloryXss=1;//"],["prime","prime"]],"Product card actions must preserve their intended behavior and opaque product ID");
+    assert.deepEqual(result.favoriteHandlers,[null,null,null],"Favorite actions must not contain inline JavaScript");
+    assert.deepEqual(result.favoriteActions,[["add","probe');window.__eloryXss=1;//"],["remove","probe');window.__eloryXss=1;//"]],"Favorite actions must preserve the product ID");
+    assert.equal(result.menuInlineHandler, "Menu category buttons must not contain inline JavaScript handlers");
     assert.equal(result.menuCategoryValue, 'probe" onclick="window.__eloryXss=1');
     assert.deepEqual(result.menuShopArgs, ['probe" onclick="window.__eloryXss=1', 'probe" onclick="window.__eloryXss=1']);
     assert.deepEqual(result.menuToggleArgs, [false, true], "Selecting a menu category must preserve the existing menu-close behavior");
