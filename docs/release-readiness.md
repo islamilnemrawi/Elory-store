@@ -6,9 +6,9 @@ Production source branch: `main`
 
 ## Changes prepared in this branch
 
-- Removed unsafe inline JavaScript interpolation from dynamic shop-category buttons. Category values now travel through escaped data attributes and a delegated click handler.
+- Removed unsafe inline JavaScript interpolation from dynamic shop-category pills, side-menu categories, and homepage category links. Category values now travel through escaped data attributes and delegated click handlers while preserving the original navigation behavior.
 - Removed unsafe inline JavaScript interpolation from customer-order product buttons. Product IDs now travel through escaped data attributes and a delegated click handler.
-- Added a Playwright regression test that injects hostile category names and order product IDs and verifies that no inline handler is created or executed.
+- Extended the Playwright regression test to inject hostile category names into the side menu, homepage category links, and shop pills, plus hostile order product IDs; it verifies that no inline handler is created or executed and that navigation arguments remain unchanged.
 - Synchronized the repository copy of `admin-reset-staff-password` with the currently deployed Edge Function. The primary-owner identity remains the security boundary; the editable `role` label is not treated as proof of primary-owner identity.
 - Added a direct WhatsApp request path to the data-deletion page using the same published store contact already present on the storefront.
 - Preserved both source modules returned by the deployed `elora-push` Worker under `cloudflare/push-worker/`. This is a source snapshot, not a Worker redeployment package; confirm the active entrypoint and bindings before any future upload.
