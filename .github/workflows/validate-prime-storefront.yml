@@ -94,7 +94,8 @@ jobs:
           staff_reset = Path("supabase/functions/admin-reset-staff-password/index.ts").read_text(encoding="utf-8")
           assert "owner_data_reset_settings" in staff_reset and "callerId !== primaryOwnerId" in staff_reset, "Staff password reset must be restricted to the primary owner"
           assert "/auth/v1/admin/users/" in staff_reset, "Staff password reset must update the Supabase Auth user"
-          assert "String(target.role || \"\").toLowerCase() === \"owner\"" in staff_reset, "Staff password reset must not target owner accounts"
+          assert "Role is only a display label." in staff_reset, "Staff reset must preserve the deployed primary-owner identity model"
+          assert 'String(target.role || "").toLowerCase() === "owner"' not in staff_reset, "Editable role labels must not be treated as the primary-owner identity"
           scripts = re.findall(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", html, flags=re.I)
           checked = 0
           for index, (attrs, code) in enumerate(scripts):
