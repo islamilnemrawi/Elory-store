@@ -18,7 +18,6 @@ async function main() {
       typeof window.bindCustomerOrderNavigation === "function" &&
       typeof window.renderMenuCategories === "function" &&
       typeof window.renderProducts === "function" &&
-      typeof window.productCardHtml === "function" &&
       typeof window.renderFavorites === "function",
       null,
       { timeout: 30000 }
@@ -61,9 +60,12 @@ async function main() {
       homeLink.textContent = category;
       document.getElementById("productsGrid").append(homeLink);
       homeLink.click();
-      const productCard = document.createElement("div");
-      productCard.innerHTML = productCardHtml({id:productId,name:"XSS product",image:"",category:"Probe",price:10});
-      document.body.append(productCard);
+      filteredProducts = [{id:productId,name:"XSS product",image:"",category:"Probe",price:10,featured:true}];
+      productsLoadState = "ready";
+      const searchInput = document.getElementById("searchInput");
+      if(searchInput) searchInput.value = "probe";
+      renderProducts();
+      const productCard = document.getElementById("productsGrid");
       const cardFavorite = productCard.querySelector('[data-product-card-action="favorite"]');
       const cardAdd = productCard.querySelector('[data-product-card-action="add-cart"]');
       const cardPrime = productCard.querySelector('[data-product-card-action="prime"]');
