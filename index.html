@@ -8113,10 +8113,30 @@ main#home{margin-top:0!important;padding-top:0!important}
 
     }
 
+    function bindCartActions(container){
+      if(!container||container.dataset.cartActionsBound==="true") return;
+      container.dataset.cartActionsBound="true";
+      container.addEventListener("click",event=>{
+        const target=event.target;
+        if(!(target instanceof Element)) return;
+        const button=target.closest("button[data-cart-action]");
+        if(!button||!container.contains(button)) return;
+        const action=button.dataset.cartAction;
+        const productId=button.dataset.productId;
+        const itemKey=button.dataset.cartItemKey;
+        if(action==="increase"||action==="decrease"){
+          if(productId!==undefined&&itemKey!==undefined) changeQuantity(productId,action==="increase"?1:-1,itemKey);
+        }else if(action==="remove"&&itemKey!==undefined){
+          removeFromCart(itemKey);
+        }
+      });
+    }
+
     function renderCart() {
 
       const container =
         document.getElementById("cartItems");
+      bindCartActions(container);
 
       const summary =
         document.getElementById("cartSummary");
@@ -8185,7 +8205,7 @@ main#home{margin-top:0!important;padding-top:0!important}
                 type="button"
                 aria-label="زيادة كمية ${escapeHtml(item.name)}"
                 ${stock!==null&&quantity>=stock?"disabled":""}
-                onclick="changeQuantity('${String(item.id).replace(/'/g,"\\'") }',1,'${escapeHtml(cartItemKey(item))}')"
+                data-cart-action="increase" data-product-id="${escapeHtml(item.id)}" data-cart-item-key="${escapeHtml(cartItemKey(item))}"
               >
                 +
               </button>
@@ -8196,7 +8216,7 @@ main#home{margin-top:0!important;padding-top:0!important}
                 type="button"
                 aria-label="تقليل كمية ${escapeHtml(item.name)}"
                 ${quantity<=1?"disabled":""}
-                onclick="changeQuantity('${String(item.id).replace(/'/g,"\\'")}',-1,'${escapeHtml(cartItemKey(item))}')"
+                data-cart-action="decrease" data-product-id="${escapeHtml(item.id)}" data-cart-item-key="${escapeHtml(cartItemKey(item))}"
               >
                 −
               </button>
@@ -8205,7 +8225,7 @@ main#home{margin-top:0!important;padding-top:0!important}
 
             <button
               class="remove-cart"
-              onclick="removeFromCart('${escapeHtml(cartItemKey(item))}')"
+              data-cart-action="remove" data-cart-item-key="${escapeHtml(cartItemKey(item))}"
             >
               <i class="fa-solid fa-trash"></i>
             </button>
