@@ -117,7 +117,7 @@ REVOKE ALL ON FUNCTION private.elory_sync_order_inventory() FROM PUBLIC, anon, a
 
 DROP TRIGGER IF EXISTS zz_elory_validate_order_totals ON public.orders;
 CREATE TRIGGER zz_elory_validate_order_totals
-BEFORE INSERT OR UPDATE OF items, governorate, center, coupon_code, user_id, prime_requested
+BEFORE INSERT OR UPDATE OF items, coupon_code, governorate, center, prime_requested
 ON public.orders
 FOR EACH ROW
 EXECUTE FUNCTION public.elory_validate_order_totals();
