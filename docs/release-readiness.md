@@ -48,6 +48,17 @@ The current verified artifact is a **Debug APK**, not a signed production Releas
 
 Google Play release still requires a production signing keystore, versionCode/versionName review, targetSdk compatibility review, a signed Release build, device testing of the exact Release APK, and Play Console privacy/data-safety declarations. Do not treat the Debug APK as Play Store-ready.
 
+## Browser audit result
+
+The Playwright audit on 24 November 2026 passed for the GitHub Pages production origin at mobile 390×844 and desktop 1365×900:
+- HTTP 200 on both viewports.
+- No horizontal overflow, broken product images, uncaught page errors, console errors, failed requests, or bad HTTP responses on the production origin.
+- First-paint/reload stability, category-rail motion, and the stored-XSS regression test passed.
+- The local branch preview at `http://127.0.0.1:4173` produced four console messages and two failed Paymob preflight requests because the deployed Paymob CORS allowlist intentionally permits the GitHub Pages origin, not localhost. Do not broaden production CORS just to silence this local-only test condition.
+- The audit deliberately skips clicking live checkout/auth/order buttons to avoid creating or modifying production customer data. It is a visual/read-only browser audit, not a complete transactional E2E test.
+
+The screenshots and JSON audit report are retained in the GitHub Actions artifact for the successful browser-audit run.
+
 ## Verification expected from this branch
 
 - PostgreSQL inventory/privacy integration tests run against an isolated disposable PostgreSQL service in GitHub Actions.
