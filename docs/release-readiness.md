@@ -6,9 +6,9 @@ Production source branch: `main`
 
 ## Changes prepared in this branch
 
-- Removed unsafe inline JavaScript interpolation from dynamic shop-category pills, side-menu categories, and homepage category links. Category values now travel through escaped data attributes and delegated click handlers while preserving the original navigation behavior.
-- Removed unsafe inline JavaScript interpolation from customer-order product buttons. Product IDs now travel through escaped data attributes and a delegated click handler.
-- Extended the Playwright regression test to inject hostile category names into the side menu, homepage category links, and shop pills, plus hostile order product IDs; it verifies that no inline handler is created or executed and that navigation arguments remain unchanged.
+- Removed unsafe inline JavaScript interpolation from dynamic shop-category pills, side-menu categories, homepage category links, product-card actions, favorites actions, cart quantity/removal actions, and customer-order product buttons. Product/category identifiers now travel through escaped data attributes and delegated click handlers while preserving existing action arguments and navigation behavior.
+- Extended the Playwright stored-XSS regression suite with hostile category names, product IDs, and cart-item keys. It verifies that generated controls contain no inline handlers, delegated actions receive the original opaque identifiers, and injected strings are never executed.
+- Added the largest layout-shift source details to the first-paint regression failure message, preserving the existing CLS threshold rather than weakening the test.
 - Synchronized the repository copy of `admin-reset-staff-password` with the currently deployed Edge Function. The primary-owner identity remains the security boundary; the editable `role` label is not treated as proof of primary-owner identity.
 - Added a direct WhatsApp request path to the data-deletion page using the same published store contact already present on the storefront.
 - Preserved both source modules returned by the deployed `elora-push` Worker under `cloudflare/push-worker/`. This is a source snapshot, not a Worker redeployment package; confirm the active entrypoint and bindings before any future upload.
@@ -49,6 +49,8 @@ The current verified artifact is a **Debug APK**, not a signed production Releas
 Google Play release still requires a production signing keystore, versionCode/versionName review, targetSdk compatibility review, a signed Release build, device testing of the exact Release APK, and Play Console privacy/data-safety declarations. Do not treat the Debug APK as Play Store-ready.
 
 ## Browser audit result
+
+- First-paint/reload stability, category-rail motion, stored-XSS regression, and mobile notch/slow-scroll checks passed on the isolated release-readiness branch (latest run set: [browser audit](https://github.com/islamilnemrawi/Elory-store/actions/runs/45405743966), [mobile regression](https://github.com/islamilnemrawi/Elory-store/actions/runs/45405743984), [JavaScript checks](https://github.com/islamilnemrawi/Elory-store/actions/runs/45405744148), [PostgreSQL privacy/inventory tests](https://github.com/islamilnemrawi/Elory-store/actions/runs/45405743939), [Worker syntax checks](https://github.com/islamilnemrawi/Elory-store/actions/runs/45405743948)).
 
 The Playwright audit on 24 November 2026 passed for the GitHub Pages production origin at mobile 390×844 and desktop 1365×900:
 - HTTP 200 on both viewports.
