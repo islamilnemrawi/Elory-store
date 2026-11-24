@@ -30,7 +30,7 @@ Performance Advisor reports unused indexes and a multiple-permissive-policy warn
 
 ### Payments
 
-The deployed Paymob function defaults to `PAYMOB_MODE=test` when the setting is absent. Secret values and the live/test mode were not inspected. Before accepting real payments, confirm in Supabase Function Secrets that `PAYMOB_MODE=live` and the correct live API, secret, HMAC, public-key, and integration values are configured. Then run a controlled end-to-end payment test with the payment provider. No real charge was made during this work.
+The deployed Paymob function defaults to `PAYMOB_MODE=test` when the setting is absent. Secret values and the live/test mode were not inspected. Before accepting real payments, confirm in Supabase Function Secrets that `PAYMOB_MODE=live` and these live values are configured: `PAYMOB_LIVE_API_KEY`, `PAYMOB_LIVE_SECRET_KEY`, `PAYMOB_LIVE_HMAC`, `PAYMOB_LIVE_PUBLIC_KEY`, `PAYMOB_LIVE_INTEGRATION_ID`, and `PAYMOB_LIVE_WALLET_INTEGRATION_ID`. Keep the service-role secret configured separately. Never paste secret values into chat or commit them to GitHub. Then run a controlled end-to-end payment test with the payment provider. No real charge was made during this work.
 
 ### Account security
 
