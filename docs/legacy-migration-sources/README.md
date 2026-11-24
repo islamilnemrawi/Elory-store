@@ -10,4 +10,4 @@ Mapping notes:
 - `20261114070500_create_elory_hero_ads_bucket.sql` and `20261118120000_owner_prime_subscription_delete.sql` match live migration names but have timestamp differences.
 - `20261111061000_elory_operations_hardening.sql`, `20261115130500_repair_coupon_staff_rls.sql`, and `20261116030000_profit_dashboard_rpc.sql` are possible historical candidates for related live operations; their exact mapping must be proven by SQL-content and schema comparison.
 
-The active Supabase migration directory remains `supabase/migrations/`. Keep this archive separate until every migration has been mapped and reviewed.
+The active Supabase migration directory remains `supabase/migrations/`. The two exact restored files are already recorded as applied in live history; no SQL was executed by restoring their source. Keep all other archive candidates separate until every migration has been mapped and reviewed.
