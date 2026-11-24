@@ -1,10 +1,6 @@
 -- Elory order inventory lifecycle and customer order data minimization.
 -- Forward-only migration. No existing orders or product stock are backfilled or modified.
 
-ALTER TABLE public.orders
-  ADD COLUMN IF NOT EXISTS inventory_deducted_at timestamptz,
-  ADD COLUMN IF NOT EXISTS inventory_restored_at timestamptz;
-
 CREATE TABLE IF NOT EXISTS private.elory_order_inventory_state (
   order_id uuid PRIMARY KEY REFERENCES public.orders(id) ON DELETE CASCADE,
   deducted_at timestamptz,
@@ -25,7 +21,6 @@ AS $function$
 DECLARE
   v_old_confirmed boolean := false;
   v_new_confirmed boolean := false;
-  v_old_cancelled boolean := false;
   v_new_cancelled boolean := false;
   v_state private.elory_order_inventory_state%ROWTYPE;
   v_item record;
@@ -35,9 +30,6 @@ BEGIN
       'طلب جديد', 'تم تأكيد الطلب', 'تم التأكيد',
       'قيد التجهيز', 'جاري التجهيز', 'جاري التحضير',
       'جاري الشحن', 'تم الشحن', 'تم التسليم', 'تم التوصيل'
-    );
-    v_old_cancelled := lower(btrim(coalesce(OLD.status, ''))) IN (
-      'ملغي', 'ملغى', 'cancelled', 'canceled'
     );
   END IF;
 
