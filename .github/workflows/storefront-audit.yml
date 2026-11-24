@@ -3,6 +3,7 @@ name: Elory full storefront browser audit
 on:
   push:
     branches:
+      - main
       - audit/full-storefront-playwright-20261122
       - fix/notch-beams-and-audit-20261122
       - fix/mobile-notch-header-category-rename-20261122
@@ -11,6 +12,7 @@ on:
       - fix/elory-initial-layout-shift-20261122
     paths:
       - index.html
+      - .github/scripts/storefront-audit.cjs
       - .github/scripts/storefront-audit.cjs
       - .github/scripts/first-paint-regression.cjs
       - .github/scripts/category-motion-regression.cjs
