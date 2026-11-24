@@ -76,9 +76,9 @@ async function main() {
       return {
         menuInlineHandler,
         menuCategoryValue,
-        menuShopArgs: window.__shopCalls[0],
+        menuShopArgs: window.__shopCalls[1],
         menuToggleArgs: window.__menuToggleArgs,
-        homeShopArgs: window.__shopCalls[1],
+        homeShopArgs: window.__shopCalls[0],
         categoryInlineHandler,
         categoryValue,
         shopArgs: window.__shopCalls[2],
