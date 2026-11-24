@@ -7,6 +7,7 @@ on:
     paths:
       - "supabase/migrations/20261124130000_elory_order_inventory_and_customer_privacy.sql"
       - "supabase/tests/order_inventory_and_customer_privacy.sql"
+      - "supabase/tests/order_inventory_fixture.sql"
       - "supabase/functions/admin-create-staff/index.ts"
       - "supabase/functions/admin-reset-staff-password/index.ts"
       - ".github/workflows/order-inventory-privacy.yml"
@@ -14,16 +15,49 @@ on:
     paths:
       - "supabase/migrations/20261124130000_elory_order_inventory_and_customer_privacy.sql"
       - "supabase/tests/order_inventory_and_customer_privacy.sql"
+      - "supabase/tests/order_inventory_fixture.sql"
       - "supabase/functions/admin-create-staff/index.ts"
       - "supabase/functions/admin-reset-staff-password/index.ts"
       - ".github/workflows/order-inventory-privacy.yml"
 
 jobs:
-  validate-migration-contract:
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: elory_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d elory_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Build disposable Elory schema
+        env:
+          PGPASSWORD: postgres
+        run: psql "postgresql://postgres@localhost:5432/elory_test" -v ON_ERROR_STOP=1 -f supabase/tests/order_inventory_fixture.sql
+      - name: Apply migration to disposable PostgreSQL
+        env:
+          PGPASSWORD: postgres
+        run: psql "postgresql://postgres@localhost:5432/elory_test" -v ON_ERROR_STOP=1 -f supabase/migrations/20261124130000_elory_order_inventory_and_customer_privacy.sql
+      - name: Run inventory lifecycle and privacy integration tests
+        env:
+          PGPASSWORD: postgres
+        run: psql "postgresql://postgres@localhost:5432/elory_test" -v ON_ERROR_STOP=1 -f supabase/tests/order_inventory_and_customer_privacy.sql
+
+  validate-source-contract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate migration safety contract
+      - name: Validate migration and staff-function safety contract
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -32,6 +66,7 @@ jobs:
 
           migration = Path("supabase/migrations/20261124130000_elory_order_inventory_and_customer_privacy.sql").read_text(encoding="utf-8")
           tests = Path("supabase/tests/order_inventory_and_customer_privacy.sql").read_text(encoding="utf-8")
+          fixture = Path("supabase/tests/order_inventory_fixture.sql").read_text(encoding="utf-8")
 
           required_migration_fragments = [
               "private.elory_order_inventory_state",
@@ -41,6 +76,7 @@ jobs:
               "stock = p.stock + v_item.quantity",
               "elory_sync_order_inventory_insert",
               "elory_sync_order_inventory_status",
+              "elory_restore_order_inventory_before_delete",
               "elory_prevent_active_order_items_change",
               "elory_prevent_product_delete_with_active_orders",
               "CREATE OR REPLACE FUNCTION public.get_customer_orders(",
@@ -54,17 +90,20 @@ jobs:
               assert fragment in migration, f"Migration is missing required safety behavior: {fragment}"
 
           required_test_fragments = [
-              "private.elory_sync_order_inventory()",
-              "public.get_customer_orders_v2(text,text)",
-              "public.get_customer_orders(text,text)",
-              "Customer item redaction removed visible fields or retained private fields",
+              "Pending/failed orders changed stock",
+              "Confirmation must deduct exactly once",
+              "Cancellation must restore exactly once",
+              "Deleting an active order must restore deducted stock",
+              "Multi-product failure partially deducted stock",
+              "Customer order v2 RPC redaction contract failed",
           ]
           for fragment in required_test_fragments:
-              assert fragment in tests, f"SQL contract test is missing: {fragment}"
+              assert fragment in tests, f"Integration test is missing: {fragment}"
 
+          assert "CREATE TABLE public.products" in fixture
+          assert "CREATE TABLE public.orders" in fixture
           assert migration.count("CREATE OR REPLACE FUNCTION public.get_customer_orders") == 2
           assert "DROP TRIGGER IF EXISTS zz_elory_validate_order_totals" in migration
-          assert "BEFORE INSERT OR UPDATE OF items, governorate, center, coupon_code, user_id, prime_requested" in migration
           create_staff = Path("supabase/functions/admin-create-staff/index.ts").read_text(encoding="utf-8")
           reset_staff = Path("supabase/functions/admin-reset-staff-password/index.ts").read_text(encoding="utf-8")
 
@@ -86,5 +125,5 @@ jobs:
           for fragment in required_reset_staff_fragments:
               assert fragment in reset_staff, f"Staff password reset is missing its owner protection: {fragment}"
 
-          print("Elory inventory/privacy and staff-function source checks passed.")
+          print("Elory PostgreSQL integration suite and source safety checks are configured.")
           PY
