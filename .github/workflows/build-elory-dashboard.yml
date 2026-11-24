@@ -6,12 +6,12 @@ on:
     paths:
       - 'dashboard-android/Elory_Dashboard_Build_Ready.zip'
       - '.github/workflows/build-elory-dashboard.yml'
-      - 'dashboard-android/dashboard-android/scripts/**'
+      - 'dashboard-android/scripts/**'
   pull_request:
     paths:
       - 'dashboard-android/Elory_Dashboard_Build_Ready.zip'
       - '.github/workflows/build-elory-dashboard.yml'
-      - 'dashboard-android/dashboard-android/scripts/**'
+      - 'dashboard-android/scripts/**'
 
 permissions:
   contents: read
