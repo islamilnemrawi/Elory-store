@@ -170,7 +170,8 @@ async function runViewport(browser, viewport) {
     }));
     assert.ok(results.final.audit.cls <= 0.1,
       viewport.name + ": cumulative layout shift must remain at or below 0.1 (actual " +
-      results.final.audit.cls + ")");
+      results.final.audit.cls + "); largest shift sources: " +
+      JSON.stringify(results.final.audit.shifts.slice().sort((a,b)=>b.value-a.value).slice(0,5)));
 
     // Exercise a real refresh from a scrolled position and inspect the first rendered frame.
     await page.evaluate(() => {
