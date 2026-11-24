@@ -6,7 +6,7 @@
 - Root repository SQL migrations: **27** files.
 - Exact version-and-name matches: **8**.
 - Root files with a matching live name but a different version timestamp: **16**.
-- Live entries with no same-named root SQL source: **34**.
+- Live entries with no same-named root SQL source: **35**.
 - Root SQL files whose names do not appear in live history: **3**.
 - Live history entries not matched by an exact root file version/name: **51**.
 
@@ -84,7 +84,7 @@ There is also a duplicate-name history entry: live version `20261116123515` is n
 
 ## Recovered legacy source candidates
 
-Seven historical SQL files were also preserved read-only from the legacy `pinky--dashboard` repository under `docs/legacy-migration-sources/`. The archive is outside the active Supabase migration directory and is not counted among the root migration files.
+Seven historical SQL files were also preserved read-only from the legacy `pinky--dashboard` repository under `docs/legacy-migration-sources/`. The archive is outside the active Supabase migration directory and is not counted among the root migration files. In addition, exact-path GitHub history searches for all 35 live entries without same-named root sources returned no commits. The other dashboard repository `Pinky_Dashboard` contains no SQL migration files under its Supabase migrations path. This confirms that source recovery cannot safely be completed from the checked repository history alone.
 
 - Two candidates now also exist in the root directory as exact version/name matches.
 - Two other files have a same-name live migration but timestamp differences.
@@ -92,6 +92,13 @@ Seven historical SQL files were also preserved read-only from the legacy `pinky-
 - No archived candidate was applied to production.
 
 Review the archive README and compare full SQL contents and resulting schema effects before using any candidate.
+
+## Current blockers after source-recovery search
+
+- The 16 same-name timestamp mismatches have not been content-compared against an authoritative deployed SQL archive; matching names alone are not proof of matching SQL.
+- The duplicate live CMS migration version `20261116123515` has no independently recovered source.
+- The 35 live entries without same-named root files were not found at their exact paths in Elory GitHub commit history. Seven legacy candidates are archived separately, but only two are exact version/name source matches already restored.
+- The three root files absent by name from live history need schema and deployment evidence before being marked applied, superseded, or pending.
 
 ## Required safe reconciliation sequence
 
