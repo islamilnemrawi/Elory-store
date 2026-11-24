@@ -50,7 +50,6 @@ CREATE TABLE public.orders (
   customer_order_code text,
   customer_access_token text,
   coupon_code text,
-  user_id uuid,
   prime_requested boolean NOT NULL DEFAULT false
 );
 
