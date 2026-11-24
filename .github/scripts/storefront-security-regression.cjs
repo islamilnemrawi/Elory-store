@@ -26,13 +26,13 @@ async function main() {
       const category = 'probe" onclick="window.__eloryXss=1';
       const productId = "probe');window.__eloryXss=1;//";
       window.__eloryXss = 0;
-      window.__shopArgs = null;
+      window.__shopCalls = [];
       window.__openedProductId = null;
       window.__menuToggleArgs = null;
       window.__homeShopArgs = null;
 
       window.showShopPage = (value, title) => {
-        window.__shopArgs = [value, title];
+        window.__shopCalls.push([value, title]);
       };
       window.openProductDetails = value => {
         window.__openedProductId = value;
@@ -40,9 +40,7 @@ async function main() {
       window.toggleMenu = (...args) => {
         window.__menuToggleArgs = args;
       };
-      window.showShopPage = (value, title) => {
-        window.__homeShopArgs = [value, title];
-      };
+
 
       storeCategories = [{ name: category, active: true, sort_order: 1 }];
       productsLoadState = "loading";
@@ -78,12 +76,12 @@ async function main() {
       return {
         menuInlineHandler,
         menuCategoryValue,
-        menuShopArgs: window.__shopArgs,
+        menuShopArgs: window.__shopCalls[0],
         menuToggleArgs: window.__menuToggleArgs,
-        homeShopArgs: window.__homeShopArgs,
+        homeShopArgs: window.__shopCalls[1],
         categoryInlineHandler,
         categoryValue,
-        shopArgs: window.__shopArgs,
+        shopArgs: window.__shopCalls[2],
         orderInlineHandler,
         orderProductId,
         openedProductId: window.__openedProductId,
