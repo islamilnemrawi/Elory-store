@@ -48,7 +48,10 @@ CREATE TABLE public.orders (
   governorate text,
   center text,
   customer_order_code text,
-  customer_access_token text
+  customer_access_token text,
+  coupon_code text,
+  user_id uuid,
+  prime_requested boolean NOT NULL DEFAULT false
 );
 
 CREATE OR REPLACE FUNCTION public.elory_validate_order_totals()
