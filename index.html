@@ -6514,9 +6514,22 @@ main#home{margin-top:0!important;padding-top:0!important}
         return;
       }
       menu.innerHTML = active.map(c => {
-        const name = escapeHtml(String(c.name || "").trim());
-        return `<button type="button" class="menu-category-btn" onclick="showShopPage(${escapeHtml(JSON.stringify(String(c.name || "").trim()))},${escapeHtml(JSON.stringify(String(c.name || "").trim()))});toggleMenu(false,true)">${name}</button>`;
+        const name = String(c.name || "").trim();
+        return `<button type="button" class="menu-category-btn" data-menu-category="${escapeHtml(name)}">${escapeHtml(name)}</button>`;
       }).join("");
+      if (menu.dataset.menuCategoriesBound !== "true") {
+        menu.dataset.menuCategoriesBound = "true";
+        menu.addEventListener("click", event => {
+          const target = event.target;
+          if (!(target instanceof Element)) return;
+          const button = target.closest("button[data-menu-category]");
+          if (!button || !menu.contains(button)) return;
+          const name = button.dataset.menuCategory || "";
+          if (!name) return;
+          showShopPage(name, name);
+          toggleMenu(false, true);
+        });
+      }
     }
 
     function renderCategories() {
