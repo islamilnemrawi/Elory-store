@@ -28,6 +28,22 @@ BEGIN
   SELECT stock INTO v_stock FROM public.products WHERE id='00000000-0000-0000-0000-000000000001';
   IF v_stock <> 10 THEN RAISE EXCEPTION 'Pending/failed orders changed stock'; END IF;
 
+  -- Legacy generic "جديد" electronic-payment orders are unconfirmed; only the trusted
+  -- payment callback's "جاري التحضير" transition may deduct their stock.
+  INSERT INTO public.orders(id, status, payment_method, items)
+  VALUES ('10000000-0000-0000-0000-000000000009', 'جديد', 'vodafone_cash',
+    '[{"product_id":"00000000-0000-0000-0000-000000000001","quantity":1}]'::jsonb);
+  SELECT stock INTO v_stock FROM public.products WHERE id='00000000-0000-0000-0000-000000000001';
+  IF v_stock <> 10 THEN RAISE EXCEPTION 'Unconfirmed legacy online order deducted stock'; END IF;
+  UPDATE public.orders SET status='جاري التحضير'
+   WHERE id='10000000-0000-0000-0000-000000000009';
+  SELECT stock INTO v_stock FROM public.products WHERE id='00000000-0000-0000-0000-000000000001';
+  IF v_stock <> 9 THEN RAISE EXCEPTION 'Verified online payment did not deduct stock'; END IF;
+  UPDATE public.orders SET status='ملغي'
+   WHERE id='10000000-0000-0000-0000-000000000009';
+  SELECT stock INTO v_stock FROM public.products WHERE id='00000000-0000-0000-0000-000000000001';
+  IF v_stock <> 10 THEN RAISE EXCEPTION 'Online cancellation did not restore stock'; END IF;
+
   -- First confirmation deducts once; moving through confirmed fulfillment states does not deduct again.
   UPDATE public.orders SET status='طلب جديد'
    WHERE id='10000000-0000-0000-0000-000000000001';
