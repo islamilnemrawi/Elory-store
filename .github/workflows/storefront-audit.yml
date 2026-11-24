@@ -14,6 +14,7 @@ on:
       - .github/scripts/storefront-audit.cjs
       - .github/scripts/first-paint-regression.cjs
       - .github/scripts/category-motion-regression.cjs
+      - .github/scripts/storefront-security-regression.cjs
       - .github/workflows/storefront-audit.yml
   pull_request:
     branches:
@@ -21,6 +22,7 @@ on:
     paths:
       - index.html
       - .github/scripts/category-motion-regression.cjs
+      - .github/scripts/storefront-security-regression.cjs
       - .github/workflows/storefront-audit.yml
   workflow_dispatch:
 
@@ -71,6 +73,12 @@ jobs:
           NODE_PATH: ${{ runner.temp }}/node_modules
           CATEGORY_MOTION_URL: http://127.0.0.1:4173/index.html
         run: node .github/scripts/category-motion-regression.cjs
+
+      - name: Run stored-XSS regression tests
+        env:
+          NODE_PATH: ${{ runner.temp }}/node_modules
+          STOREFRONT_SECURITY_URL: http://127.0.0.1:4173/index.html
+        run: node .github/scripts/storefront-security-regression.cjs
 
       - name: Audit desktop and mobile storefront
         env:
