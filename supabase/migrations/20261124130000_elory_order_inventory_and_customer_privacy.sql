@@ -369,3 +369,60 @@ REVOKE ALL ON FUNCTION public.get_customer_orders_v2(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_customer_orders_v2(text, text) TO anon, authenticated;
 
 NOTIFY pgrst, 'reload schema';
+
+
+-- Preserve inventory when an administrator permanently deletes an order.
+-- The existing admin bulk-delete workflow remains available, but it cannot
+-- silently erase the only record of stock already deducted for an active order.
+CREATE OR REPLACE FUNCTION private.elory_restore_order_inventory_before_delete()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+DECLARE
+  v_state private.elory_order_inventory_state%ROWTYPE;
+  v_item record;
+BEGIN
+  SELECT *
+    INTO v_state
+    FROM private.elory_order_inventory_state
+   WHERE order_id = OLD.id
+   FOR UPDATE;
+
+  IF FOUND
+     AND v_state.deducted_at IS NOT NULL
+     AND v_state.restored_at IS NULL THEN
+    FOR v_item IN
+      SELECT
+        coalesce(nullif(item->>'product_id', ''), nullif(item->>'id', ''))::uuid AS product_id,
+        sum(coalesce(nullif(item->>'quantity', ''), nullif(item->>'qty', ''), '0')::integer)::integer AS quantity
+      FROM jsonb_array_elements(OLD.items) AS entries(item)
+      GROUP BY 1
+      ORDER BY 1
+    LOOP
+      UPDATE public.products AS p
+         SET stock = p.stock + v_item.quantity
+       WHERE p.id = v_item.product_id;
+
+      IF NOT FOUND THEN
+        RAISE EXCEPTION 'لا يمكن حذف الطلب لأن أحد منتجاته لم يعد موجودًا، وتعذرت إعادة المخزون';
+      END IF;
+    END LOOP;
+
+    UPDATE private.elory_order_inventory_state
+       SET restored_at = clock_timestamp()
+     WHERE order_id = OLD.id;
+  END IF;
+
+  RETURN OLD;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION private.elory_restore_order_inventory_before_delete() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS elory_restore_order_inventory_before_delete ON public.orders;
+CREATE TRIGGER elory_restore_order_inventory_before_delete
+BEFORE DELETE ON public.orders
+FOR EACH ROW
+EXECUTE FUNCTION private.elory_restore_order_inventory_before_delete();
