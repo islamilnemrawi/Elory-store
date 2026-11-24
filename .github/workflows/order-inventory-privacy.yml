@@ -1,0 +1,65 @@
+name: Validate Elory inventory and customer privacy changes
+
+on:
+  push:
+    branches:
+      - "fix/**"
+    paths:
+      - "supabase/migrations/20261124130000_elory_order_inventory_and_customer_privacy.sql"
+      - "supabase/tests/order_inventory_and_customer_privacy.sql"
+      - ".github/workflows/order-inventory-privacy.yml"
+  pull_request:
+    paths:
+      - "supabase/migrations/20261124130000_elory_order_inventory_and_customer_privacy.sql"
+      - "supabase/tests/order_inventory_and_customer_privacy.sql"
+      - ".github/workflows/order-inventory-privacy.yml"
+
+jobs:
+  validate-migration-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate migration safety contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          migration = Path("supabase/migrations/20261124130000_elory_order_inventory_and_customer_privacy.sql").read_text(encoding="utf-8")
+          tests = Path("supabase/tests/order_inventory_and_customer_privacy.sql").read_text(encoding="utf-8")
+
+          required_migration_fragments = [
+              "private.elory_order_inventory_state",
+              "ALTER TABLE private.elory_order_inventory_state ENABLE ROW LEVEL SECURITY",
+              "FOR UPDATE",
+              "stock = p.stock - v_item.quantity",
+              "stock = p.stock + v_item.quantity",
+              "elory_sync_order_inventory_insert",
+              "elory_sync_order_inventory_status",
+              "elory_prevent_active_order_items_change",
+              "elory_prevent_product_delete_with_active_orders",
+              "CREATE OR REPLACE FUNCTION public.get_customer_orders(",
+              "CREATE OR REPLACE FUNCTION public.get_customer_orders_v2(",
+              "- 'code'",
+              "- 'sku'",
+              "- 'stock'",
+              "REVOKE ALL ON FUNCTION public.get_customer_orders_v2(text, text) FROM PUBLIC",
+          ]
+          for fragment in required_migration_fragments:
+              assert fragment in migration, f"Migration is missing required safety behavior: {fragment}"
+
+          required_test_fragments = [
+              "private.elory_sync_order_inventory()",
+              "public.get_customer_orders_v2(text,text)",
+              "public.get_customer_orders(text,text)",
+              "Customer item redaction removed visible fields or retained private fields",
+          ]
+          for fragment in required_test_fragments:
+              assert fragment in tests, f"SQL contract test is missing: {fragment}"
+
+          assert migration.count("CREATE OR REPLACE FUNCTION public.get_customer_orders") == 2
+          assert "DROP TRIGGER IF EXISTS zz_elory_validate_order_totals" in migration
+          assert "BEFORE INSERT OR UPDATE OF items, governorate, center, coupon_code, user_id, prime_requested" in migration
+          print("Elory inventory/privacy migration contract checks passed.")
+          PY
