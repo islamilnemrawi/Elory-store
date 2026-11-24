@@ -18,7 +18,8 @@ async function main() {
       typeof window.bindCustomerOrderNavigation === "function" &&
       typeof window.renderMenuCategories === "function" &&
       typeof window.renderProducts === "function" &&
-      typeof window.renderFavorites === "function",
+      typeof window.renderFavorites === "function" &&
+      typeof window.bindCartActions === "function",
       null,
       { timeout: 30000 }
     );
@@ -32,6 +33,7 @@ async function main() {
       window.__menuToggleArgs = null;
       window.__productCardActions = [];
       window.__favoriteActions = [];
+      window.__cartCalls = [];
       window.__homeShopArgs = null;
 
       window.showShopPage = (value, title) => {
@@ -48,6 +50,8 @@ async function main() {
       window.handleProductPrimeOffer = event => window.__productCardActions.push(["prime",event.target.closest("button")?.dataset.productCardAction]);
       window.addFavoriteToCart = id => window.__favoriteActions.push(["add",id]);
       window.removeFavoriteById = id => window.__favoriteActions.push(["remove",id]);
+      window.changeQuantity = (...args) => window.__cartCalls.push(["change",...args]);
+      window.removeFromCart = (...args) => window.__cartCalls.push(["remove",...args]);
 
 
       storeCategories = [{ name: category, active: true, sort_order: 1 }];
@@ -103,6 +107,20 @@ async function main() {
       const orderProductId = orderButton?.dataset.productId ?? null;
       orderButton?.click();
 
+      const cartHost = document.createElement("div");
+      const cartIncrease = document.createElement("button");
+      cartIncrease.dataset.cartAction = "increase";
+      cartIncrease.dataset.productId = productId;
+      cartIncrease.dataset.cartItemKey = 'key" onclick="window.__eloryXss=2';
+      cartHost.append(cartIncrease);
+      const cartRemove = document.createElement("button");
+      cartRemove.dataset.cartAction = "remove";
+      cartRemove.dataset.cartItemKey = 'key" onclick="window.__eloryXss=2';
+      cartHost.append(cartRemove);
+      bindCartActions(cartHost);
+      cartIncrease.click();
+      cartRemove.click();
+
       return {
         cardHandlers,
         productCardActions: window.__productCardActions,
@@ -119,6 +137,7 @@ async function main() {
         orderInlineHandler,
         orderProductId,
         openedProductId: window.__openedProductId,
+        cartCalls: window.__cartCalls,
         executed: window.__eloryXss
       };
     });
@@ -127,7 +146,7 @@ async function main() {
     assert.deepEqual(result.productCardActions,[["favorite","probe');window.__eloryXss=1;//"],["add-cart","probe');window.__eloryXss=1;//"],["prime","prime"]],"Product card actions must preserve their intended behavior and opaque product ID");
     assert.deepEqual(result.favoriteHandlers,[null,null,null],"Favorite actions must not contain inline JavaScript");
     assert.deepEqual(result.favoriteActions,[["add","probe');window.__eloryXss=1;//"],["remove","probe');window.__eloryXss=1;//"]],"Favorite actions must preserve the product ID");
-    assert.equal(result.menuInlineHandler, "Menu category buttons must not contain inline JavaScript handlers");
+    assert.equal(result.menuInlineHandler, null, "Menu category buttons must not contain inline JavaScript handlers");
     assert.equal(result.menuCategoryValue, 'probe" onclick="window.__eloryXss=1');
     assert.deepEqual(result.menuShopArgs, ['probe" onclick="window.__eloryXss=1', 'probe" onclick="window.__eloryXss=1']);
     assert.deepEqual(result.menuToggleArgs, [false, true], "Selecting a menu category must preserve the existing menu-close behavior");
@@ -138,10 +157,14 @@ async function main() {
     assert.equal(result.orderInlineHandler, null, "Customer-order product buttons must not contain inline JavaScript handlers");
     assert.equal(result.orderProductId, "probe');window.__eloryXss=1;//");
     assert.equal(result.openedProductId, "probe');window.__eloryXss=1;//", "Delegated navigation must preserve the product identifier");
+    assert.deepEqual(result.cartCalls, [
+      ["change", "probe');window.__eloryXss=1;//", 1, 'key" onclick="window.__eloryXss=2'],
+      ["remove", 'key" onclick="window.__eloryXss=2']
+    ], "Cart actions must preserve hostile-looking identifiers as inert arguments");
     assert.equal(result.executed, 0, "Injected strings must never execute");
     assert.deepEqual(pageErrors, [], "The storefront must not emit uncaught page errors during the regression test");
 
-    console.log("Stored-XSS regression passed: category names and customer-order product IDs remain data, not executable code.");
+    console.log("Stored-XSS regression passed: category names, product IDs, and cart identifiers remain data, not executable code.");
   } finally {
     await browser.close();
   }
