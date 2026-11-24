@@ -48,6 +48,12 @@ The current verified artifact is a **Debug APK**, not a signed production Releas
 
 Google Play release still requires a production signing keystore, versionCode/versionName review, targetSdk compatibility review, a signed Release build, device testing of the exact Release APK, and Play Console privacy/data-safety declarations. Do not treat the Debug APK as Play Store-ready.
 
+## Open performance verification
+
+A repeated first-paint run on 24 November 2026 intermittently failed the existing desktop CLS threshold (0.1): measured CLS was 0.4746. The largest reported source was `#featured` changing from y=473/height=350.75 to y=501.5/height=398.5; `#prime` also collapsed from a 6.25px box to zero. A rerun on the code commit passed, but the later documentation-triggered run failed again. The live `site_customizations` row was checked read-only: the hero, categories, featured, and Prime sections are configured visible and in the expected order; no custom CSS or custom sections are configured. No database values were changed.
+
+Do not lower the CLS threshold or treat this as closed. The exact runtime cause of the desktop section geometry change remains under investigation; production release remains blocked until repeated first-paint runs pass and the source of the shift is isolated.
+
 ## Browser audit result
 
 - First-paint/reload stability, category-rail motion, stored-XSS regression, and mobile notch/slow-scroll checks passed on the isolated release-readiness branch (latest run set: [browser audit](https://github.com/islamilnemrawi/Elory-store/actions/runs/45405743966), [mobile regression](https://github.com/islamilnemrawi/Elory-store/actions/runs/45405743984), [JavaScript checks](https://github.com/islamilnemrawi/Elory-store/actions/runs/45405744148), [PostgreSQL privacy/inventory tests](https://github.com/islamilnemrawi/Elory-store/actions/runs/45405743939), [Worker syntax checks](https://github.com/islamilnemrawi/Elory-store/actions/runs/45405743948)).
