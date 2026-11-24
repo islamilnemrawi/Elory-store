@@ -35,7 +35,7 @@ The deployed Paymob function defaults to `PAYMOB_MODE=test` when the setting is 
 ### Account security
 
 - Cloudflare account-level 2FA enforcement is currently disabled. Enroll the account owner and all required administrators in 2FA first; only then consider enforcement to avoid locking out the account.
-- Supabase leaked-password protection must be enabled in the Supabase Auth security settings. This setting was not changed by this branch.
+- The Supabase organization is on the **Free** plan. Supabase documents leaked-password protection as Pro-and-above only, so this warning cannot be cleared without a paid upgrade. No upgrade is recommended for this project. As a free mitigation, review Authentication → Sign In / Providers → Email and set a strong minimum password length (at least 10–12 characters) plus required lowercase, uppercase, digits, and symbols; verify the current settings before changing them. This does not replace breached-password screening, and the Security Advisor warning may remain. See [Supabase password security](https://supabase.com/docs/guides/auth/password-security) and [plan comparison](https://supabase.com/pricing).
 - Never put service-role keys, Firebase service-account JSON, Paymob secrets, or private signing keys in the repository.
 
 ### Hosting
