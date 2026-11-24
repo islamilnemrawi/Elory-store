@@ -39,6 +39,8 @@ BEGIN
   -- Cancellation restores from the state ledger even after an intermediate status regression.
   UPDATE public.orders SET status='جديد'
    WHERE id='10000000-0000-0000-0000-000000000001';
+  SELECT stock INTO v_stock FROM public.products WHERE id='00000000-0000-0000-0000-000000000001';
+  IF v_stock <> 8 THEN RAISE EXCEPTION 'Intermediate status regression must not restore stock early'; END IF;
   UPDATE public.orders SET status='ملغي'
    WHERE id='10000000-0000-0000-0000-000000000001';
   UPDATE public.orders SET status='ملغي'
