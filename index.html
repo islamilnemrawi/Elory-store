@@ -9773,7 +9773,21 @@ main#home{margin-top:0!important;padding-top:0!important}
       const box=document.getElementById("shopCategoryPills"); if(!box) return;
       const cats=["كل المنتجات", ...storeCategories.filter(c=>c && c.active !== false).map(c=>String(c.name||"").trim()).filter(Boolean)];
       const unique=[...new Set(cats)];
-      box.innerHTML=unique.map(c=>{const active=(c==="كل المنتجات"&&!currentShopCategory)||c===currentShopCategory; const value=String(c).replace(/'/g,"\\'"); return `<button class="${active?'active':''}" onclick="showShopPage('${c==='كل المنتجات'?'':value}','${value}')">${escapeHtml(c)}</button>`}).join("");
+      box.innerHTML=unique.map(c=>{
+        const active=(c==="كل المنتجات"&&!currentShopCategory)||c===currentShopCategory;
+        return `<button type="button" class="${active?'active':''}" data-shop-category="${escapeHtml(c)}" aria-pressed="${active?'true':'false'}">${escapeHtml(c)}</button>`;
+      }).join("");
+      if(box.dataset.shopPillsBound!=="true"){
+        box.dataset.shopPillsBound="true";
+        box.addEventListener("click",event=>{
+          const target=event.target;
+          if(!(target instanceof Element)) return;
+          const button=target.closest("button[data-shop-category]");
+          if(!button||!box.contains(button)) return;
+          const name=button.dataset.shopCategory||"";
+          showShopPage(name==="كل المنتجات"?"":name,name);
+        });
+      }
     }
 
     const SHOP_PRODUCTS_PAGE_SIZE = 24;
@@ -9893,7 +9907,7 @@ main#home{margin-top:0!important;padding-top:0!important}
         ${orderStatusTimelineHtml(order.status,order.payment_method)}
         <div class="customer-order-items">${items.length?items.map(item=>{
           const id=item.product_id??item.productId??item.id;
-          const link=id?`<button type="button" class="customer-order-item-open" onclick="openProductDetails('${escapeHtml(String(id))}')">`:"<div>";
+          const link=id?`<button type="button" class="customer-order-item-open" data-product-id="${escapeHtml(String(id))}">`:"<div>";
           const close=id?"</button>":"</div>";
           const quantity=Math.max(0,Number(item.quantity??item.qty)||0);
           return `<div class="customer-order-item">${link}<img src="${escapeHtml(item.image||"")}" onerror="this.style.opacity='0'" alt="${escapeHtml(item.name||"")}"><div class="customer-order-item-main"><b>${escapeHtml(item.name||"منتج")}</b><small>الكمية: ${quantity}${item.color?` • <span class="cart-item-color-dot" style="background:${escapeHtml(item.color_hex||item.colorHex||legacyColorHex(item.color))}" aria-label="لون المنتج"></span>`:""}${item.size?` • المقاس: ${escapeHtml(item.size)}`:""}${item.code?` • الكود: ${escapeHtml(item.code)}`:""}</small></div>${close}<div class="customer-order-item-price">${formatPrice(Number(item.price||0)*quantity)}</div></div>`;
@@ -9902,6 +9916,19 @@ main#home{margin-top:0!important;padding-top:0!important}
         ${details.length?`<details class="customer-order-details"><summary>بيانات الطلب والشحن</summary><div>${details.map(([label,value])=>`<p><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></p>`).join("")}</div></details>`:""}
       </article>`;
     }
+    function bindCustomerOrderNavigation(list){
+      if(!list||list.dataset.productNavigationBound==="true") return;
+      list.dataset.productNavigationBound="true";
+      list.addEventListener("click",event=>{
+        const target=event.target;
+        if(!(target instanceof Element)) return;
+        const button=target.closest("button.customer-order-item-open[data-product-id]");
+        if(!button||!list.contains(button)) return;
+        const productId=button.dataset.productId||"";
+        if(productId) openProductDetails(productId);
+      });
+    }
+
     function openOrdersPage(){
       const primeModal=document.getElementById("primeModal");
       if(primeModal?.classList.contains("show")){
@@ -9927,6 +9954,7 @@ main#home{margin-top:0!important;padding-top:0!important}
       const state=document.getElementById("ordersPageState");
       const list=document.getElementById("customerOrdersList");
       if(!state||!list) return;
+      bindCustomerOrderNavigation(list);
       state.textContent="جاري تحميل طلباتك...";
       list.innerHTML="";
       if(!hasSupabaseClient()){state.textContent="تعذر الاتصال بقاعدة البيانات.";return;}
