@@ -7013,6 +7013,19 @@ main#home{margin-top:0!important;padding-top:0!important}
     function renderProducts(){
       const grid=document.getElementById("productsGrid");
       if(!grid)return;
+      if(grid.dataset.homeCategoryNavigationBound!=="true"){
+        grid.dataset.homeCategoryNavigationBound="true";
+        grid.addEventListener("click",event=>{
+          const target=event.target;
+          if(!(target instanceof Element)) return;
+          const link=target.closest("a.elory-home-category-link[data-home-category]");
+          if(!link||!grid.contains(link)) return;
+          const name=link.dataset.homeCategory||"";
+          if(!name) return;
+          event.preventDefault();
+          showShopPage(name,name);
+        });
+      }
       if(productsLoadState==="loading"){
         grid.innerHTML='<div class="loading"><div class="spinner"></div> جاري تحميل المنتجات...</div>';
         syncFavoriteButtons(); return;
@@ -7053,8 +7066,7 @@ main#home{margin-top:0!important;padding-top:0!important}
       const sections=categories.map(category=>{
         const categoryProducts=homepageProducts.filter(product=>canonicalHomepageCategoryKey(product.category)===category.key);
         if(!categoryProducts.length)return "";
-        const categoryArg=escapeHtml(JSON.stringify(category.name));
-        return `<section class="elory-home-category-section" data-home-category="${escapeHtml(category.name)}"><div class="elory-home-category-heading"><h3><a class="elory-home-category-link" href="#shopPage" onclick="showShopPage(${categoryArg},${categoryArg});return false;">${escapeHtml(category.name)}</a></h3></div><div class="products-grid elory-home-category-grid">${categoryProducts.map(product=>productCardHtml(product)).join("")}</div></section>`;
+        return `<section class="elory-home-category-section" data-home-category="${escapeHtml(category.name)}"><div class="elory-home-category-heading"><h3><a class="elory-home-category-link" href="#shopPage" data-home-category="${escapeHtml(category.name)}">${escapeHtml(category.name)}</a></h3></div><div class="products-grid elory-home-category-grid">${categoryProducts.map(product=>productCardHtml(product)).join("")}</div></section>`;
       }).filter(Boolean);
 
       if(!sections.length){
