@@ -83,7 +83,6 @@ BEGIN
 
   -- Restore exactly once when a previously confirmed order is cancelled.
   ELSIF v_new_cancelled
-        AND v_old_confirmed
         AND v_state.deducted_at IS NOT NULL
         AND v_state.restored_at IS NULL THEN
 
