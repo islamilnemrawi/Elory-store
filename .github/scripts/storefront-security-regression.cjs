@@ -36,7 +36,7 @@ async function main() {
 
       storeCategories = [{ name: category, active: true, sort_order: 1 }];
       renderShopPills();
-      const pill = document.querySelector("#shopCategoryPills button[data-shop-category]");
+      const pill = [...document.querySelectorAll("#shopCategoryPills button[data-shop-category]")].find(button => button.dataset.shopCategory === category);
       const categoryInlineHandler = pill?.getAttribute("onclick") ?? null;
       const categoryValue = pill?.dataset.shopCategory ?? null;
       pill?.click();
