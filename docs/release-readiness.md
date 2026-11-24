@@ -18,13 +18,13 @@ Production source branch: `main`
 
 ### Supabase database
 
-The live migration history and root SQL files are not reconciled. See [Supabase migration reconciliation](supabase-migration-reconciliation.md). Do not push or repair migration history until all source SQL is recovered and matched.
+The live migration history and root SQL files are not reconciled: 59 live entries, 27 root SQL files, 8 exact version/name matches, 16 timestamp mismatches, 35 live entries without same-named root sources, and 3 local files absent by name from live history. Exact-path GitHub history searches did not recover the missing sources. See [Supabase migration reconciliation](supabase-migration-reconciliation.md). Do not push or repair migration history until all source SQL is recovered and matched.
 
 The Security Advisor still reports:
 - Leaked-password protection disabled.
 - `pg_net` installed in the `public` schema.
-- Five anon-callable `SECURITY DEFINER` RPCs and authenticated-callable privileged RPCs. These must be reviewed one-by-one against their intended caller flows; do not revoke grants in bulk.
-- RLS-enabled tables without policies, including private/server-only tables and administrative audit/settings tables. Do not add generic policies simply to silence the advisor.
+- Five anon-callable `SECURITY DEFINER` RPCs and authenticated-callable privileged RPCs. A read-only review of `get_customer_orders`, `get_customer_orders_v2`, `redeem_coupon`, and both `validate_coupon` overloads confirmed that order retrieval and coupon redemption check the authenticated user identity or a 24-character access token; coupon validation is a deliberately public checkout lookup. These functions still need ongoing abuse/rate-limit review. Do not revoke grants in bulk.
+- RLS-enabled tables without policies, including private/server-only tables and administrative audit/settings tables. A read-only ACL check confirmed that all five flagged tables deny both `anon` and `authenticated` SELECT/INSERT; the three public administrative tables grant table privileges only to `service_role`, while the two private tables have no client grants. These warnings are consistent with server-only access and should not be silenced by adding generic policies.
 
 Performance Advisor reports unused indexes and a multiple-permissive-policy warning. Do not drop indexes without query-plan and workload evidence.
 
