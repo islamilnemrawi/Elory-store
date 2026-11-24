@@ -16,7 +16,8 @@ async function main() {
       typeof window.renderShopPills === "function" &&
       typeof window.renderCustomerOrderCard === "function" &&
       typeof window.bindCustomerOrderNavigation === "function" &&
-      typeof window.renderMenuCategories === "function",
+      typeof window.renderMenuCategories === "function" &&
+      typeof window.renderProducts === "function",
       null,
       { timeout: 30000 }
     );
@@ -28,6 +29,7 @@ async function main() {
       window.__shopArgs = null;
       window.__openedProductId = null;
       window.__menuToggleArgs = null;
+      window.__homeShopArgs = null;
 
       window.showShopPage = (value, title) => {
         window.__shopArgs = [value, title];
@@ -38,8 +40,20 @@ async function main() {
       window.toggleMenu = (...args) => {
         window.__menuToggleArgs = args;
       };
+      window.showShopPage = (value, title) => {
+        window.__homeShopArgs = [value, title];
+      };
 
       storeCategories = [{ name: category, active: true, sort_order: 1 }];
+      productsLoadState = "loading";
+      renderProducts();
+      const homeLink = document.createElement("a");
+      homeLink.className = "elory-home-category-link";
+      homeLink.dataset.homeCategory = category;
+      homeLink.href = "#shopPage";
+      homeLink.textContent = category;
+      document.getElementById("productsGrid").append(homeLink);
+      homeLink.click();
       renderMenuCategories();
       const menuButton = document.querySelector("#menuCategories button[data-menu-category]");
       const menuInlineHandler = menuButton?.getAttribute("onclick") ?? null;
@@ -66,6 +80,7 @@ async function main() {
         menuCategoryValue,
         menuShopArgs: window.__shopArgs,
         menuToggleArgs: window.__menuToggleArgs,
+        homeShopArgs: window.__homeShopArgs,
         categoryInlineHandler,
         categoryValue,
         shopArgs: window.__shopArgs,
@@ -80,6 +95,7 @@ async function main() {
     assert.equal(result.menuCategoryValue, 'probe" onclick="window.__eloryXss=1');
     assert.deepEqual(result.menuShopArgs, ['probe" onclick="window.__eloryXss=1', 'probe" onclick="window.__eloryXss=1']);
     assert.deepEqual(result.menuToggleArgs, [false, true], "Selecting a menu category must preserve the existing menu-close behavior");
+    assert.deepEqual(result.homeShopArgs, ['probe" onclick="window.__eloryXss=1', 'probe" onclick="window.__eloryXss=1'], "Homepage category navigation must preserve the category as inert data");
     assert.equal(result.categoryInlineHandler, null, "Category buttons must not contain inline JavaScript handlers");
     assert.equal(result.categoryValue, 'probe" onclick="window.__eloryXss=1');
     assert.deepEqual(result.shopArgs, ['probe" onclick="window.__eloryXss=1', 'probe" onclick="window.__eloryXss=1']);
