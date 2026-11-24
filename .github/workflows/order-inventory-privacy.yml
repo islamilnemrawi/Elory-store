@@ -104,6 +104,7 @@ jobs:
           assert "CREATE TABLE public.orders" in fixture
           assert migration.count("CREATE OR REPLACE FUNCTION public.get_customer_orders") == 2
           assert "DROP TRIGGER IF EXISTS zz_elory_validate_order_totals" in migration
+          assert "BEFORE INSERT OR UPDATE OF items, coupon_code, governorate, center, prime_requested" in migration
           create_staff = Path("supabase/functions/admin-create-staff/index.ts").read_text(encoding="utf-8")
           reset_staff = Path("supabase/functions/admin-reset-staff-password/index.ts").read_text(encoding="utf-8")
 
