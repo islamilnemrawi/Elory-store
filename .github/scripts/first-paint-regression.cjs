@@ -93,15 +93,34 @@ async function runViewport(browser, viewport) {
   const pageErrors = [];
   page.on("pageerror", error => pageErrors.push({ message: error.message, stack: error.stack }));
   await page.addInitScript(() => {
-    window.__eloryFirstPaintAudit = { cls: 0, shifts: [] };
+    window.__eloryFirstPaintAudit = {
+      cls: 0,
+      totalShiftSum: 0,
+      sessionValue: 0,
+      sessionStartTime: 0,
+      lastShiftTime: 0,
+      shifts: []
+    };
     try {
       new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           if (!entry.hadRecentInput) {
-            window.__eloryFirstPaintAudit.cls += entry.value;
-            window.__eloryFirstPaintAudit.shifts.push({
+            const audit = window.__eloryFirstPaintAudit;
+            const startsNewSession = audit.sessionStartTime === 0 ||
+              entry.startTime - audit.lastShiftTime > 1000 ||
+              entry.startTime - audit.sessionStartTime > 5000;
+            if (startsNewSession) {
+              audit.sessionStartTime = entry.startTime;
+              audit.sessionValue = 0;
+            }
+            audit.sessionValue += entry.value;
+            audit.totalShiftSum += entry.value;
+            audit.lastShiftTime = entry.startTime;
+            audit.cls = Math.max(audit.cls, audit.sessionValue);
+            audit.shifts.push({
               value: entry.value,
               startTime: entry.startTime,
+              sessionValue: audit.sessionValue,
               sources: (entry.sources || []).map(source => {
                 const node = source.node;
                 return {
@@ -170,7 +189,8 @@ async function runViewport(browser, viewport) {
     }));
     assert.ok(results.final.audit.cls <= 0.1,
       viewport.name + ": cumulative layout shift must remain at or below 0.1 (actual " +
-      results.final.audit.cls + ")");
+      results.final.audit.cls + "); largest shift sources: " +
+      JSON.stringify(results.final.audit.shifts.slice().sort((a,b)=>b.value-a.value).slice(0,5)));
 
     // Exercise a real refresh from a scrolled position and inspect the first rendered frame.
     await page.evaluate(() => {

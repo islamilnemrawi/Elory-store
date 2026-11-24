@@ -120,11 +120,13 @@ jobs:
 
           required_reset_staff_fragments = [
               "staffId === primaryOwnerId",
-              'String(target.role || "").toLowerCase() === "owner"',
+              "Role is only a display label.",
+              "`staff_profiles?id=eq.${encodeURIComponent(staffId)}&select=id&limit=1`",
               "/auth/v1/admin/users/",
           ]
           for fragment in required_reset_staff_fragments:
-              assert fragment in reset_staff, f"Staff password reset is missing its owner protection: {fragment}"
+              assert fragment in reset_staff, f"Staff password reset is missing its primary-owner identity guard or employee lookup: {fragment}"
+          assert 'String(target.role || "").toLowerCase() === "owner"' not in reset_staff, "Editable role labels must not be treated as the primary-owner identity."
 
           print("Elory PostgreSQL integration suite and source safety checks are configured.")
           PY

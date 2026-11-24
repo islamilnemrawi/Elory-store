@@ -45,7 +45,6 @@ Deno.serve(async (request: Request) => {
   }
 
   try {
-    // Validate the caller JWT against Supabase Auth; never trust a caller-supplied owner ID.
     const callerResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: authorization },
     });
@@ -72,14 +71,11 @@ Deno.serve(async (request: Request) => {
       return json({ success: false, message: "لا يمكن إعادة تعيين كلمة مرور حساب المالك الأساسي من هذه الشاشة" }, 403);
     }
 
+    // Role is only a display label. Do not block an employee because the label is "owner".
     const profiles = await serviceGet(
-      `staff_profiles?id=eq.${encodeURIComponent(staffId)}&select=id,role&limit=1`,
+      `staff_profiles?id=eq.${encodeURIComponent(staffId)}&select=id&limit=1`,
     );
-    const target = profiles?.[0];
-    if (!target) return json({ success: false, message: "حساب الموظف غير موجود" }, 404);
-    if (String(target.role || "").toLowerCase() === "owner") {
-      return json({ success: false, message: "إعادة تعيين كلمة مرور حساب المالك غير متاحة من إدارة الموظفين" }, 403);
-    }
+    if (!profiles?.[0]) return json({ success: false, message: "حساب الموظف غير موجود" }, 404);
 
     const updateResponse = await fetch(
       `${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(staffId)}`,
