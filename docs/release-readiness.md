@@ -69,3 +69,12 @@ The screenshots and JSON audit report are retained in the GitHub Actions artifac
 ## Release decision
 
 This branch is a safer, testable release candidate, but the whole business system must not be labelled fully production-ready until the database migration history, Paymob live configuration, account 2FA, Auth leaked-password protection, and signed Android release requirements are resolved and verified.
+
+
+## Additional storefront identifier hardening — 24 November 2026
+
+A follow-up source review found that cart quantity/removal controls still interpolated product IDs and cart-item keys into inline JavaScript. These handlers have been replaced with inert `data-cart-action`, `data-product-id`, and `data-cart-item-key` attributes plus one delegated click handler bound to the cart container. The original increase, decrease, and remove actions are preserved. Product-card and favorites actions are also data-driven and covered by the same browser security regression suite.
+
+The regression test now exercises hostile-looking category names, product IDs, and cart-item keys and verifies that the expected navigation/cart function arguments are preserved without executing injected code. On code commit `d771df8dd707bdf1618110469594a3441f2a7fb4`, the expanded stored-XSS regression, storefront JavaScript validation, disposable PostgreSQL integration tests, Worker syntax checks, and mobile regression all passed. The complete browser audit also passed: [run 45405229228](https://github.com/islamilnemrawi/Elory-store/actions/runs/45405229228).
+
+A subsequent first-paint diagnostic-only commit `f7b4c9142818e228e3e38f0a161e1d6508825bf0` is undergoing its own complete browser and mobile regression run; do not infer its result from the prior commit's checks. No production deployment or database mutation was performed.
