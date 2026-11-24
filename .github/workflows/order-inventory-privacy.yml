@@ -7,11 +7,15 @@ on:
     paths:
       - "supabase/migrations/20261124130000_elory_order_inventory_and_customer_privacy.sql"
       - "supabase/tests/order_inventory_and_customer_privacy.sql"
+      - "supabase/functions/admin-create-staff/index.ts"
+      - "supabase/functions/admin-reset-staff-password/index.ts"
       - ".github/workflows/order-inventory-privacy.yml"
   pull_request:
     paths:
       - "supabase/migrations/20261124130000_elory_order_inventory_and_customer_privacy.sql"
       - "supabase/tests/order_inventory_and_customer_privacy.sql"
+      - "supabase/functions/admin-create-staff/index.ts"
+      - "supabase/functions/admin-reset-staff-password/index.ts"
       - ".github/workflows/order-inventory-privacy.yml"
 
 jobs:
@@ -61,5 +65,26 @@ jobs:
           assert migration.count("CREATE OR REPLACE FUNCTION public.get_customer_orders") == 2
           assert "DROP TRIGGER IF EXISTS zz_elory_validate_order_totals" in migration
           assert "BEFORE INSERT OR UPDATE OF items, governorate, center, coupon_code, user_id, prime_requested" in migration
-          print("Elory inventory/privacy migration contract checks passed.")
+          create_staff = Path("supabase/functions/admin-create-staff/index.ts").read_text(encoding="utf-8")
+          reset_staff = Path("supabase/functions/admin-reset-staff-password/index.ts").read_text(encoding="utf-8")
+
+          required_create_staff_fragments = [
+              "owner_data_reset_settings?singleton=eq.true",
+              'String(actor?.id ?? "") !== primaryOwnerId',
+              "/auth/v1/admin/users",
+              "email_confirm: true",
+              'method: "DELETE"',
+          ]
+          for fragment in required_create_staff_fragments:
+              assert fragment in create_staff, f"Staff creation is missing its security/rollback behavior: {fragment}"
+
+          required_reset_staff_fragments = [
+              "staffId === primaryOwnerId",
+              'String(target.role || "").toLowerCase() === "owner"',
+              "/auth/v1/admin/users/",
+          ]
+          for fragment in required_reset_staff_fragments:
+              assert fragment in reset_staff, f"Staff password reset is missing its owner protection: {fragment}"
+
+          print("Elory inventory/privacy and staff-function source checks passed.")
           PY
