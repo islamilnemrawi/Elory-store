@@ -78,6 +78,17 @@ These are source/history reconciliation discrepancies, not proof that the live d
 | `20261118131000_customer_order_payment_method.sql` | `20261118122514` |
 | `20261124130000_elory_order_inventory_and_customer_privacy.sql` | `20261124112349` |
 
+## Recovered legacy source candidates
+
+Seven historical SQL source files were recovered read-only from the legacy `pinky--dashboard` repository and preserved under `docs/legacy-migration-sources/`. This is an evidence archive only; it is outside the active Supabase migration directory and is not counted among the 25 root migration files.
+
+- Two files match a live version/name pair exactly or partially (one live version has a duplicate name at a second timestamp).
+- Two files have a matching live migration name but a different timestamp.
+- Three files are possible candidates for related grouped operations, but their mapping is not proven.
+- No archived file was copied into `supabase/migrations/` or applied to production.
+
+Review the archive README and compare full SQL contents and resulting schema effects before using any candidate in the active migration history.
+
 ## Required safe reconciliation sequence
 
 1. Keep the current production schema and data unchanged.
