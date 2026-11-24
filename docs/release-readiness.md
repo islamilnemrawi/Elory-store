@@ -12,6 +12,7 @@ Production source branch: `main`
 - Synchronized the repository copy of `admin-reset-staff-password` with the currently deployed Edge Function. The primary-owner identity remains the security boundary; the editable `role` label is not treated as proof of primary-owner identity.
 - Added a direct WhatsApp request path to the data-deletion page using the same published store contact already present on the storefront.
 - Preserved both source modules returned by the deployed `elora-push` Worker under `cloudflare/push-worker/`. This is a source snapshot, not a Worker redeployment package; confirm the active entrypoint and bindings before any future upload.
+- Enabled Cloudflare Worker query-string redaction for `elora-push` observability and verified the setting by reading it back. Existing log sampling, persistence, and invocation-log settings were preserved.
 
 ## Production gates still open
 
