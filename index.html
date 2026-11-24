@@ -7078,6 +7078,20 @@ main#home{margin-top:0!important;padding-top:0!important}
     }
 
     function productCardHtml(product){
+      if(!document.documentElement.dataset.productCardActionsBound){
+        document.documentElement.dataset.productCardActionsBound="true";
+        document.addEventListener("click",event=>{
+          const target=event.target;
+          if(!(target instanceof Element)) return;
+          const button=target.closest("button[data-product-card-action]");
+          if(!button) return;
+          const action=button.dataset.productCardAction;
+          const id=button.dataset.productId||"";
+          if(action==="favorite"){ toggleFavorite(button); return; }
+          if(action==="add-cart" && id){ addToCart(id); return; }
+          if(action==="prime"){ handleProductPrimeOffer(event); }
+        });
+      }
       const discount=Math.max(0,Number(product.discount||0));
       const salePrice=Math.max(0,Number(product.price||0));
       const oldPrice=Number(product.oldPrice||0);
@@ -7089,7 +7103,7 @@ main#home{margin-top:0!important;padding-top:0!important}
         <article class="product-card" data-product-card="true" data-product-id="${escapeHtml(product.id)}" tabindex="0" role="group" aria-label="عرض تفاصيل ${escapeHtml(product.name)}">
           <div class="product-image">
             ${discount>0?`<span class="discount-badge">خصم ${discount}%</span>`:""}
-            <button class="favorite-btn" data-product-id="${String(product.id).replace(/"/g,'&quot;')}" onclick="toggleFavorite(this)" aria-label="المفضلة"><i class="fa-regular fa-heart"></i></button>
+            <button type="button" class="favorite-btn" data-product-card-action="favorite" data-product-id="${escapeHtml(product.id)}" aria-label="المفضلة"><i class="fa-regular fa-heart"></i></button>
             <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.style.visibility='hidden';this.parentElement.style.background='linear-gradient(135deg,#f8edf2,#f1e4ea)';">
           </div>
           <div class="product-info">
@@ -7099,11 +7113,11 @@ main#home{margin-top:0!important;padding-top:0!important}
               <span class="current-price">${formatPrice(salePrice)}</span>
               ${originalPrice>salePrice?`<span class="old-price">${formatPrice(originalPrice)}</span>`:""}
             </div>
-            <button type="button" class="product-prime-price${primeActive?' is-active':''}" style="${primeActive||isPrimeEnabled()?'':'display:none'}" aria-label="سعر Prime ${formatPrice(primePrice)}" title="Elory Prime — ${formatPrice(primePrice)}" onclick="handleProductPrimeOffer(event)">
+            <button type="button" class="product-prime-price${primeActive?' is-active':''}" style="${primeActive||isPrimeEnabled()?'':'display:none'}" aria-label="سعر Prime ${formatPrice(primePrice)}" title="Elory Prime — ${formatPrice(primePrice)}" data-product-card-action="prime">
               <span class="product-prime-label"><i class="fa-solid fa-crown" aria-hidden="true"></i><span>Prime</span></span>
               <strong>${formatPrice(primePrice)}</strong>
             </button>
-            <button class="add-cart" onclick="addToCart('${String(product.id).replace(/'/g,"\'")}')"><i class="fa-solid fa-bag-shopping"></i> أضيفي للسلة</button>
+            <button type="button" class="add-cart" data-product-card-action="add-cart" data-product-id="${escapeHtml(product.id)}"><i class="fa-solid fa-bag-shopping"></i> أضيفي للسلة</button>
           </div>
         </article>`;
     }
@@ -9597,6 +9611,20 @@ main#home{margin-top:0!important;padding-top:0!important}
 
     function renderFavorites(refreshAvailability=true){
       const box=document.getElementById("favoritesItems"); if(!box) return;
+      if(box.dataset.favoriteActionsBound!=="true"){
+        box.dataset.favoriteActionsBound="true";
+        box.addEventListener("click",event=>{
+          const target=event.target;
+          if(!(target instanceof Element)) return;
+          const button=target.closest("button[data-favorite-action]");
+          if(!button||!box.contains(button)) return;
+          const id=button.dataset.productId||"";
+          if(!id) return;
+          if(button.dataset.favoriteAction==="open") openProductDetails(id);
+          else if(button.dataset.favoriteAction==="add") addFavoriteToCart(id);
+          else if(button.dataset.favoriteAction==="remove") removeFavoriteById(id);
+        });
+      }
       const version=++favoriteRenderVersion;
       if(!favorites.length){ box.innerHTML='<div class="favorite-empty"><i class="fa-regular fa-heart" style="font-size:30px;margin-bottom:10px"></i><div>لسه مفيش منتجات في المفضلة.</div></div>'; return; }
       box.innerHTML=favorites.map(item=>{
@@ -9610,11 +9638,11 @@ main#home{margin-top:0!important;padding-top:0!important}
           ?`<small class="favorite-price-change">${price<savedPrice?"انخفض السعر":"تغير السعر"} من ${formatPrice(savedPrice)}</small>`
           :"";
         return `<div class="favorite-item${unavailable?" favorite-unavailable":""}">
-          <button type="button" class="favorite-item-open" aria-label="عرض تفاصيل ${escapeHtml(product.name||item.name)}" onclick="openProductDetails('${id}')"><img src="${escapeHtml(product.image||item.image||"")}" alt="${escapeHtml(product.name||item.name)}"></button>
-          <button type="button" class="favorite-item-open favorite-item-name" onclick="openProductDetails('${id}')"><strong>${escapeHtml(product.name||item.name||"منتج")}</strong></button>
+          <button type="button" class="favorite-item-open" data-favorite-action="open" data-product-id="${id}" aria-label="عرض تفاصيل ${escapeHtml(product.name||item.name)}"><img src="${escapeHtml(product.image||item.image||"")}" alt="${escapeHtml(product.name||item.name)}"></button>
+          <button type="button" class="favorite-item-open favorite-item-name" data-favorite-action="open" data-product-id="${id}"><strong>${escapeHtml(product.name||item.name||"منتج")}</strong></button>
           <div class="favorite-item-info"><span>${formatPrice(price)}</span>${priceChange}${unavailable?'<small class="favorite-stock-status">غير متوفر حاليًا</small>':""}</div>
-          <button type="button" aria-label="إضافة إلى السلة" ${unavailable?"disabled":""} onclick="addFavoriteToCart('${id}')"><i class="fa-solid fa-bag-shopping"></i></button>
-          <button type="button" aria-label="إزالة من المفضلة" onclick="removeFavoriteById('${id}')"><i class="fa-solid fa-trash"></i></button>
+          <button type="button" aria-label="إضافة إلى السلة" data-favorite-action="add" data-product-id="${id}" ${unavailable?"disabled":""}><i class="fa-solid fa-bag-shopping"></i></button>
+          <button type="button" aria-label="إزالة من المفضلة" data-favorite-action="remove" data-product-id="${id}"><i class="fa-solid fa-trash"></i></button>
         </div>`;
       }).join("");
       if(!refreshAvailability||!hasSupabaseClient()) return;
