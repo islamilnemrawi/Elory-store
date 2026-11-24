@@ -1,0 +1,31 @@
+name: Elory source inspection export
+# Export the exact input archive for reproducible source-level review.
+on:
+  push:
+    branches:
+      - work/elory-source-inspection-2026-11-17
+    paths:
+      - .github/workflows/export-elory-source.yml
+permissions:
+  contents: read
+jobs:
+  export-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and extract source archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ZIP_NAME="Elory_Dashboard_Build_Ready.zip"
+          test -s "$ZIP_NAME"
+          unzip -tq "$ZIP_NAME"
+          mkdir -p "$RUNNER_TEMP/elory-source"
+          unzip -q "$ZIP_NAME" -d "$RUNNER_TEMP/elory-source"
+          test -n "$(find "$RUNNER_TEMP/elory-source" -type f -print -quit)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Elory-Dashboard-Source-For-Inspection
+          path: ${{ runner.temp }}/elory-source/
+          if-no-files-found: error
+          retention-days: 1
