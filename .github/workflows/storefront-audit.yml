@@ -21,6 +21,7 @@ on:
       - main
     paths:
       - index.html
+      - .github/scripts/first-paint-regression.cjs
       - .github/scripts/category-motion-regression.cjs
       - .github/scripts/storefront-security-regression.cjs
       - .github/workflows/storefront-audit.yml
