@@ -13,7 +13,6 @@ on:
     paths:
       - index.html
       - .github/scripts/storefront-audit.cjs
-      - .github/scripts/storefront-audit.cjs
       - .github/scripts/first-paint-regression.cjs
       - .github/scripts/category-motion-regression.cjs
       - .github/scripts/storefront-security-regression.cjs
@@ -23,6 +22,7 @@ on:
       - main
     paths:
       - index.html
+      - .github/scripts/storefront-audit.cjs
       - .github/scripts/first-paint-regression.cjs
       - .github/scripts/category-motion-regression.cjs
       - .github/scripts/storefront-security-regression.cjs
